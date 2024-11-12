@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 
 export default function Dashboard() {
+
+  
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
