@@ -72,7 +72,9 @@ export default function Projects() {
       <CardContent>
         <CardDescription>{status === "to-translate" ? "Awaiting translation" : "In progress"}</CardDescription>
         <p className="text-sm text-gray-600">{status === "to-translate" ? "0%" : "50%"} Complete</p>
-        <Button className="mt-4">{status === "to-translate" ? "Start" : "Continue"} Translating</Button>
+        <Link href="/project-overview">
+          <Button className="mt-4">{status === "to-translate" ? "Start" : "Continue"} Translating</Button>
+        </Link>
       </CardContent>
     </Card>
   );
