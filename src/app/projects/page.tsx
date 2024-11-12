@@ -16,7 +16,7 @@ export default function Projects() {
         <div className="p-4">
           <h1 className="text-2xl font-bold text-gray-800">TranslateOS</h1>
         </div>
-        <nav className="mt-4">
+        <nav className="mt-3">
           <Link href="/dashboard" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200">
             <Home className="mr-3 h-5 w-5" />
             Dashboard
@@ -24,10 +24,6 @@ export default function Projects() {
           <Link href="/projects" className="flex items-center px-4 py-2 text-gray-700 bg-gray-200">
             <Globe className="mr-3 h-5 w-5" />
             Projects
-          </Link>
-          <Link href="/team" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200">
-            <Users className="mr-3 h-5 w-5" />
-            Team
           </Link>
           <Link href="/settings" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200">
             <Settings className="mr-3 h-5 w-5" />
