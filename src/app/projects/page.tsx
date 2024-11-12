@@ -1,4 +1,5 @@
 "use client";
+import { useAuth } from "@/context/AuthContext"
 import * as React from "react"
 import { Globe, Home, MoreVertical, Plus, Search, Settings, Trash, Users } from "lucide-react"
 import Link from "next/link"
@@ -24,47 +25,54 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Projects() {
+  const { user } = useAuth(); // 获取用户信息，包括 role
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-const [projectToDelete, setProjectToDelete] = React.useState<number | null>(null); // 修改为 number | null
+  const [projectToDelete, setProjectToDelete] = React.useState<number | null>(null); // 修改为 number | null
 
-// 修改 handleDeleteClick 的参数类型为 number
-const handleDeleteClick = (projectId: number) => {
-  setProjectToDelete(projectId);
-  setIsDeleteDialogOpen(true);
-};
+  // 检查当前用户是否为 admin
+  const isAdmin = user?.role === "admin";
 
-const handleDeleteConfirm = () => {
-  // 执行删除逻辑
-  console.log(`Deleting project ${projectToDelete}`);
-  setIsDeleteDialogOpen(false);
-  setProjectToDelete(null);
-};
+  // 修改 handleDeleteClick 的参数类型为 number
+  const handleDeleteClick = (projectId: number) => {
+    setProjectToDelete(projectId);
+    setIsDeleteDialogOpen(true);
+  };
 
+  const handleDeleteConfirm = () => {
+    // 执行删除逻辑
+    console.log(`Deleting project ${projectToDelete}`);
+    setIsDeleteDialogOpen(false);
+    setProjectToDelete(null);
+  };
+
+  // ProjectCard 组件，根据 isAdmin 控制拓展菜单的显示
   const ProjectCard = ({ project, status }: { project: number; status: "to-translate" | "in-progress" }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Project {project}</CardTitle>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project}`)}>
-              Manage Project
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleDeleteClick(project)} className="text-red-600">
-              Delete Project
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isAdmin && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project}`)}>
+                Manage Project
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleDeleteClick(project)} className="text-red-600">
+                Delete Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </CardHeader>
       <CardContent>
-        <CardDescription>{status === 'to-translate' ? 'Awaiting translation' : 'In progress'}</CardDescription>
-        <p className="text-sm text-gray-600">{status === 'to-translate' ? '0%' : '50%'} Complete</p>
-        <Button className="mt-4">{status === 'to-translate' ? 'Start' : 'Continue'} Translating</Button>
+        <CardDescription>{status === "to-translate" ? "Awaiting translation" : "In progress"}</CardDescription>
+        <p className="text-sm text-gray-600">{status === "to-translate" ? "0%" : "50%"} Complete</p>
+        <Button className="mt-4">{status === "to-translate" ? "Start" : "Continue"} Translating</Button>
       </CardContent>
     </Card>
   );
@@ -115,9 +123,12 @@ const handleDeleteConfirm = () => {
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
               <Input type="text" placeholder="Search projects..." className="pl-8 pr-4 w-64" />
             </div>
-            <Button onClick={() => console.log('Create new project')}>
-              <Plus className="mr-2 h-4 w-4" /> Create Project
-            </Button>
+            {/* 仅当 isAdmin 为 true 时显示 Create Project 按钮 */}
+            {isAdmin && (
+              <Button onClick={() => console.log("Create new project")}>
+                <Plus className="mr-2 h-4 w-4" /> Create Project
+              </Button>
+            )}
           </div>
 
           <Tabs defaultValue="to-translate">
