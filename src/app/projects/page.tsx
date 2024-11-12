@@ -1,14 +1,75 @@
+"use client";
 import * as React from "react"
-import { Globe, Home, Search, Settings, Users } from "lucide-react"
+import { Globe, Home, MoreVertical, Plus, Search, Settings, Trash, Users } from "lucide-react"
 import Link from "next/link"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Projects() {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+const [projectToDelete, setProjectToDelete] = React.useState<number | null>(null); // 修改为 number | null
+
+// 修改 handleDeleteClick 的参数类型为 number
+const handleDeleteClick = (projectId: number) => {
+  setProjectToDelete(projectId);
+  setIsDeleteDialogOpen(true);
+};
+
+const handleDeleteConfirm = () => {
+  // 执行删除逻辑
+  console.log(`Deleting project ${projectToDelete}`);
+  setIsDeleteDialogOpen(false);
+  setProjectToDelete(null);
+};
+
+  const ProjectCard = ({ project, status }: { project: number; status: "to-translate" | "in-progress" }) => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle>Project {project}</CardTitle>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project}`)}>
+              Manage Project
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => handleDeleteClick(project)} className="text-red-600">
+              Delete Project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent>
+        <CardDescription>{status === 'to-translate' ? 'Awaiting translation' : 'In progress'}</CardDescription>
+        <p className="text-sm text-gray-600">{status === 'to-translate' ? '0%' : '50%'} Complete</p>
+        <Button className="mt-4">{status === 'to-translate' ? 'Start' : 'Continue'} Translating</Button>
+      </CardContent>
+    </Card>
+  );
+  
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -49,11 +110,14 @@ export default function Projects() {
 
         {/* Projects Content */}
         <div className="p-8">
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input type="text" placeholder="Search projects..." className="pl-10" />
+          <div className="mb-6 flex items-center justify-between">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+              <Input type="text" placeholder="Search projects..." className="pl-8 pr-4 w-64" />
             </div>
+            <Button onClick={() => console.log('Create new project')}>
+              <Plus className="mr-2 h-4 w-4" /> Create Project
+            </Button>
           </div>
 
           <Tabs defaultValue="to-translate">
@@ -64,40 +128,40 @@ export default function Projects() {
             <TabsContent value="to-translate">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((project) => (
-                  <Card key={project}>
-                    <CardHeader>
-                      <CardTitle>Project {project}</CardTitle>
-                      <CardDescription>Awaiting translation</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">0% Complete</p>
-                      <Link href="/project-overview">
-                        <Button className="mt-4">In Detail</Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
+                  <ProjectCard key={project} project={project} status="to-translate" />
                 ))}
               </div>
             </TabsContent>
             <TabsContent value="in-progress">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((project) => (
-                  <Card key={project}>
-                    <CardHeader>
-                      <CardTitle>Project {project}</CardTitle>
-                      <CardDescription>In  progress</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">50% Complete</p>
-                      <Button className="mt-4">Continue Translating</Button>
-                    </CardContent>
-                  </Card>
+                  <ProjectCard key={project} project={project} status="in-progress" />
                 ))}
               </div>
             </TabsContent>
           </Tabs>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete Project {projectToDelete}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
