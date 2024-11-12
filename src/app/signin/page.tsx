@@ -2,6 +2,7 @@
 import { useState } from "react";
 // import { useRouter } from "next/router";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,7 @@ export default function SignIn() {
     });
     const [error, setError] = useState(""); //错误信息保存
     const router = useRouter(); //用于页面跳转
+    const { login } = useAuth(); // 使用 AuthContext 的 login 方法
 
     //动态更新输入的值并保存至formData中
     const handleChange = (e: { target: { id: any; value: any; }; }) => {
@@ -47,8 +49,7 @@ export default function SignIn() {
             if (response.ok) {
                 // 响应码为200，代表成功登陆
                 
-                const {token} = result; //从响应中提取token
-                localStorage.setItem("authToken", token); //将token储存懂啊loacalStorage中，便于后续请求使用
+                login(result.token); // 成功登录后调用 login 方法
                 setError("");//清空错误信息
                 // console.log(token);
                 router.push("/dashboard");// 使用router.push跳转到dashboard界面
