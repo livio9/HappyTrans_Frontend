@@ -54,7 +54,9 @@ export default function Projects() {
   const handleStartTranslating = async (project: ProjectName) => {
     await fetchProjectInfo(project); // 从后端获取项目的信息
     setCurrentProject({ name: `Project ${project}`, id: project }); // 设置当前项目的名称和 ID
-    router.push("/project-overview"); // 跳转到项目概览页面
+    // router.push("/project-overview"); // 跳转到项目概览页面
+    //暂时修改为跳转到具体词条翻译页面，后续做component之后再改回来
+    router.push("/translation-interface");
   };
 
   // ProjectCard 组件，根据 isAdmin 控制拓展菜单的显示

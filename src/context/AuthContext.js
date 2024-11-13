@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserInfo = async (authToken) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Token ${authToken}`, // 使用 `Token` 格式
