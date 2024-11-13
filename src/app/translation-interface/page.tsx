@@ -186,6 +186,7 @@ export default function TranslationInterface() {
             <TabsTrigger value="similar">Similar Keys</TabsTrigger>
             <TabsTrigger value="other">Other Languages</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="comment">Comment</TabsTrigger>
           </TabsList>
           <TabsContent value="nearby">
             <table className="w-full text-sm">
@@ -216,6 +217,7 @@ export default function TranslationInterface() {
           <TabsContent value="similar">Similar keys content</TabsContent>
           <TabsContent value="other">Other languages content</TabsContent>
           <TabsContent value="history">History content</TabsContent>
+          <TabsContent value="comment">Comment content</TabsContent>
         </Tabs>
       </footer>
     </div>
