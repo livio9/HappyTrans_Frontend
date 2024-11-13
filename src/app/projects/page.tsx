@@ -1,14 +1,14 @@
 "use client";
-import { useAuth } from "@/context/AuthContext"
-import { useProject } from "@/context/ProjectContext"
+import { useAuth } from "@/context/AuthContext";
+import { useProject } from "@/context/ProjectContext";
 import { useRouter } from "next/navigation";
-import * as React from "react"
-import { Globe, Home, MoreVertical, Plus, Search, Settings, Trash, Users } from "lucide-react"
-import Link from "next/link"
+import * as React from "react";
+import { Globe, Home, MoreVertical, Plus, Search, Settings } from "lucide-react";
+import Link from "next/link";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,56 +16,82 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Projects() {
   const { user } = useAuth(); // 获取用户信息，包括 role
   const { setCurrentProject, fetchProjectInfo } = useProject(); // 获取 setCurrentProject 函数
   const router = useRouter(); // 定义 router
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  type ProjectName = string; // 定义 ProjectName 类型
-  const [projectToDelete, setProjectToDelete] = React.useState<ProjectName | null>(null); // 修改为 ProjectName | null
+  const [projectToDelete, setProjectToDelete] = React.useState<string | null>(null); // 当前选择删除的项目名称
+  const [projects, setProjects] = React.useState<Project[]>([]); // 存储从后端获取的项目列表
+  const [loading, setLoading] = React.useState(true); // 加载状态
 
   // 检查当前用户是否为 admin
   const isAdmin = user?.role === "admin";
 
-  // 修改 handleDeleteClick 的参数类型为 name
-  const handleDeleteClick = (projectId: ProjectName) => {
-    setProjectToDelete(projectId);
+  // 获取项目列表
+  React.useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data); // 将项目列表存储在状态中
+        } else {
+          console.error("Failed to fetch projects");
+        }
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  const handleDeleteClick = (projectName: string) => {
+    setProjectToDelete(projectName);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
-    // 执行删除逻辑
     console.log(`Deleting project ${projectToDelete}`);
     setIsDeleteDialogOpen(false);
     setProjectToDelete(null);
   };
 
-  // 点击 "Start Translating" 按钮时设置当前项目并跳转到详情页面
-  const handleStartTranslating = async (project: ProjectName) => {
-    await fetchProjectInfo(project); // 从后端获取项目的信息
-    setCurrentProject({ name: project }); // 设置当前项目的名称和 ID
-    console.log('project:', project);
-    // router.push("/project-overview"); // 跳转到项目概览页面
-    //暂时修改为跳转到具体词条翻译页面，后续做component之后再改回来
+  const handleStartTranslating = async (projectName: string) => {
+    await fetchProjectInfo(projectName);
+    setCurrentProject({ name: projectName });
     router.push("/translation-interface");
   };
 
   // ProjectCard 组件，根据 isAdmin 控制拓展菜单的显示
-  const ProjectCard = ({ project, status }: { project: ProjectName; status: "to-translate" | "in-progress" }) => (
+  interface Project {
+    name: string;
+    description: string;
+  }
+
+  const ProjectCard = ({ project }: { project: Project }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle>Project {project}</CardTitle>
-        {/* <CardTitle>string</CardTitle> */}
+        <CardTitle>{project.name}</CardTitle>
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -75,10 +101,10 @@ export default function Projects() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project}`)}>
+              <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project.name}`)}>
                 Manage Project
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleDeleteClick(project)} className="text-red-600">
+              <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
                 Delete Project
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -86,15 +112,13 @@ export default function Projects() {
         )}
       </CardHeader>
       <CardContent>
-        <CardDescription>{status === "to-translate" ? "Awaiting translation" : "In progress"}</CardDescription>
-        <p className="text-sm text-gray-600">{status === "to-translate" ? "0%" : "50%"} Complete</p>
-        <Button className="mt-4" onClick={() => handleStartTranslating(project)}>
-          {status === "to-translate" ? "Start" : "Continue"} Translating
+        <CardDescription>{project.description}</CardDescription>
+        <Button className="mt-4" onClick={() => handleStartTranslating(project.name)}>
+          Start Translating
         </Button>
       </CardContent>
     </Card>
   );
-  
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -141,7 +165,6 @@ export default function Projects() {
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
               <Input type="text" placeholder="Search projects..." className="pl-8 pr-4 w-64" />
             </div>
-            {/* 仅当 isAdmin 为 true 时显示 Create Project 按钮 */}
             {isAdmin && (
               <Button onClick={() => console.log("Create new project")}>
                 <Plus className="mr-2 h-4 w-4" /> Create Project
@@ -149,26 +172,24 @@ export default function Projects() {
             )}
           </div>
 
-          <Tabs defaultValue="to-translate">
-            <TabsList>
-              <TabsTrigger value="to-translate">To Translate</TabsTrigger>
-              <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-            </TabsList>
-            <TabsContent value="to-translate">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {["test_project", 2, 3, 4, 5, 6].map((project) => (
-                  <ProjectCard key={project} project={project.toString()} status="to-translate" />
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="in-progress">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((project) => (
-                  <ProjectCard key={project} project={project.toString()} status="in-progress" />
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+          {loading ? (
+            <p>Loading projects...</p>
+          ) : (
+            <Tabs defaultValue="to-translate">
+              <TabsList>
+                <TabsTrigger value="to-translate">To Translate</TabsTrigger>
+                <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+              </TabsList>
+              <TabsContent value="to-translate">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {projects.map((project) => (
+                    <ProjectCard key={project.name} project={project} />
+                  ))}
+                </div>
+              </TabsContent>
+              {/* 可以添加其他 TabsContent */}
+            </Tabs>
+          )}
         </div>
       </main>
 
@@ -192,5 +213,5 @@ export default function Projects() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }
