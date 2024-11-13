@@ -53,7 +53,8 @@ export default function Projects() {
   // 点击 "Start Translating" 按钮时设置当前项目并跳转到详情页面
   const handleStartTranslating = async (project: ProjectName) => {
     await fetchProjectInfo(project); // 从后端获取项目的信息
-    setCurrentProject({ name: `Project ${project}`, id: project }); // 设置当前项目的名称和 ID
+    setCurrentProject({ name: project }); // 设置当前项目的名称和 ID
+    console.log('project:', project);
     // router.push("/project-overview"); // 跳转到项目概览页面
     //暂时修改为跳转到具体词条翻译页面，后续做component之后再改回来
     router.push("/translation-interface");
@@ -155,7 +156,7 @@ export default function Projects() {
             </TabsList>
             <TabsContent value="to-translate">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {["string", 2, 3, 4, 5, 6].map((project) => (
+                {["test_project", 2, 3, 4, 5, 6].map((project) => (
                   <ProjectCard key={project} project={project.toString()} status="to-translate" />
                 ))}
               </div>
