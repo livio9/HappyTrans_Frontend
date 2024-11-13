@@ -1,5 +1,7 @@
 "use client";
 import { useAuth } from "@/context/AuthContext"
+import { useProject } from "@/context/ProjectContext"
+import { useRouter } from "next/navigation";
 import * as React from "react"
 import { Globe, Home, MoreVertical, Plus, Search, Settings, Trash, Users } from "lucide-react"
 import Link from "next/link"
@@ -26,14 +28,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function Projects() {
   const { user } = useAuth(); // 获取用户信息，包括 role
+  const { setCurrentProject, fetchProjectInfo } = useProject(); // 获取 setCurrentProject 函数
+  const router = useRouter(); // 定义 router
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [projectToDelete, setProjectToDelete] = React.useState<number | null>(null); // 修改为 number | null
+  type ProjectName = string; // 定义 ProjectName 类型
+  const [projectToDelete, setProjectToDelete] = React.useState<ProjectName | null>(null); // 修改为 ProjectName | null
 
   // 检查当前用户是否为 admin
   const isAdmin = user?.role === "admin";
 
-  // 修改 handleDeleteClick 的参数类型为 number
-  const handleDeleteClick = (projectId: number) => {
+  // 修改 handleDeleteClick 的参数类型为 name
+  const handleDeleteClick = (projectId: ProjectName) => {
     setProjectToDelete(projectId);
     setIsDeleteDialogOpen(true);
   };
@@ -45,11 +50,19 @@ export default function Projects() {
     setProjectToDelete(null);
   };
 
+  // 点击 "Start Translating" 按钮时设置当前项目并跳转到详情页面
+  const handleStartTranslating = async (project: ProjectName) => {
+    await fetchProjectInfo(project); // 从后端获取项目的信息
+    setCurrentProject({ name: `Project ${project}`, id: project }); // 设置当前项目的名称和 ID
+    router.push("/project-overview"); // 跳转到项目概览页面
+  };
+
   // ProjectCard 组件，根据 isAdmin 控制拓展菜单的显示
-  const ProjectCard = ({ project, status }: { project: number; status: "to-translate" | "in-progress" }) => (
+  const ProjectCard = ({ project, status }: { project: ProjectName; status: "to-translate" | "in-progress" }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle>Project {project}</CardTitle>
+        {/* <CardTitle>string</CardTitle> */}
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -72,9 +85,9 @@ export default function Projects() {
       <CardContent>
         <CardDescription>{status === "to-translate" ? "Awaiting translation" : "In progress"}</CardDescription>
         <p className="text-sm text-gray-600">{status === "to-translate" ? "0%" : "50%"} Complete</p>
-        <Link href="/project-overview">
-          <Button className="mt-4">{status === "to-translate" ? "Start" : "Continue"} Translating</Button>
-        </Link>
+        <Button className="mt-4" onClick={() => handleStartTranslating(project)}>
+          {status === "to-translate" ? "Start" : "Continue"} Translating
+        </Button>
       </CardContent>
     </Card>
   );
@@ -140,15 +153,15 @@ export default function Projects() {
             </TabsList>
             <TabsContent value="to-translate">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((project) => (
-                  <ProjectCard key={project} project={project} status="to-translate" />
+                {["string", 2, 3, 4, 5, 6].map((project) => (
+                  <ProjectCard key={project} project={project.toString()} status="to-translate" />
                 ))}
               </div>
             </TabsContent>
             <TabsContent value="in-progress">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((project) => (
-                  <ProjectCard key={project} project={project} status="in-progress" />
+                  <ProjectCard key={project} project={project.toString()} status="in-progress" />
                 ))}
               </div>
             </TabsContent>

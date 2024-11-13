@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext"; // 导入 AuthProvider 以管理用户上下文
+import { ProjectProvider } from "@/context/ProjectContext"; // 导入 ProjectProvider 以管理项目上下文
 
 // 字体加载
 const geistSans = localFont({
@@ -33,7 +34,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          {children} {/* 使用 children 渲染页面内容 */}
+          <ProjectProvider>
+            {children} {/* 使用 children 渲染页面内容 */}
+          </ProjectProvider>
         </AuthProvider>
       </body>
     </html>
