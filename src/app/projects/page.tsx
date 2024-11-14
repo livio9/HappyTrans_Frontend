@@ -26,14 +26,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface Project {
+  name: string;
+  description: string;
+}
+
 export default function Projects() {
-  const { user } = useAuth(); // 获取用户信息，包括 role
-  const { setCurrentProject, fetchProjectInfo } = useProject(); // 获取 setCurrentProject 函数
+  const { user, token } = useAuth(); // 获取用户信息，包括 role
+  const { setCurrentProject, fetchProjectInfo } = useProject();// 获取 setCurrentProject 函数
   const router = useRouter(); // 定义 router
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+  const [newProjectName, setNewProjectName] = React.useState("");
+  const [newProjectDescription, setNewProjectDescription] = React.useState("");
   const [projectToDelete, setProjectToDelete] = React.useState<string | null>(null); // 当前选择删除的项目名称
   const [projects, setProjects] = React.useState<Project[]>([]); // 存储从后端获取的项目列表
   const [loading, setLoading] = React.useState(true); // 加载状态
+  type ProjectName = string; // 定义 ProjectName 类型
 
   // 检查当前用户是否为 admin
   const isAdmin = user?.role === "admin";
@@ -47,6 +56,7 @@ export default function Projects() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+
           },
         });
         if (response.ok) {
@@ -65,15 +75,82 @@ export default function Projects() {
     fetchProjects();
   }, []);
 
-  const handleDeleteClick = (projectName: string) => {
-    setProjectToDelete(projectName);
+   // Delete project function
+  const deleteProject = async (projectName: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/delete-project?project_name=${projectName}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Token ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setProjects(projects.filter(project => project.name !== projectName));
+      } else {
+        throw new Error('Failed to delete project');
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      throw error;
+    }
+  };
+
+  // Create project function
+  const createProject = async (name: string, description: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project?name=${name}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({ name, description }),
+      });
+
+      if (response.ok) {
+        const newProject = await response.json();
+        setProjects([...projects, newProject]);
+        setIsCreateDialogOpen(false);
+      } else {
+        throw new Error('Failed to create project');
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteClick = (projectId: string) => {
+    setProjectToDelete(projectId);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    console.log(`Deleting project ${projectToDelete}`);
-    setIsDeleteDialogOpen(false);
-    setProjectToDelete(null);
+  const handleDeleteConfirm = async () => {
+    if (projectToDelete) {
+      try {
+        await deleteProject(projectToDelete);
+        setIsDeleteDialogOpen(false);
+        setProjectToDelete(null);
+      } catch (error) {
+        console.error('Error during project deletion:', error);
+      }
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!newProjectName) {
+      alert("Project name is required");
+      return;
+    }
+    try {
+      await createProject(newProjectName, newProjectDescription);
+      setNewProjectName("");
+      setNewProjectDescription("");
+    } catch (error) {
+      console.error("Error creating project:", error);
+    }
   };
 
   const handleStartTranslating = async (projectName: string) => {
