@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Globe, Home, Settings, Users } from "lucide-react"
+import { Globe, Home, Settings, ChevronDown, Users } from "lucide-react"
 import Link from "next/link"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -45,6 +45,10 @@ export default function Team() {
                 <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
                 <AvatarFallback>JD</AvatarFallback>
               </Avatar>
+              <Button variant="ghost" className="ml-2">
+                John Doe
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
             </div>
           </div>
         </header>

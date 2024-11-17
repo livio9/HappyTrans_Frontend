@@ -1,5 +1,7 @@
+'use client';
 import * as React from "react"
-import { Globe, Home, Settings, Users } from "lucide-react"
+import { useAuth } from "@/context/AuthContext";
+import { Globe, Home, Settings, ChevronDown, Users } from "lucide-react"
 import Link from "next/link"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -10,6 +12,33 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 
 export default function SettingsPage() {
+  // 在组件的顶层调用钩子
+  const { logout } = useAuth();
+
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
+
+  // 确保客户端钩子只在客户端执行
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // 切换下拉框显示状态
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      logout();
+      // 在成功后清除用户会话或重定向
+      window.location.href = "/signin" // 重定向到登录页
+
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    }
+  }
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -39,11 +68,30 @@ export default function SettingsPage() {
         <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between px-8 py-4">
             <h2 className="text-2xl font-semibold text-gray-800">Settings</h2>
-            <div className="flex items-center">
+            <div className="flex items-center relative"> {/* 将容器设置为 relative 定位 */}
               <Avatar className="ml-4">
                 <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
                 <AvatarFallback>JD</AvatarFallback>
               </Avatar>
+              <Button variant="ghost" className="ml-2" onClick={toggleDropdown}>
+                John Doe
+                <ChevronDown className="ml-2 h-4 w-4 z-20" /> {/* 增加z-index确保按钮在最上层 */}
+              </Button>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-20 w-48 bg-white shadow-lg rounded-md z-10"> {/* 下拉框的 z-index 设置为 10 */}
+                  <ul className="space-y-2 p-2">
+                    <li className="hover:bg-gray-200 rounded-md">
+                      <Button
+                        variant="ghost"
+                        className="w-full text-left"
+                        onClick={handleLogout}
+                      >
+                        Logout
+                      </Button>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </header>
