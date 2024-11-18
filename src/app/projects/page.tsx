@@ -1,9 +1,10 @@
 "use client";
+
 import { useAuth } from "@/context/AuthContext";
 import { useProject } from "@/context/ProjectContext";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Globe, Home, ChevronDown, MoreVertical, Plus, Search, Settings } from "lucide-react";
 import Link from "next/link";
 
@@ -45,91 +46,62 @@ function getCookie(name: string): string | null {
     return parts.pop()?.split(';').shift() || null;
   }
   return null;
-} 
+}
 
 export default function Projects() {
-  const { user, token } = useAuth(); // 获取用户信息，包括 role
-  const { setCurrentProject, fetchProjectInfo } = useProject();// 获取 setCurrentProject 函数
-  const router = useRouter(); // 定义 router
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false); // 删除
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [dropdownOpen, setDropdownOpen] = React.useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("");
-  // 切换下拉框显示状态
+  const { user, token, logout } = useAuth();
+  const { setCurrentProject, fetchProjectInfo } = useProject();
+  const router = useRouter();
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   const toggleDropdown = () => {
-    setDropdownOpen((prev) => !prev); // 切换状态
+    setDropdownOpen((prev) => !prev);
   };
 
-  const [newProjectName, setNewProjectName] = React.useState("");
-  const [newProjectDescription, setNewProjectDescription] = React.useState("");
-  const [projectToDelete, setProjectToDelete] = React.useState<string | null>(null); // 当前选择删除的项目名称
-  const [projects, setProjects] = React.useState<Project[]>([]); // 存储从后端获取的项目列表
-  const [loading, setLoading] = React.useState(true); // 加载状态
-  const [newProjectSourceLanguage, setNewProjectSourceLanguage] = React.useState("en"); // 存储源语言
-  const [newProjectLanguageCode, setNewProjectLanguageCode] = React.useState(""); // 存储目标语言
-  const [newProjectFile, setNewProjectFile] = React.useState<File | null>(null); // 存储PO文件
-  const { logout } = useAuth(); 
-  
-  
-  type ProjectName = string; // 定义 ProjectName 类型
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newProjectSourceLanguage, setNewProjectSourceLanguage] = useState("en");
+  const [newProjectLanguageCode, setNewProjectLanguageCode] = useState("");
+  const [newProjectFile, setNewProjectFile] = useState<File | null>(null);
 
-  // 检查当前用户是否为 admin
   const isAdmin = user?.role === "admin";
 
   // 获取项目列表
-  React.useEffect(() => {
-    let isMounted = true; // 用于标记组件是否挂载
-
-    const fetchProjects = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (isMounted) setProjects(data); // 将项目列表存储在状态中
-        } else {
-          console.error("Failed to fetch projects");
-        }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      } finally {
-        if (isMounted) setLoading(false);
+  const fetchProjects = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      } else {
+        console.error("Failed to fetch projects");
       }
-    };
-
-    fetchProjects();
-    return () => {
-    isMounted = false; // 清理操作，防止状态更新
-  };
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // 语言选项
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
   const languages = ["English (en)", "Chinese (zh_CN)", "Spanish (es)", "French (fr)", "German (de)"];
 
-  // 处理弹窗关闭
-  const closeModal = () => setIsModalOpen(false);
-
-  // 处理目标语言选择
-  const handleLanguageSelect = () => {
-    // 此处添加处理语言选择逻辑
-    if (selectedLanguage) {
-      // 可以调用其他的处理函数或 API
-      console.log(`Selected language: ${selectedLanguage}`);
-      setIsModalOpen(false); // 选择语言后关闭弹窗
-    } else {
-      alert("Please select a language");
-    }
-  };
-
-   // 删除文件
+  // 删除项目
   const deleteProject = async (projectName: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/delete-project?project_name=${projectName}`, {
@@ -141,7 +113,7 @@ export default function Projects() {
       });
 
       if (response.ok) {
-        setProjects(projects.filter(project => project.name !== projectName));
+        setProjects((prevProjects) => prevProjects.filter(project => project.name !== projectName));
       } else {
         throw new Error('Failed to delete project');
       }
@@ -151,7 +123,7 @@ export default function Projects() {
     }
   };
 
-  // 创建文件
+  // 创建项目
   const createProject = async (name: string, description: string) => {
     if (!newProjectFile) {
       alert("Please select a file before submitting.");
@@ -164,16 +136,6 @@ export default function Projects() {
       formData.append('language_code', newProjectLanguageCode);
       formData.append('source_language', newProjectSourceLanguage);
       formData.append('po_file', newProjectFile);
-
-      // 打印完整的请求数据
-      console.log('Request details:', {
-        url: `${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project`,
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-        },
-        formData: Object.fromEntries(formData.entries())
-      });
 
       const csrfToken = getCookie('csrftoken');
 
@@ -188,21 +150,10 @@ export default function Projects() {
         mode: 'cors',
       });
 
-      const responseData = await response.text();
-      console.log('Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        body: responseData
-      });
-
       if (response.ok) {
-        const newProject = JSON.parse(responseData);
+        const newProject = await response.json(); // 直接解析 JSON
         setProjects((prevProjects) => [...prevProjects, newProject]);
-
-        // setProjects([...projects, newProject]);
         setIsCreateDialogOpen(false);
-
         // 重置表单
         setNewProjectName("");
         setNewProjectDescription("");
@@ -210,13 +161,8 @@ export default function Projects() {
         setNewProjectLanguageCode("");
         setNewProjectFile(null);
       } else {
-        let errorMessage = 'Failed to create project';
-        try {
-          const errorData = JSON.parse(responseData);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = responseData;
-        }
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || 'Failed to create project';
         throw new Error(errorMessage);
       }
     } catch (error) {
@@ -225,11 +171,13 @@ export default function Projects() {
     }
   };
 
+  // 第一次点击删除项目
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
     setIsDeleteDialogOpen(true);
   };
 
+  // 最终确认删除项目
   const handleDeleteConfirm = async () => {
     if (projectToDelete) {
       try {
@@ -242,6 +190,7 @@ export default function Projects() {
     }
   };
 
+  // 最终确认创建项目
   const handleCreateProject = async () => {
     if (!newProjectName) {
       alert("Project name is required");
@@ -249,8 +198,8 @@ export default function Projects() {
     }
     try {
       await createProject(newProjectName, newProjectDescription);
-      setNewProjectName("");
-      setNewProjectDescription("");
+      // 重新获取项目列表以确保数据一致性
+      await fetchProjects();
     } catch (error) {
       console.error("Error creating project:", error);
     }
@@ -265,38 +214,27 @@ export default function Projects() {
       await fetchProjectInfo(projectName);
       setCurrentProject({ name: projectName });
       router.push("/translation-interface");
-      // console.log(`Starting translation for ${projectName} in ${targetLanguage}`);
-      // 调用翻译 API 或执行其他逻辑
     } catch (error) {
       console.error("Failed to start translating:", error);
     }
   };
 
-  // ProjectCard 组件，根据 isAdmin 控制拓展菜单的显示
-  interface Project {
-    name: string;
-    description: string;
-  }
-
   const handleLogout = async () => {
     try {
       logout();
-      // 在成功后清除用户会话或重定向
-      window.location.href = "/signin" // 重定向到登录页
-
+      window.location.href = "/signin";
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;
     }
-  }
+  };
 
-  // 将选择目标语言的下拉框部分提取到单独的组件中
   interface LanguageSelectProps {
     selectedLanguage: string;
     setSelectedLanguage: (language: string) => void;
     languages: string[];
   }
-  // LanguageSelect 组件
+
   const LanguageSelect: React.FC<LanguageSelectProps> = ({ selectedLanguage, setSelectedLanguage, languages }) => (
     <div className="grid grid-cols-4 items-center gap-4">
       <Label htmlFor="language-select" className="text-right">
@@ -318,72 +256,73 @@ export default function Projects() {
     </div>
   );
 
+  const ProjectCard = ({ project }: { project: Project }) => {
+    const [isLanguageDialogOpen, setIsLanguageDialogOpen] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState("");
 
-  const ProjectCard = ({ project }: { project: Project }) => (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle>{project.name}</CardTitle>
-        {isAdmin && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreVertical className="h-4 w-4" />
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle>{project.name}</CardTitle>
+          {isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project.name}`)}>
+                  Manage Project
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
+                  Delete Project
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </CardHeader>
+        <CardContent>
+          <CardDescription>{project.description}</CardDescription>
+          <Button className="mt-4" onClick={() => setIsLanguageDialogOpen(true)}>
+            Start Translating
+          </Button>
+        </CardContent>
+        <Dialog open={isLanguageDialogOpen} onOpenChange={setIsLanguageDialogOpen}>
+          <DialogContent className="bg-white shadow-lg z-50">
+            <DialogHeader>
+              <DialogTitle>Select Target Language</DialogTitle>
+              <DialogDescription>
+                Please select a language for translating {project.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <LanguageSelect
+                selectedLanguage={selectedLanguage}
+                setSelectedLanguage={setSelectedLanguage}
+                languages={languages}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsLanguageDialogOpen(false)}>
+                Cancel
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project.name}`)}>
-                Manage Project
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
-                Delete Project
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </CardHeader>
-      <CardContent>
-        <CardDescription>{project.description}</CardDescription>
-        <Button className="mt-4" onClick={() => {
-          setIsLanguageDialogOpen(true); // 打开语言选择弹窗
-        }}>
-          Start Translating
-        </Button>
-      </CardContent>
-      <Dialog open={isLanguageDialogOpen} onOpenChange={setIsLanguageDialogOpen}>
-        <DialogContent className="bg-white shadow-lg z-50">
-          <DialogHeader>
-            <DialogTitle>Select Target Language</DialogTitle>
-            <DialogDescription>
-              Please select a language for translating {project.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <LanguageSelect
-              selectedLanguage={selectedLanguage}
-              setSelectedLanguage={setSelectedLanguage}
-              languages={languages}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsLanguageDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                handleStartTranslating(project.name, selectedLanguage).catch(console.error);
-                setIsLanguageDialogOpen(false); // 关闭弹窗
-              }}
-            >
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
-  );
+              <Button
+                onClick={() => {
+                  handleStartTranslating(project.name, selectedLanguage).catch(console.error);
+                  setIsLanguageDialogOpen(false);
+                }}
+              >
+                Confirm
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </Card>
+    );
+  };
 
-  
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -412,18 +351,18 @@ export default function Projects() {
         {/* Header */}
         <header className="bg-white shadow-sm">
           <div className="flex items-center justify-between px-8 py-4">
-            <h2 className="text-2xl font-semibold text-gray-800">Settings</h2>
-            <div className="flex items-center relative"> {/* 将容器设置为 relative 定位 */}
+            <h2 className="text-2xl font-semibold text-gray-800">Projects</h2>
+            <div className="flex items-center relative">
               <Avatar className="ml-4">
                 <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
                 <AvatarFallback>JD</AvatarFallback>
               </Avatar>
               <Button variant="ghost" className="ml-2" onClick={toggleDropdown}>
-                John Doe
-                <ChevronDown className="ml-2 h-4 w-4 z-20" /> {/* 增加z-index确保按钮在最上层 */}
+                {user?.name || "John Doe"}
+                <ChevronDown className="ml-2 h-4 w-4 z-20" />
               </Button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-20 w-48 bg-white shadow-lg rounded-md z-10"> {/* 下拉框的 z-index 设置为 10 */}
+                <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md z-10">
                   <ul className="space-y-2 p-2">
                     <li className="hover:bg-gray-200 rounded-md">
                       <Button
@@ -440,7 +379,6 @@ export default function Projects() {
             </div>
           </div>
         </header>
-
 
         {/* Projects Content */}
         <div className="p-8">
@@ -471,12 +409,12 @@ export default function Projects() {
                   ))}
                 </div>
               </TabsContent>
-              {/* 可以添加其他 TabsContent */}
+              {/* 可以在此添加其他 TabsContent */}
             </Tabs>
           )}
         </div>
       </main>
-      
+
       {/* Create Project Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -572,40 +510,6 @@ export default function Projects() {
             </Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>
               Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      {/* 选择目标语言对话框 */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select Target Language</DialogTitle>
-            <DialogDescription>
-              Please select a language for translation.
-            </DialogDescription>
-          </DialogHeader>
-          <div>
-            <Label htmlFor="language-select">Target Language</Label>
-            <select
-              id="language-select"
-              value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-            >
-              <option value="">Select Language</option>
-              {languages.map((language) => (
-                <option key={language} value={language}>
-                  {language}
-                </option>
-              ))}
-            </select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeModal}>
-              Cancel
-            </Button>
-            <Button variant="default" onClick={handleLanguageSelect}>
-              Confirm
             </Button>
           </DialogFooter>
         </DialogContent>
