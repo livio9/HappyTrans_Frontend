@@ -1,83 +1,113 @@
-"use client";
+"use client"; // 指定该文件为客户端组件，确保在客户端渲染
 
 import { createContext, useState, useEffect, useContext } from "react";
 
-// 创建 AuthContext
+// 创建 AuthContext，用于在组件树中共享认证状态
 const AuthContext = createContext();
 
+/**
+ * AuthProvider 组件
+ * 提供用户认证上下文，包括用户信息、认证令牌及登录登出功能
+ */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // 保存用户信息，包括 role
-  const [token, setToken] = useState(null); // 保存 token
+  // 用户信息状态，包括用户角色
+  const [user, setUser] = useState(null);
+  
+  // 用户认证令牌状态
+  const [token, setToken] = useState(null);
 
-  // 初始化，从 localStorage 中获取 token
+  /**
+   * useEffect 钩子
+   * 组件挂载时，从 localStorage 中获取存储的认证令牌，并尝试获取用户信息
+   */
   useEffect(() => {
-    const storedToken = localStorage.getItem("authToken");
+    const storedToken = localStorage.getItem("authToken"); // 从 localStorage 获取存储的 token
     if (storedToken) {
-      setToken(storedToken);
-      fetchUserInfo(storedToken); // 如果有 token，获取用户信息
+      setToken(storedToken); // 设置 token 状态
+      fetchUserInfo(storedToken); // 使用 token 获取用户信息
     }
-  }, []);
+  }, []); // 只在组件挂载时执行一次
 
-  // 从后端获取用户信息，包括 role 字段
+  /**
+   * fetchUserInfo 函数
+   * 使用认证令牌从后端 API 获取用户信息
+   * @param {string} authToken - 用户认证令牌
+   */
   const fetchUserInfo = async (authToken) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Token ${authToken}`, // 使用 `Token` 格式
+          Authorization: `Token ${authToken}`, // 使用 `Token` 格式的认证头
         },
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData); // 设置用户信息，包括 role 字段
-        checkUserRole(userData.role); // 检查用户角色
+        const userData = await response.json(); // 解析响应数据
+        setUser(userData); // 设置用户信息状态
+        checkUserRole(userData.role); // 根据用户角色执行相应逻辑
       } else if (response.status === 401) {
-        logout();
-        console.log("Unauthorized access. Logging out...");
+        logout(); // 如果认证失败，执行登出操作
+        console.log("Unauthorized access. Logging out..."); // 打印日志
       } else {
-        console.log("Failed to fetch user information");
+        console.log("Failed to fetch user information"); // 打印错误日志
       }
     } catch (error) {
-      console.error("Error fetching user info:", error);
+      console.error("Error fetching user info:", error); // 捕获并打印错误
     }
   };
 
-  // 检查用户角色，处理不同权限逻辑
+  /**
+   * checkUserRole 函数
+   * 根据用户角色执行不同的逻辑处理
+   * @param {string} role - 用户角色
+   */
   const checkUserRole = (role) => {
     if (role === "admin") {
       console.log("Admin user logged in");
-      // 可以在这里触发特定的管理员逻辑或状态更新
+      // 在这里可以触发特定的管理员逻辑或状态更新
     } else if (role === "user") {
       console.log("Regular user logged in");
-      // 普通用户的逻辑处理
+      // 在这里处理普通用户的逻辑
     } else {
       console.log("Unknown role");
       // 处理未知角色（可选）
     }
   };
 
-  // 登录时设置 token 并获取用户信息
+  /**
+   * login 函数
+   * 处理用户登录，设置认证令牌并获取用户信息
+   * @param {string} authToken - 用户认证令牌
+   */
   const login = (authToken) => {
-    setToken(authToken);
-    localStorage.setItem("authToken", authToken);
-    fetchUserInfo(authToken);
+    setToken(authToken); // 设置 token 状态
+    localStorage.setItem("authToken", authToken); // 将 token 存储到 localStorage
+    fetchUserInfo(authToken); // 使用 token 获取用户信息
   };
 
-  // 登出时清除 token 和用户信息
+  /**
+   * logout 函数
+   * 处理用户登出，清除认证令牌和用户信息
+   */
   const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("authToken");
+    setToken(null); // 清除 token 状态
+    setUser(null); // 清除用户信息状态
+    localStorage.removeItem("authToken"); // 从 localStorage 中移除 token
   };
 
   return (
+    // 提供 AuthContext，上下文值包括用户信息、认证令牌、登录和登出函数
     <AuthContext.Provider value={{ user, token, login, logout }}>
-      {children}
+      {children} {/* 渲染子组件 */}
     </AuthContext.Provider>
   );
 };
 
-// 自定义钩子，方便使用 AuthContext
+/**
+ * useAuth 自定义钩子
+ * 简化在子组件中使用 AuthContext 的方法
+ * @returns {object} - 包含用户信息、认证令牌、登录和登出函数
+ */
 export const useAuth = () => useContext(AuthContext);
