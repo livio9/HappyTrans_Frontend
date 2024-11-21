@@ -2,12 +2,21 @@
 
 import { createContext, useState, useEffect, useContext } from "react";
 
-// 创建 AuthContext，用于在组件树中共享认证状态
-const AuthContext = createContext();
+/**
+ * @typedef {Object} AuthContextType
+ * @property {{ role?: string } | null} user - 用户信息
+ * @property {string | null} token - 用户认证令牌
+ * @property {(authToken: string) => void} login - 登录方法
+ * @property {() => void} logout - 登出方法
+ */
+
+// 创建上下文并指定默认值为 null
+/** @type {React.Context<AuthContextType | null>} */
+const AuthContext = createContext(null);
 
 /**
  * AuthProvider 组件
- * 提供用户认证上下文，包括用户信息、认证令牌及登录登出功能
+ * @param {{ children: React.ReactNode }} props
  */
 export const AuthProvider = ({ children }) => {
   // 用户信息状态，包括用户角色
@@ -31,7 +40,6 @@ export const AuthProvider = ({ children }) => {
   /**
    * fetchUserInfo 函数
    * 使用认证令牌从后端 API 获取用户信息
-   * @param {string} authToken - 用户认证令牌
    */
   const fetchUserInfo = async (authToken) => {
     try {
@@ -61,7 +69,6 @@ export const AuthProvider = ({ children }) => {
   /**
    * checkUserRole 函数
    * 根据用户角色执行不同的逻辑处理
-   * @param {string} role - 用户角色
    */
   const checkUserRole = (role) => {
     if (role === "admin") {
@@ -79,7 +86,6 @@ export const AuthProvider = ({ children }) => {
   /**
    * login 函数
    * 处理用户登录，设置认证令牌并获取用户信息
-   * @param {string} authToken - 用户认证令牌
    */
   const login = (authToken) => {
     setToken(authToken); // 设置 token 状态
@@ -106,8 +112,13 @@ export const AuthProvider = ({ children }) => {
 };
 
 /**
- * useAuth 自定义钩子
- * 简化在子组件中使用 AuthContext 的方法
- * @returns {object} - 包含用户信息、认证令牌、登录和登出函数
+ * 自定义钩子，简化上下文的使用
+ * @returns {AuthContextType}
  */
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
