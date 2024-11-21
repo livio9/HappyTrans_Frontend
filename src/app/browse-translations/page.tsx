@@ -13,6 +13,25 @@ type Translation = {
   chinese: string // 翻译的中文内容
 }
 
+// 静态翻译数据
+const translations: Translation[] = [
+  { key: "app.55J3j", english: "Subscribed successfully!", chinese: "订阅成功！" },
+  { key: "app.08ZQZZ", english: "Notifications have been blocked. Please update your notification permissions and try again.", chinese: "通知已被阻止。请更新您的通知权限并重试。" },
+  { key: "app.0Mbf4A", english: "Change Group", chinese: "更改组" },
+  { key: "app.0aO9Nm", english: "Your invite could not be found.", chinese: "找不到您的邀请。" },
+  { key: "app.3zjIGZ", english: "Successfully updated profile.", chinese: "成功更新个人资料。" },
+  { key: "app.47FYwb", english: "Cancel", chinese: "取消" },
+  { key: "app.5JcXdV", english: "Create Account", chinese: "创建账户" },
+  { key: "app.5sg7KC", english: "Password", chinese: "密码" },
+  { key: "app.7L86Z5", english: "Member", chinese: "成员" },
+  { key: "app.7Lfwtm", english: "An unexpected error occurred while logging in", chinese: "登录时发生意外错误" },
+  { key: "app.7tSUe8", english: "Back to login", chinese: "返回登录" },
+  { key: "app.858KSI", english: "Successfully unsubscribed from notifications.", chinese: "成功取消订阅通知。" },
+  { key: "app.AyGauy", english: "Login", chinese: "登录" },
+  { key: "app.Azs7Bx", english: "Access was denied", chinese: "访问被拒绝" },
+  { key: "app.C81/uG", english: "Logout", chinese: "登出" },
+]
+
 export default function BrowseTranslations() {
   // 当前页码的状态
   const [currentPage, setCurrentPage] = React.useState(1)
@@ -20,25 +39,6 @@ export default function BrowseTranslations() {
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc")
   // 每页显示的词条数量
   const itemsPerPage = 10
-
-  // 静态翻译数据
-  const translations: Translation[] = [
-    { key: "app.55J3j", english: "Subscribed successfully!", chinese: "订阅成功！" },
-    { key: "app.08ZQZZ", english: "Notifications have been blocked. Please update your notification permissions and try again.", chinese: "通知已被阻止。请更新您的通知权限并重试。" },
-    { key: "app.0Mbf4A", english: "Change Group", chinese: "更改组" },
-    { key: "app.0aO9Nm", english: "Your invite could not be found.", chinese: "找不到您的邀请。" },
-    { key: "app.3zjIGZ", english: "Successfully updated profile.", chinese: "成功更新个人资料。" },
-    { key: "app.47FYwb", english: "Cancel", chinese: "取消" },
-    { key: "app.5JcXdV", english: "Create Account", chinese: "创建账户" },
-    { key: "app.5sg7KC", english: "Password", chinese: "密码" },
-    { key: "app.7L86Z5", english: "Member", chinese: "成员" },
-    { key: "app.7Lfwtm", english: "An unexpected error occurred while logging in", chinese: "登录时发生意外错误" },
-    { key: "app.7tSUe8", english: "Back to login", chinese: "返回登录" },
-    { key: "app.858KSI", english: "Successfully unsubscribed from notifications.", chinese: "成功取消订阅通知。" },
-    { key: "app.AyGauy", english: "Login", chinese: "登录" },
-    { key: "app.Azs7Bx", english: "Access was denied", chinese: "访问被拒绝" },
-    { key: "app.C81/uG", english: "Logout", chinese: "登出" },
-  ]
 
   // 根据排序方式对词条进行排序
   const sortedTranslations = [...translations].sort((a, b) => {
