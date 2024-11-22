@@ -5,6 +5,10 @@ import { createContext, useState, useContext } from "react";
 // 创建 ProjectContext
 const ProjectContext = createContext();
 
+/**
+ * ProjectProvider 组件
+ * 提供项目管理上下文，包括当前项目信息、加载状态、错误信息及相关操作函数
+ */
 export const ProjectProvider = ({ children }) => {
   const [project, setProject] = useState(null); // 当前项目的信息
   const [loading, setLoading] = useState(false); // 加载状态
@@ -32,13 +36,17 @@ export const ProjectProvider = ({ children }) => {
       if (response.ok) {
         const projectData = await response.json();
         setProject(projectData); // 设置项目信息
+        return projectData; // 返回项目信息
       } else if (response.status === 404) {
         setError("Project not found");
+        return null;
       } else {
         setError("Failed to fetch project information");
+        return null;
       }
     } catch (error) {
       setError("Error fetching project info: " + error.message);
+      return null;
     } finally {
       setLoading(false); // 结束加载状态
     }
