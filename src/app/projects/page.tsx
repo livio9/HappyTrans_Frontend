@@ -281,11 +281,11 @@ export default function Projects() {
    * 启动翻译项目的函数
    * @param {string} projectName - 项目名称
    */
-  const handleStartTranslating = async (projectName: string) => {
+  const handleGoToTranslate = async (projectName: string) => {
     try {
       await fetchProjectInfo(projectName); // 获取项目详细信息
       setCurrentProject({ name: projectName }); // 设置当前项目
-      router.push(`/projects/${encodeURIComponent(projectName)}/language-versions`); // 跳转到语言版本页面
+      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);  // 跳转到语言版本页面
     } catch (error) {
       console.error("Failed to start translating:", error); // 打印错误日志
       alert("无法启动翻译工作，请稍后再试。"); // 提示用户错误信息
@@ -353,7 +353,7 @@ export default function Projects() {
         {/* 项目卡片内容，显示项目描述和启动翻译按钮 */}
         <CardContent>
           <CardDescription>{project.description}</CardDescription> {/* 项目描述 */}
-          <Button className="mt-4" onClick={() => handleStartTranslating(project.name)}>
+          <Button className="mt-4" onClick={() => handleGoToTranslate(project.name)}>
             <Globe className="mr-2 h-4 w-4" /> {/* 地球图标 */}
             Go to Translation {/* 启动翻译 */}
           </Button>
