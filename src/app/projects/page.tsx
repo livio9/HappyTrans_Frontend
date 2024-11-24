@@ -195,6 +195,7 @@ export default function Projects() {
       return;
     }
     try {
+      console.log("start to create.")
       const formData = new FormData();
       formData.append("name", name);
       formData.append("description", description);
@@ -203,6 +204,8 @@ export default function Projects() {
       formData.append("po_file", newProjectFile);
 
       const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
+
+      console.log("before use create")
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project`, {
         method: "POST",
@@ -214,7 +217,7 @@ export default function Projects() {
         body: formData, // 发送表单数据
         mode: "cors", // 跨域请求模式
       });
-
+      console.log("after use create")
       if (response.ok) {
         const newProject = await response.json(); // 解析响应数据
         setProjects((prevProjects) => [...prevProjects, newProject]); // 将新项目添加到项目列表
