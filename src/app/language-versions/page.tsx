@@ -22,51 +22,63 @@ export default function LanguageVersions() {
     const searchParams = useSearchParams();
     const projectName = searchParams.get("project") || "";
 
-    // 以下为硬编码内容（等后端API接口包含语言之后删除）
-    const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>([
-        { code: "en", name: "English", progress: 80 },
-        { code: "zh-hans", name: "Simplified Chinese", progress: 50 },
-        { code: "es", name: "Spanish", progress: 30 },
-        { code: "fr", name: "French", progress: 60 },
-    ]); 
-    const [loading, setLoading] = useState(false); // 模拟数据，不显示加载状态
-    const [projectDescription, setProjectDescription] = useState<string>("");
-    useEffect(() => {
-        setProjectDescription("test 1"); // 使用硬编码的描述信息
-    }, []);
 
     // （等后端API接口包含语言之后再用下面的函数）
-    // const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>([]);
-    // const [loading, setLoading] = useState(true);
+    const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>([]);
+    const [loading, setLoading] = useState(true);
     // 获取语言版本信息
-    // const fetchLanguageVersions = useCallback(async () => {
-    //     if (!projectName) return;
-    //     setLoading(true);
-    //     try {
-    //         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName)}`, {
-    //             method: "GET",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //                 Authorization: `Token ${token}`, // 确保传递认证令牌
-    //             },
-    //         });
-    //         if (response.ok) {
-    //             const data: LanguageVersion[] = await response.json();
-    //             setLanguageVersions(data); // 设置语言版本列表
-    //         } else {
-    //             console.error("Failed to fetch language versions");
-    //         }
-    //     } catch (error) {
-    //         console.error("Error fetching language versions:", error);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // }, [projectName, project]);
+    const fetchLanguageVersions = useCallback(async () => {
+        if (!projectName) return;
+        setLoading(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName)}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Token ${token}`, // 确保传递认证令牌
+                },
+            });
+            if (response.ok) {
+                // console.log("Project info fetched successfully");
+                // console.log(response.json());
+                const data = await response.json();
+                // 确保返回的数据中包含 languages
+                const languages = data.languages || [];
+                // 映射语言版本
+                const formattedLanguages = languages.map((lang: { language_code: string; po_revision_date?: string }) => {
+                    // 语言代码与名称的映射
+                    const languageNames: { [key: string]: string } = {
+                        "zh-hans": "Simplified Chinese",
+                        "en": "English",
+                        // 需要支持更多语言时可扩展
+                    };
+
+                    // 计算进度（假定翻译进度逻辑）
+                    const progress = lang.po_revision_date ? 50 : 0;
+
+                    return {
+                        code: lang.language_code, // 语言代码
+                        name: languageNames[lang.language_code] || lang.language_code, // 语言名称或回退到代码
+                        progress, // 翻译进度
+                    };
+                });
+
+                setLanguageVersions(formattedLanguages); // 设置格式化后的语言版本
+                
+            } else {
+                console.error("Failed to fetch language versions");
+            }
+        } catch (error) {
+            console.error("Error fetching language versions:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [projectName, project]);
 
     // 组件挂载时获取语言版本信息
-    // useEffect(() => {
-    //     fetchLanguageVersions();
-    // }, [fetchLanguageVersions]);
+    useEffect(() => {
+        fetchLanguageVersions();
+    }, [fetchLanguageVersions]);
 
     /**
      * 启动翻译界面的函数
