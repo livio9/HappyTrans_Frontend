@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext"; // 导入 AuthProvider 以管理用户上下文
-import { ProjectProvider } from "@/context/ProjectContext"; // 导入 ProjectProvider 以管理项目上下文
+import "./globals.css"; // 引入全局样式
+import { AuthProvider } from "@/context/AuthContext"; // 用户上下文
+import { ProjectProvider } from "@/context/ProjectContext"; // 项目上下文
+
+import Layout from "@/components/shared/Layout"; // 引入共享布局组件
 
 // 字体加载
 const geistSans = localFont({
@@ -35,7 +37,13 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ProjectProvider>
-            {children} {/* 使用 children 渲染页面内容 */}
+            <Layout>
+              {children} {/* 子页面内容 */}
+            </Layout>
+            {/* 底部栏 */}
+            <footer className="bg-white shadow-md text-center py-4">
+              &copy; {new Date().getFullYear()} TranslateOS. All rights reserved.
+            </footer>
           </ProjectProvider>
         </AuthProvider>
       </body>
