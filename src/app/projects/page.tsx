@@ -130,6 +130,7 @@ export default function Projects() {
       return;
     }
     try {
+      console.log("start to create.")
       const formData = new FormData();
       formData.append('name', name);
       formData.append('description', description);
@@ -138,6 +139,8 @@ export default function Projects() {
       formData.append('po_file', newProjectFile);
 
       const csrfToken = getCookie('csrftoken');
+
+      console.log("before use create")
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project`, {
         method: 'POST',
@@ -149,7 +152,7 @@ export default function Projects() {
         body: formData,
         mode: 'cors',
       });
-
+      console.log("after use create")
       if (response.ok) {
         const newProject = await response.json(); // 直接解析 JSON
         setProjects((prevProjects) => [...prevProjects, newProject]);
