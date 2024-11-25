@@ -226,7 +226,7 @@ export default function ProjectDetails() {
     );
   }, [filteredAndSortedEntries, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedEntries.length / itemsPerPage);
 
 
   if (loading) {
