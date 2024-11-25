@@ -85,7 +85,7 @@ export default function LanguageVersions() {
      * @param {string} languageCode - 目标语言代码
      */
     const handleStartTranslation = (languageCode: string) => {
-        router.push(`/projects/${encodeURIComponent(projectName)}/translation-interface?language=${languageCode}`);
+        router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
     };
 
     return (
