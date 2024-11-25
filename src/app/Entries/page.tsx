@@ -1,6 +1,6 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; //添加useMemo实现缓存排序和筛选结果
 import { useSearchParams } from "next/navigation";
 import {
   Table,
@@ -169,56 +169,61 @@ export default function ProjectDetails() {
 
   // Modify the sorting logic in the useEffect hook
   //修改筛选逻辑为使用appliedSearchTerm而不是动态更新searchTerm
-  useEffect(() => {
-    if (entriesdata && entriesdata.languages) {
-      const languageData = entriesdata.languages.find(
-        (lang) => lang.language_code === languageCode
-      );
+  // 使用 useMemo 缓存筛选和排序结果
+  const filteredAndSortedEntries = useMemo(() => {
+    if (!entriesdata || !entriesdata.languages) return [];
 
-      if (languageData) {
-        const searchFiltered = languageData.entries.filter(
-          (entry) =>
-            entry.msgid.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
-            entry.msgstr.some((str) =>
-              str.msg.toLowerCase().includes(appliedSearchTerm.toLowerCase())
-            )
-        );
+    const languageData = entriesdata.languages.find(
+      (lang) => lang.language_code === languageCode
+    );
 
-        const sorted = [...searchFiltered].sort((a, b) => {
-          if (sortColumn === "index") {
-            return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
-          } else if (sortColumn === "key") {
-            return sortDirection === "asc" 
-              ? a.references.localeCompare(b.references) 
-              : b.references.localeCompare(a.references);
-          } else if (sortColumn === "original") {
-            return sortDirection === "asc" 
-              ? a.msgid.localeCompare(b.msgid) 
-              : b.msgid.localeCompare(a.msgid);
-          } else if (sortColumn === "translation") {
-            const aTranslation = a.msgstr[0]?.msg || "";
-            const bTranslation = b.msgstr[0]?.msg || "";
-            return sortDirection === "asc" 
-              ? aTranslation.localeCompare(bTranslation) 
-              : bTranslation.localeCompare(aTranslation);
-          } else if (sortColumn === "updatedAt") {
-            return sortDirection === "asc" 
-              ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
-              : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-          }
-          return 0;
-        });
+    if (!languageData) return [];
 
-        setFilteredEntries(sorted);
+    // 筛选
+    const searchFiltered = languageData.entries.filter(
+      (entry) =>
+        entry.msgid.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
+        entry.msgstr.some((str) =>
+          str.msg.toLowerCase().includes(appliedSearchTerm.toLowerCase())
+        )
+    );
+
+    // 排序
+    const sorted = [...searchFiltered].sort((a, b) => {
+      if (sortColumn === "index") {
+        return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
+      } else if (sortColumn === "key") {
+        return sortDirection === "asc"
+          ? a.references.localeCompare(b.references)
+          : b.references.localeCompare(a.references);
+      } else if (sortColumn === "original") {
+        return sortDirection === "asc"
+          ? a.msgid.localeCompare(b.msgid)
+          : b.msgid.localeCompare(a.msgid);
+      } else if (sortColumn === "translation") {
+        const aTranslation = a.msgstr[0]?.msg || "";
+        const bTranslation = b.msgstr[0]?.msg || "";
+        return sortDirection === "asc"
+          ? aTranslation.localeCompare(bTranslation)
+          : bTranslation.localeCompare(aTranslation);
+      } else if (sortColumn === "updatedAt") {
+        return sortDirection === "asc"
+          ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+          : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       }
-    }
+      return 0;
+    });
+
+    return sorted;
   }, [entriesdata, appliedSearchTerm, sortColumn, sortDirection, languageCode]);
 
-  // 分页
-  const paginatedEntries = filteredEntries.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // 分页数据
+  const paginatedEntries = useMemo(() => {
+    return filteredAndSortedEntries.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredAndSortedEntries, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredEntries.length / itemsPerPage);
 
