@@ -66,13 +66,13 @@ type Entries = {
 }
 
 export default function ProjectDetails() {
-  const { user, token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
+  const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
   const searchParams = useSearchParams();
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const [searchTerm, setSearchTerm] = useState("");
+  
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [currentLanguage, setCurrentLanguage] = useState(languageCode);
   const itemsPerPage = 10;
 
@@ -82,7 +82,14 @@ export default function ProjectDetails() {
 
   // 搜索、排序和分页相关状态
   const [filteredEntries, setFilteredEntries] = useState<Entry[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const applySearch = () => {
+    setAppliedSearchTerm(searchTerm);
+  };
+
   // Add new state for sorting
+  
   const [sortColumn, setSortColumn] = useState<string>("index");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
@@ -160,6 +167,7 @@ export default function ProjectDetails() {
   };
 
   // Modify the sorting logic in the useEffect hook
+  //修改筛选逻辑为使用appliedSearchTerm而不是动态更新searchTerm
   useEffect(() => {
     if (entriesdata && entriesdata.languages) {
       const languageData = entriesdata.languages.find(
@@ -169,9 +177,9 @@ export default function ProjectDetails() {
       if (languageData) {
         const searchFiltered = languageData.entries.filter(
           (entry) =>
-            entry.msgid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            entry.msgid.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
             entry.msgstr.some((str) =>
-              str.msg.toLowerCase().includes(searchTerm.toLowerCase())
+              str.msg.toLowerCase().includes(appliedSearchTerm.toLowerCase())
             )
         );
 
@@ -203,7 +211,7 @@ export default function ProjectDetails() {
         setFilteredEntries(sorted);
       }
     }
-  }, [entriesdata, searchTerm, sortColumn, sortDirection, languageCode]);
+  }, [entriesdata, appliedSearchTerm, sortColumn, sortDirection, languageCode]);
 
   // 分页
   const paginatedEntries = filteredEntries.slice(
@@ -252,13 +260,16 @@ export default function ProjectDetails() {
       </div>
 
       <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-        <Input
-          type="text"
-          placeholder="Search translations..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="md:w-1/3"
-        />
+      <Input
+        type="text"
+        placeholder="Search translations..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="md:w-2/3"
+      />
+      <Button onClick={applySearch} variant="default">
+        Search
+      </Button>
     
       </div>
 
@@ -266,13 +277,13 @@ export default function ProjectDetails() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">
+              <TableHead className="w-[95px]">
                 Index
                 <Button variant="ghost" size="sm" onClick={() => handleSort("index")}>
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </TableHead>
-              <TableHead className="w-[150px]">
+              <TableHead className="w-[250px]">
                 Key
                 <Button variant="ghost" size="sm" onClick={() => handleSort("key")}>
                   <ArrowUpDown className="h-4 w-4" />
@@ -301,7 +312,8 @@ export default function ProjectDetails() {
           <TableBody>
             {paginatedEntries.map((entry, index) => (
               <TableRow key={entry.index}>
-                <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                {/* <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell> */}
+                <TableCell>{entry.index}</TableCell>
                 <TableCell>{entry.references}</TableCell>
                 <TableCell>{entry.msgid}</TableCell>
                 <TableCell>
