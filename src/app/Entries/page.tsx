@@ -85,7 +85,6 @@ export default function ProjectDetails() {
   
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentLanguage, setCurrentLanguage] = useState(languageCode);
   const itemsPerPage = 8;
 
   const [entriesdata, setEntriesData] = useState<Entries>();
@@ -94,7 +93,7 @@ export default function ProjectDetails() {
 
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
-  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  
   
 
   // Add new state for sorting
@@ -186,17 +185,10 @@ export default function ProjectDetails() {
 
     if (!languageData) return [];
 
-    // 筛选
-    const searchFiltered = languageData.entries.filter(
-      (entry) =>
-        entry.msgid.toLowerCase().includes(appliedSearchTerm.toLowerCase()) ||
-        entry.msgstr.some((str) =>
-          str.msg.toLowerCase().includes(appliedSearchTerm.toLowerCase())
-        )
-    );
+    
 
     // 排序
-    const sorted = [...searchFiltered].sort((a, b) => {
+    const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
       if (sortColumn === "index") {
         return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
       } else if (sortColumn === "key") {
@@ -222,7 +214,7 @@ export default function ProjectDetails() {
     });
 
     return sorted;
-  }, [entriesdata, appliedSearchTerm, sortColumn, sortDirection, languageCode]);
+  }, [entriesdata, searchTerm, sortColumn, sortDirection, languageCode]);
 
   // 分页数据
   const paginatedEntries = useMemo(() => {
@@ -253,7 +245,8 @@ export default function ProjectDetails() {
     );
   }
 
-  if (!entriesdata?.languages[0].entries.length) {
+  //现在不区分错误和没有数据的情况，显示一个友好的消息
+  if (!entriesdata?.languages.length) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
