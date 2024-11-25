@@ -73,11 +73,20 @@ export default function ProjectDetails() {
   const searchParams = useSearchParams();
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
+  const query = searchParams.get("query");
+  // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算
+  const queryParams = useMemo(() => {
+    return new URLSearchParams({
+      project_name: projectName || "",
+      language_code: languageCode || "",
+      ...(query ? { query } : {}),
+    });
+  }, [projectName, languageCode, query]);
   
 
   const [currentPage, setCurrentPage] = useState(1);
   const [currentLanguage, setCurrentLanguage] = useState(languageCode);
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
 
   const [entriesdata, setEntriesData] = useState<Entries>();
   const [projectData, setProjectData] = useState<ProjectData | null >(null);
@@ -86,9 +95,7 @@ export default function ProjectDetails() {
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
-  const applySearch = () => {
-    setAppliedSearchTerm(searchTerm);
-  };
+  
 
   // Add new state for sorting
   
@@ -121,9 +128,7 @@ export default function ProjectDetails() {
     const fetchEntriesData = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
-            projectName!
-          )}&language_code=${encodeURIComponent(languageCode!)}`, {
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -131,14 +136,15 @@ export default function ProjectDetails() {
             },
           }
         );
+        console.log(`${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`);
         if (!response.ok) {
           throw new Error("Failed to fetch entries data");
         }
         const data: Entries = await response.json();
         console.log(data);
         setEntriesData(data); // 保存 entriesdata 到状态
-        console.log("here is entriesdata");
-        console.log(entriesdata);
+        // console.log("here is entriesdata");
+        // console.log(entriesdata);
       } catch (error) {
         console.error("Error fetching entries data:", error);
       }
@@ -156,7 +162,7 @@ export default function ProjectDetails() {
     };
 
     fetchData();
-  }, [projectName, languageCode]);
+  }, [projectName, languageCode, query, token]);
 
   // Add a new function for handling sort
   const handleSort = (column: string) => {
@@ -233,6 +239,12 @@ export default function ProjectDetails() {
       router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
     }
   };
+
+  const handleSearch = () => {
+    if (projectName && languageCode && searchTerm) {
+      router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}&query=${encodeURIComponent(searchTerm)}`);
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -304,7 +316,7 @@ export default function ProjectDetails() {
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
-            <Button onClick={applySearch} variant="default" className="md:w-1/4">
+            <Button onClick={handleSearch} variant="default" className="md:w-1/4">
               Search
             </Button>
           </div>
