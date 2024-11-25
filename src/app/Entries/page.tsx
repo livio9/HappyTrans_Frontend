@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from 'lucide-react'
 
 //用于entries返回的数据结构中的msgstr数组
 type msgstr = {
@@ -82,6 +82,9 @@ export default function ProjectDetails() {
 
   // 搜索、排序和分页相关状态
   const [filteredEntries, setFilteredEntries] = useState<Entry[]>([]);
+  // Add new state for sorting
+  const [sortColumn, setSortColumn] = useState<string>("index");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -146,7 +149,17 @@ export default function ProjectDetails() {
     fetchData();
   }, [projectName, languageCode]);
 
-  // 搜索和排序
+  // Add a new function for handling sort
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  // Modify the sorting logic in the useEffect hook
   useEffect(() => {
     if (entriesdata && entriesdata.languages) {
       const languageData = entriesdata.languages.find(
@@ -156,24 +169,41 @@ export default function ProjectDetails() {
       if (languageData) {
         const searchFiltered = languageData.entries.filter(
           (entry) =>
-            entry.msgid.toLowerCase().includes(searchTerm.toLowerCase()) || // 搜索 msgid
+            entry.msgid.toLowerCase().includes(searchTerm.toLowerCase()) ||
             entry.msgstr.some((str) =>
               str.msg.toLowerCase().includes(searchTerm.toLowerCase())
-            ) // 搜索 msgstr 中的每个 msg
+            )
         );
 
         const sorted = [...searchFiltered].sort((a, b) => {
-          if (sortOrder === "asc") {
-            return a.msgid.localeCompare(b.msgid);
-          } else {
-            return b.msgid.localeCompare(a.msgid);
+          if (sortColumn === "index") {
+            return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
+          } else if (sortColumn === "key") {
+            return sortDirection === "asc" 
+              ? a.references.localeCompare(b.references) 
+              : b.references.localeCompare(a.references);
+          } else if (sortColumn === "original") {
+            return sortDirection === "asc" 
+              ? a.msgid.localeCompare(b.msgid) 
+              : b.msgid.localeCompare(a.msgid);
+          } else if (sortColumn === "translation") {
+            const aTranslation = a.msgstr[0]?.msg || "";
+            const bTranslation = b.msgstr[0]?.msg || "";
+            return sortDirection === "asc" 
+              ? aTranslation.localeCompare(bTranslation) 
+              : bTranslation.localeCompare(aTranslation);
+          } else if (sortColumn === "updatedAt") {
+            return sortDirection === "asc" 
+              ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+              : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
           }
+          return 0;
         });
 
         setFilteredEntries(sorted);
       }
     }
-  }, [entriesdata, searchTerm, sortOrder, languageCode]);
+  }, [entriesdata, searchTerm, sortColumn, sortDirection, languageCode]);
 
   // 分页
   const paginatedEntries = filteredEntries.slice(
@@ -229,26 +259,43 @@ export default function ProjectDetails() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="md:w-1/3"
         />
-        <Select value={sortOrder} onValueChange={(value: "asc" | "desc") => setSortOrder(value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Sort order" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="asc">Ascending</SelectItem>
-            <SelectItem value="desc">Descending</SelectItem>
-          </SelectContent>
-        </Select>
+    
       </div>
 
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">Index</TableHead>
-              <TableHead className="w-[150px]">Key</TableHead>
-              <TableHead>Original</TableHead>
-              <TableHead>Translation</TableHead>
-              <TableHead>Updated At</TableHead>
+              <TableHead className="w-[50px]">
+                Index
+                <Button variant="ghost" size="sm" onClick={() => handleSort("index")}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead className="w-[150px]">
+                Key
+                <Button variant="ghost" size="sm" onClick={() => handleSort("key")}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                Original
+                <Button variant="ghost" size="sm" onClick={() => handleSort("original")}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                Translation
+                <Button variant="ghost" size="sm" onClick={() => handleSort("translation")}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                Updated At
+                <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")}>
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
