@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from "@/context/AuthContext";
 import React, { useEffect, useState, useMemo } from "react"; //添加useMemo实现缓存排序和筛选结果
-import { useSearchParams } from "next/navigation";
+import { useSearchParams ,useRouter} from "next/navigation";
 import { FixedSizeList as List } from "react-window";
 import {
   Table,
@@ -68,6 +68,7 @@ type Entries = {
 }
 
 export default function ProjectDetails() {
+  const router = useRouter(); // 使用路由钩子跳转页面
   const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
   const searchParams = useSearchParams();
   const projectName = searchParams.get("project_name");
@@ -83,7 +84,6 @@ export default function ProjectDetails() {
   const [loading, setLoading] = useState<boolean>(true);
 
   // 搜索、排序和分页相关状态
-  const [filteredEntries, setFilteredEntries] = useState<Entry[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const applySearch = () => {
@@ -228,7 +228,11 @@ export default function ProjectDetails() {
 
   const totalPages = Math.ceil(filteredAndSortedEntries.length / itemsPerPage);
 
-
+  const handleLanguageChange = (newLanguageCode: string) => {
+    if (projectName) {
+      router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -263,7 +267,7 @@ export default function ProjectDetails() {
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div>
             <h2 className="text-lg font-semibold mb-2">Current Language</h2>
-            <Select value={languageCode || undefined} onValueChange={(value) => console.log(value)}>
+            <Select value={languageCode || undefined} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select language" />
               </SelectTrigger>
