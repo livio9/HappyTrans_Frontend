@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "@/context/AuthContext"; // 导入用户认证上下文钩子
+import { useAuth } from "@/context/AuthContext";
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Search } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 //用于entries返回的数据结构中的msgstr数组
 type msgstr = {
@@ -223,155 +224,178 @@ export default function ProjectDetails() {
 
 
   if (loading) {
-    return <div className="container mx-auto p-4">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!entriesdata?.languages[0].entries.length) {
-    return <div className="container mx-auto p-4">No entries found for the selected language.</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>No Entries Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">No entries found for the selected language.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{projectData?.name || projectName}</h1>
-        <p className="text-muted-foreground">{projectData?.description}</p>
-      </div>
+    <div className="container mx-auto p-6 space-y-8">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle>
+          <p className="text-muted-foreground mt-2">{projectData?.description}</p>
+        </CardHeader>
+        <CardContent className="grid gap-6 md:grid-cols-3">
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Current Language</h2>
+            <Select value={languageCode || undefined} onValueChange={(value) => console.log(value)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                {projectData?.languages.map((lang) => (
+                  <SelectItem key={lang.language_code} value={lang.language_code}>
+                    {lang.language_code}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
+            <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
+            <Progress value={(filteredEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full h-4" />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Current Language</h2>
-          <Select value={languageCode || undefined} onValueChange={(value) => console.log(value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {projectData?.languages.map((lang) => (
-                <SelectItem key={lang.language_code} value={lang.language_code}>
-                  {lang.language_code}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-2">
-          <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
-          <Progress value={(filteredEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full" />
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Translations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+            <div className="relative md:w-2/3">
+              <Input
+                type="text"
+                placeholder="Search translations..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            </div>
+            <Button onClick={applySearch} variant="default" className="md:w-1/4">
+              Search
+            </Button>
+          </div>
 
-      <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-      <Input
-        type="text"
-        placeholder="Search translations..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="md:w-2/3"
-      />
-      <Button onClick={applySearch} variant="default">
-        Search
-      </Button>
-    
-      </div>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted">
+                  <TableHead className="w-[100px]">
+                    Index
+                    <Button variant="ghost" size="sm" onClick={() => handleSort("index")} className="ml-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[270px]">
+                    Key
+                    <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[400px]">
+                    Original
+                    <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[400px]">
+                    Translation
+                    <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    Updated At
+                    <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2">
+                      <ArrowUpDown className="h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedEntries.map((entry, index) => (
+                  <TableRow key={entry.index} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">{entry.index}</TableCell>
+                    <TableCell className="font-mono text-sm">{entry.references}</TableCell>
+                    <TableCell>{entry.msgid}</TableCell>
+                    <TableCell>
+                      {entry.msgstr.map((str) => (
+                        <div key={str.id}>{str.msg}</div>
+                      ))}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[95px]">
-                Index
-                <Button variant="ghost" size="sm" onClick={() => handleSort("index")}>
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead className="w-[250px]">
-                Key
-                <Button variant="ghost" size="sm" onClick={() => handleSort("key")}>
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                Original
-                <Button variant="ghost" size="sm" onClick={() => handleSort("original")}>
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                Translation
-                <Button variant="ghost" size="sm" onClick={() => handleSort("translation")}>
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                Updated At
-                <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")}>
-                  <ArrowUpDown className="h-4 w-4" />
-                </Button>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedEntries.map((entry, index) => (
-              <TableRow key={entry.index}>
-                {/* <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell> */}
-                <TableCell>{entry.index}</TableCell>
-                <TableCell>{entry.references}</TableCell>
-                <TableCell>{entry.msgid}</TableCell>
-                <TableCell>
-                  {entry.msgstr.map((str) => (
-                    <div key={str.id}>{str.msg}</div>
-                  ))}
-                </TableCell>
-                <TableCell>{new Date(entry.updated_at).toLocaleString()}</TableCell>
-                
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredEntries.length)} of {filteredEntries.length} entries
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-            aria-label="First page"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            aria-label="Next page"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages}
-            aria-label="Last page"
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
+            <div className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredEntries.length)} of {filteredEntries.length} entries
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                aria-label="First page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                aria-label="Last page"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
