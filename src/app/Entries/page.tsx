@@ -232,11 +232,20 @@ export default function ProjectDetails() {
     }
   };
 
+  //处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
   const handleSearch = () => {
-    if (projectName && languageCode && searchTerm) {
-      router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}&query=${encodeURIComponent(searchTerm)}`);
+    if (projectName && languageCode) {
+      const baseUrl = `/Entries?project_name=${encodeURIComponent(
+        projectName
+      )}&language_code=${encodeURIComponent(languageCode)}`;
+      const queryParam = searchTerm
+        ? `&query=${encodeURIComponent(searchTerm)}`
+        : "";
+  
+      router.push(baseUrl + queryParam);
     }
   };
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
