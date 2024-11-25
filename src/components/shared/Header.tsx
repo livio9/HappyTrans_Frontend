@@ -5,11 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from 'next/navigation'; // 导入 useRouter
+
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const router = useRouter(); // 初始化 useRouter 钩子
 
     // 切换下拉菜单显示状态
     const toggleDropdown = () => {
@@ -41,12 +44,18 @@ const Header: React.FC = () => {
         }
     };
 
+    // 处理头像点击，跳转到个人资料页面
+    const handleAvatarClick = () => {
+        // 跳转到个人资料页面
+        router.push('/user-profile');
+    };
+
     return (
         <header className="bg-white shadow-sm">
             <div className="flex items-center justify-between px-8 py-4">
                 <h2 className="text-2xl font-semibold text-gray-800">TranslateOS</h2>
                 <div className="flex items-center relative">
-                    <Avatar className="ml-4">
+                    <Avatar className="ml-4" onClick={handleAvatarClick}> {/* 添加头像点击事件 */}
                         <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
                         <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
