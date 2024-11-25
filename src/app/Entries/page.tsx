@@ -2,6 +2,7 @@
 import { useAuth } from "@/context/AuthContext";
 import React, { useEffect, useState, useMemo } from "react"; //添加useMemo实现缓存排序和筛选结果
 import { useSearchParams } from "next/navigation";
+import { FixedSizeList as List } from "react-window";
 import {
   Table,
   TableBody,
@@ -253,6 +254,7 @@ export default function ProjectDetails() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      {/* 项目信息部分 */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle>
@@ -276,11 +278,12 @@ export default function ProjectDetails() {
           </div>
           <div className="md:col-span-2">
             <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
-            <Progress value={(filteredEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full h-4" />
+            <Progress value={(filteredAndSortedEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full h-4" />
           </div>
         </CardContent>
       </Card>
 
+      {/* 表格部分 */}
       <Card>
         <CardHeader>
           <CardTitle>Translations</CardTitle>
@@ -302,63 +305,78 @@ export default function ProjectDetails() {
             </Button>
           </div>
 
+          {/* 使用 react-window 渲染虚拟列表 */}
           <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted">
-                  <TableHead className="w-[100px]">
-                    Index
-                    <Button variant="ghost" size="sm" onClick={() => handleSort("index")} className="ml-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[270px]">
-                    Key
-                    <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[400px]">
-                    Original
-                    <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-[400px]">
-                    Translation
-                    <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    Updated At
-                    <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2">
-                      <ArrowUpDown className="h-4 w-4" />
-                    </Button>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedEntries.map((entry, index) => (
-                  <TableRow key={entry.index} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{entry.index}</TableCell>
-                    <TableCell className="font-mono text-sm">{entry.references}</TableCell>
-                    <TableCell>{entry.msgid}</TableCell>
-                    <TableCell>
+            {/* 表头部分 */}
+            <div className="sticky top-0 bg-muted z-10">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted">
+                    <TableHead className="w-[100px]">
+                      Index
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("index")} className="ml-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-[270px]">
+                      Key
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-[400px]">
+                      Original
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-[400px]">
+                      Translation
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      Updated At
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2">
+                        <ArrowUpDown className="h-4 w-4" />
+                      </Button>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+              </Table>
+            </div>
+
+            {/* 虚拟滚动区域 */}
+            <List
+              height={400} // 表格可滚动区域的高度
+              itemCount={paginatedEntries.length} // 当前页条目数
+              itemSize={50} // 每个条目的固定高度
+              width="100%" // 列表宽度
+            >
+              {({ index, style }) => {
+                const entry = paginatedEntries[index];
+                return (
+                  <div style={style} key={entry.index} className="flex items-center border-b hover:bg-muted/50">
+                    <div className="w-[100px] font-medium pl-4">{entry.index}</div>
+                    <div className="w-[270px] font-mono text-sm">{entry.references}</div>
+                    <div className="w-[400px]">{entry.msgid}</div>
+                    <div className="w-[400px]">
                       {entry.msgstr.map((str) => (
                         <div key={str.id}>{str.msg}</div>
                       ))}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                    <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
+                  </div>
+                );
+              }}
+            </List>
           </div>
 
+          {/* 分页控制 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
             <div className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredEntries.length)} of {filteredEntries.length} entries
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedEntries.length)} of {filteredAndSortedEntries.length} entries
             </div>
             <div className="flex space-x-2">
               <Button
