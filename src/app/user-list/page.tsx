@@ -5,9 +5,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation"; // 导入 useRouter
 
 const UserList: React.FC = () => {
   const { user } = useAuth(); // 从上下文中获取当前用户信息
+  const router = useRouter(); // 获取路由对象
   const [users, setUsers] = useState([]); // 保存用户列表数据
   const [searchTerm, setSearchTerm] = useState(""); // 搜索关键字
   const [loading, setLoading] = useState(true); // 加载状态
@@ -85,6 +87,11 @@ const UserList: React.FC = () => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">User Management</h2>
+
+      {/* 添加用户按钮 */}
+      <div className="mb-4">
+        <Button onClick={() => router.push("/add-user")}>Add User</Button>
+      </div>
 
       {/* 搜索框 */}
       <div className="mb-4 flex space-x-2">
