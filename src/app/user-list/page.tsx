@@ -47,6 +47,32 @@ const UserList: React.FC = () => {
     }
   };
 
+  // 删除用户
+  const deleteUser = async (userId: number) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/remove-user?user_id=${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${localStorage.getItem("authToken")}`,
+        },
+      });
+
+      if (response.ok) {
+        alert("User deleted successfully");
+        fetchUsers(); // 刷新用户列表
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to delete user.");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      setError("Failed to delete user.");
+    }
+  };
+
   // 页面加载时获取默认用户列表
   useEffect(() => {
     fetchUsers();
@@ -83,6 +109,7 @@ const UserList: React.FC = () => {
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -92,6 +119,11 @@ const UserList: React.FC = () => {
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.profile?.role || "N/A"}</TableCell>
+                <TableCell>
+                  <Button onClick={() => deleteUser(user.id)} color="red">
+                    Delete
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
