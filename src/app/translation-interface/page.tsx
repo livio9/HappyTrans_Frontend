@@ -20,8 +20,9 @@ import {
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
+import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
-import { useRouter } from "next/navigation"; // 导入路由钩子
+import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 
 // 定义翻译字符串的类型
 type TranslationString = {
@@ -39,7 +40,11 @@ type TranslationSuggestion = {
 };
 
 export default function TranslationInterface() {
-  const { project } = useProject(); // 使用项目上下文获取当前项目
+  const { user,token } = useAuth(); // 使用用户上下文获取当前用户
+  const searchParams = useSearchParams(); // 使用查询参数钩子获取 URL 查询参数
+  const projectName = searchParams.get("project_name");
+  const languageCode = searchParams.get("language_code");
+  const project = useProject(); // 使用项目上下文获取当前项目
   const router = useRouter(); // 使用路由钩子进行页面导航
   const [currentIndex, setCurrentIndex] = React.useState(0); // 当前显示的翻译字符串索引
   const [strings, setStrings] = React.useState<TranslationString[]>([]); // 存储所有翻译字符串的数组

@@ -135,7 +135,7 @@ export default function ProjectDetails() {
             },
           }
         );
-        console.log(`${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`);
+        // console.log(`${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`);
         if (!response.ok) {
           throw new Error("Failed to fetch entries data");
         }
@@ -375,7 +375,15 @@ export default function ProjectDetails() {
               {({ index, style }) => {
                 const entry = paginatedEntries[index];
                 return (
-                  <div style={style} key={entry.index} className="flex items-center border-b hover:bg-muted/50">
+                  <div
+                    style={style} 
+                    key={entry.index} 
+                    className="flex items-center border-b hover:bg-muted/50"
+                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}
+                                                                    &language_code=${encodeURIComponent(languageCode!)}
+                                                                    &index=${entry.index}`)
+                            }
+                  >
                     <div className="w-[100px] font-medium pl-4">{entry.index}</div>
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
