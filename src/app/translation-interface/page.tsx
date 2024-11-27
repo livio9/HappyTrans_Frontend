@@ -23,14 +23,49 @@ import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
+import { useState } from "react";
 
-// 定义翻译字符串的类型
-type TranslationString = {
-  id: string; // 字符串唯一标识符
-  source: string; // 源文本
-  target: string; // 目标翻译文本
-  comments: string; // 注释
-  index: number; // 字符串在列表中的索引
+type msgstr = {
+  msg: string;
+  timestamp: string;
+  user_id: string;
+  id: string;
+};
+
+type Entry = {
+  comments: string;
+  extracted_comments: string;
+  flags: string;
+  msgctxt: string | null;
+  index: number;
+  msgid: string;
+  msgid_plural: string;
+  msgstr: msgstr[];
+  msgstr_plural: string;
+  updated_at: string;
+  selected_msgstr_index: number;
+  references: string;
+};
+
+type LanguageData = {
+  language_code: string;
+  entries: Entry[];
+};
+
+type Entries = {
+  project: string;
+  languages: LanguageData[];
+};
+
+type EntryData = {
+  project: string;
+  entries: {
+    [languageCode: string]: {
+      previous: Entry | null;
+      current: Entry;
+      next: Entry | null;
+    };
+  };
 };
 
 // 定义翻译建议的类型
@@ -40,376 +75,311 @@ type TranslationSuggestion = {
 };
 
 export default function TranslationInterface() {
-  const { user,token } = useAuth(); // 使用用户上下文获取当前用户
-  const searchParams = useSearchParams(); // 使用查询参数钩子获取 URL 查询参数
+  const { user, token } = useAuth(); // 使用用户上下文获取当前用户
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [strings, setStrings] = React.useState<Entry[]>([]); // 动态获取的翻译条目
+  const [nearbyStrings, setNearbyStrings] = React.useState<(Entry | null)[]>([]); // 存储附近的字符串
+  const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+  const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
+  const [originalTranslation, setOriginalTranslation] = useState<string>(""); // 原始翻译内容
+
+
+  // 从 URL 获取参数
+  const searchParams = new URLSearchParams(window.location.search);
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const project = useProject(); // 使用项目上下文获取当前项目
-  const router = useRouter(); // 使用路由钩子进行页面导航
-  const [currentIndex, setCurrentIndex] = React.useState(0); // 当前显示的翻译字符串索引
-  const [strings, setStrings] = React.useState<TranslationString[]>([]); // 存储所有翻译字符串的数组
-  const [loading, setLoading] = React.useState(false); // 加载状态
-  const [error, setError] = React.useState<string | null>(null); // 错误信息
-  const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]); // 存储翻译建议的数组
-  const [selectedSuggestion, setSelectedSuggestion] = React.useState(""); // 用户选择的翻译建议
+  const index = searchParams.get("index");
 
-  // 当组件挂载或项目变化时，获取翻译条目
   React.useEffect(() => {
-    if (!project || !project.languageCode) {
-      // 如果没有选择项目或语言代码，重定向到项目列表页面
-      router.push("/projects");
-      return;
+    if (projectName && languageCode) {
+      fetchEntriesData(projectName, languageCode);
     }
-    fetchEntries(project.name, project.languageCode); // 获取翻译条目
-  }, [project]);
+  }, [projectName, languageCode]);
+  React.useEffect(() => {
+    // 假设项目数据和语言数据已加载
+    if (strings.length > 0) {
+      setOriginalTranslation(strings[currentIndex]?.msgstr[0]?.msg || "");
+      setCurrentTranslation(strings[currentIndex]?.msgstr[0]?.msg || "");
+    }
+  }, [currentIndex, strings]);
 
-  /**
-   * 获取翻译条目的函数
-   * @param {string} projectName - 项目名称
-   * @param {string} languageCode - 目标语言代码
-   */
-  const fetchEntries = async (projectName: string, languageCode: string) => {
-    setLoading(true); // 设置加载状态为加载中
-    setError(null); // 清除之前的错误信息
+  // 获取项目翻译条目数据
+  const fetchEntriesData = async (projectName: string, languageCode: string) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${projectName}&language_code=${languageCode}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
+          projectName
+        )}&language_code=${encodeURIComponent(languageCode)}`,
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
           },
         }
       );
-      if (response.ok) {
-        const data = await response.json(); // 解析响应数据
-        processEntriesData(data); // 处理翻译条目数据
-      } else {
-        setError("Failed to fetch entries"); // 设置错误信息
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch entries data");
       }
-    } catch (err: any) {
-      setError("Error fetching entries: " + err.message); // 捕获并设置错误信息
-    } finally {
-      setLoading(false); // 结束加载状态
+      const data: Entries = await response.json();
+      const languageData = data.languages.find(
+        (language) => language.language_code === languageCode
+      );
+
+      if (languageData) {
+        setStrings(languageData.entries);
+      }
+    } catch (error) {
+      console.error(error);
     }
   };
 
-  /**
-   * 处理翻译条目数据的函数
-   * @param {any} data - 从 API 获取的原始数据
-   */
-  const processEntriesData = (data: any) => {
-    const sourceLanguageCode = data.source_language_code; // 获取源语言代码
-    const targetLanguageCode = data.language_code; // 获取目标语言代码
+  // 获取特定翻译条目的数据
+  const fetchEntryData = async (projectName: string, languageCode: string, index: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
+          projectName
+        )}&language_code=${encodeURIComponent(languageCode)}&index=${encodeURIComponent(index)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
 
-    const sourceLanguageData = data.languages.find(
-      (lang: any) => lang.language_code === sourceLanguageCode
-    );
-    const targetLanguageData = data.languages.find(
-      (lang: any) => lang.language_code === targetLanguageCode
-    );
-
-    if (!sourceLanguageData || !targetLanguageData) {
-      setError("Source or target language data not found"); // 设置错误信息
-      return;
+      if (response.ok) {
+        const data: EntryData = await response.json();
+        const { previous, current, next } = data.entries;
+        
+        // 将前后条目存入附近字符串状态
+        setNearbyStrings([previous, current, next].filter(Boolean)); // 只保留有效条目
+        setStrings([current]); // 只显示当前条目
+      }
+    } catch (error) {
+      console.error(error);
     }
-
-    // 创建目标语言条目的映射表
-    const targetEntriesMap = new Map();
-    targetLanguageData.entries.forEach((entry: any) => {
-      targetEntriesMap.set(entry.msgid, entry);
-    });
-
-    // 结合源语言和目标语言的条目
-    const combinedStrings = sourceLanguageData.entries.map((sourceEntry: any) => {
-      const targetEntry = targetEntriesMap.get(sourceEntry.msgid);
-
-      return {
-        id: sourceEntry.references, // 使用引用作为 ID
-        source: sourceEntry.msgid, // 源文本
-        target: targetEntry ? targetEntry.msgstr : "", // 目标翻译文本
-        comments: sourceEntry.comments || "", // 注释
-        index: sourceEntry.index, // 索引
-      };
-    });
-
-    setStrings(combinedStrings); // 设置翻译字符串数组
-    setCurrentIndex(0); // 重置当前索引为第一个条目
   };
 
-  /**
-   * 处理翻译文本变化的函数
-   * @param {string} value - 用户输入的翻译文本
-   */
+  // 处理翻译内容变化
   const handleTranslationChange = (value: string) => {
-    const updatedStrings = [...strings]; // 创建翻译字符串的副本
-    updatedStrings[currentIndex].target = value; // 更新当前条目的翻译文本
-    setStrings(updatedStrings); // 设置更新后的翻译字符串数组
+    // const updatedStrings = [...strings];
+    // updatedStrings[currentIndex].msgstr[updatedStrings[currentIndex].selected_msgstr_index].msg = value;
+    // setStrings(updatedStrings);
   };
 
-  /**
-   * 处理导航按钮点击的函数
-   * @param {"first" | "prev" | "next" | "last"} direction - 导航方向
-   */
-  const handleNavigation = (direction: "first" | "prev" | "next" | "last") => {
-    switch (direction) {
-      case "first":
-        setCurrentIndex(0); // 跳转到第一个条目
-        break;
-      case "prev":
-        setCurrentIndex(Math.max(0, currentIndex - 1)); // 跳转到前一个条目
-        break;
-      case "next":
-        setCurrentIndex(Math.min(strings.length - 1, currentIndex + 1)); // 跳转到下一个条目
-        break;
-      case "last":
-        setCurrentIndex(strings.length - 1); // 跳转到最后一个条目
-        break;
+  const saveTranslation = async (msgstr: string) => {
+    if (currentIndex < 0 || currentIndex >= strings.length) {
+      throw new Error('Invalid currentIndex');
+    }
+    
+    const index2 = strings[currentIndex]?.index;
+    if (index2 === undefined || index2 < 0) {
+      throw new Error('Invalid index value');
+    }
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry`, // 后端接口 URL
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({
+            project_name: projectName,
+            language_code: languageCode,
+            index: strings[currentIndex]?.index,
+            msgstr: msgstr,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to save translation");
+      }
+
+      // 成功保存翻译，跳转到下一个条目
+      setCurrentIndex((prevIndex) => Math.min(strings.length - 1, prevIndex + 1));
+    } catch (error) {
+      console.error("Error saving translation:", error);
     }
   };
 
-  /**
-   * 处理获取翻译建议的函数
-   * 这里模拟调用翻译服务的 API 获取建议
-   */
-  const handleSuggest = async () => {
-    // 模拟翻译建议数据
-    const mockSuggestions = [
-      { source: "DeepL", translation: "Suggestion 1" },
-      { source: "Google Translate", translation: "Suggestion 2" },
-      { source: "ChatGPT", translation: "Suggestion 3" },
-    ];
-    setSuggestions(mockSuggestions); // 设置翻译建议数组
+  const handleSaveAndContinue = () => {
+    
+    if (currentTranslation !== originalTranslation) {
+      // 检查文本是否变化，若有变化，保存并跳转
+      saveTranslation(currentTranslation);
+    } else {
+      // 如果没有变化，则直接跳转到下一个条目
+      setCurrentIndex((prevIndex) => Math.min(strings.length - 1, prevIndex + 1));
+    }
   };
 
-  /**
-   * 处理选择翻译建议的函数
-   */
+  const handleSaveAndStay = () => {
+    if (currentTranslation !== originalTranslation) {
+      // 检查文本是否变化，若有变化，保存当前翻译
+      saveTranslation(currentTranslation);
+    }
+    // 如果没有变化，保持当前条目，不跳转
+  };
+
+  
+
+  // 处理翻译建议
+  const handleSuggest = async () => {
+    // 模拟获取翻译建议
+    const mockSuggestions = [
+      { source: "DeepL", translation: "Administrator" },
+      { source: "Google Translate", translation: "Manager" },
+      { source: "ChatGPT", translation: "Supervisor" },
+    ];
+    setSuggestions(mockSuggestions);
+  };
+
   const handleSelectSuggestion = () => {
     if (selectedSuggestion) {
-      handleTranslationChange(selectedSuggestion); // 应用选择的翻译建议
+      handleTranslationChange(selectedSuggestion);
     }
   };
 
-  const progress = ((currentIndex + 1) / strings.length) * 100; // 计算翻译进度百分比
-
-  // 获取当前条目的附近条目，用于“Nearby Strings”标签
-  const nearbyStrings = strings.slice(
-    Math.max(0, currentIndex - 5),
-    Math.min(strings.length, currentIndex + 6)
-  );
-
-  // 如果正在加载，显示加载状态
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  // 如果有错误，显示错误信息
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
-  // 如果没有可翻译的字符串，显示提示信息
-  if (strings.length === 0) {
-    return <div>No strings available.</div>;
-  }
+  const progress = ((currentIndex + 1) / strings.length) * 100;
+  
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
-      {/* 返回按钮 */}
-      <Button variant="ghost" onClick={() => router.back()} className="mb-4">
-        <ChevronLeft className="mr-2 h-4 w-4" />
-        Back to Language Versions
-      </Button>
-
-      {/* 头部区域，包含导航按钮和进度条 */}
       <header className="bg-white dark:bg-gray-800 shadow p-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {project.name} / Translate ({project.languageCode}) {/* 显示项目名称和语言代码 */}
-        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">{projectName}  / {languageCode} / Translate</div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
-            {/* 导航按钮 */}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleNavigation("first")}
-              disabled={currentIndex === 0} // 禁用条件：当前索引为第一个条目
-            >
-              <ChevronsLeft className="h-4 w-4" /> {/* 双向向左箭头图标 */}
+            <Button variant="outline" size="icon" onClick={() => setCurrentIndex(0)} disabled={currentIndex === 0}>
+              <ChevronsLeft className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleNavigation("prev")}
-              disabled={currentIndex === 0} // 禁用条件：当前索引为第一个条目
-            >
-              <ChevronLeft className="h-4 w-4" /> {/* 向左箭头图标 */}
+            <Button variant="outline" size="icon" onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium">
-              {currentIndex + 1} / {strings.length} {/* 显示当前条目和总条目数 */}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleNavigation("next")}
-              disabled={currentIndex === strings.length - 1} // 禁用条件：当前索引为最后一个条目
-            >
-              <ChevronRight className="h-4 w-4" /> {/* 向右箭头图标 */}
+            <span className="text-sm font-medium">{currentIndex + 1} / {strings.length}</span>
+            <Button variant="outline" size="icon" onClick={() => setCurrentIndex(Math.min(strings.length - 1, currentIndex + 1))} disabled={currentIndex === strings.length - 1}>
+              <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => handleNavigation("last")}
-              disabled={currentIndex === strings.length - 1} // 禁用条件：当前索引为最后一个条目
-            >
-              <ChevronsRight className="h-4 w-4" /> {/* 双向向右箭头图标 */}
+            <Button variant="outline" size="icon" onClick={() => setCurrentIndex(strings.length - 1)} disabled={currentIndex === strings.length - 1}>
+              <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-          {/* 进度条 */}
           <Progress value={progress} className="w-64" />
         </div>
       </header>
-
-      {/* 主体区域，包含源文本和翻译文本的编辑区域 */}
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-auto p-4">
           <div className="space-y-4">
-            {/* 源文本显示卡片 */}
             <Card>
               <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-2">Source</h2> {/* 源文本标题 */}
+                <h2 className="text-lg font-semibold mb-2">Dutch</h2>
                 <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                  {strings[currentIndex].source} {/* 显示源文本内容 */}
+                  {strings[currentIndex]?.msgid}
                 </div>
               </CardContent>
             </Card>
-            {/* 翻译文本编辑卡片 */}
             <Card>
               <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-2">Translation</h2> {/* 翻译文本标题 */}
+                <h2 className="text-lg font-semibold mb-2">English</h2>
                 <Textarea
-                  value={strings[currentIndex].target} // 绑定翻译文本值
-                  onChange={(e) => handleTranslationChange(e.target.value)} // 处理翻译文本变化
+                  value={currentTranslation}
+                  onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
                 />
               </CardContent>
             </Card>
-            {/* 操作按钮组 */}
             <div className="flex space-x-2">
-              <Button>Save and Continue</Button> {/* 保存并继续按钮 */}
-              <Button variant="outline">Save and Stay</Button> {/* 保存并停留按钮 */}
-              {/* 翻译建议对话框 */}
+            <Button onClick={handleSaveAndContinue}>
+              Save and Continue
+            </Button>
+            <Button variant="outline" onClick={handleSaveAndStay}>
+              Save and Stay
+            </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" onClick={handleSuggest}>
-                    Suggest {/* 获取翻译建议按钮 */}
-                  </Button>
+                  <Button variant="outline" onClick={handleSuggest}>Suggest</Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>Translation Suggestions</DialogTitle> {/* 对话框标题 */}
+                    <DialogTitle>Translation Suggestions</DialogTitle>
                     <DialogDescription>
                       Choose a translation suggestion from the options below.
-                    </DialogDescription> {/* 对话框描述 */}
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
-                    {/* 翻译建议单选按钮组 */}
-                    <RadioGroup
-                      value={selectedSuggestion}
-                      onValueChange={setSelectedSuggestion}
-                    >
+                    <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
                       {suggestions.map((suggestion, index) => (
                         <div key={index} className="flex items-center space-x-2">
-                          <RadioGroupItem
-                            value={suggestion.translation}
-                            id={`suggestion-${index}`}
-                          />
+                          <RadioGroupItem value={suggestion.translation} id={`suggestion-${index}`} />
                           <Label htmlFor={`suggestion-${index}`}>
-                            <span className="font-semibold">{suggestion.source}:</span>{" "}
-                            {suggestion.translation}
+                            <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
                           </Label>
                         </div>
                       ))}
                     </RadioGroup>
                   </div>
-                  <Button onClick={handleSelectSuggestion}>Use Selected Suggestion</Button> {/* 使用选中的建议按钮 */}
+                  <Button onClick={handleSelectSuggestion}>Use Selected Suggestion</Button>
                 </DialogContent>
               </Dialog>
-              <Button variant="outline">Skip</Button> {/* 跳过按钮 */}
+              <Button variant="outline">Skip</Button>
             </div>
           </div>
         </main>
-
-        {/* 侧边栏区域，包含词汇表和字符串信息的标签页 */}
         <aside className="w-80 bg-white dark:bg-gray-800 overflow-auto p-4 border-l border-gray-200 dark:border-gray-700">
           <Tabs defaultValue="glossary">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="glossary">Glossary</TabsTrigger> {/* 词汇表标签 */}
-              <TabsTrigger value="info">String Info</TabsTrigger> {/* 字符串信息标签 */}
+              <TabsTrigger value="glossary">Glossary</TabsTrigger>
+              <TabsTrigger value="info">String Info</TabsTrigger>
             </TabsList>
             <TabsContent value="glossary">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                No relevant strings found in the glossary.
-              </p> {/* 词汇表内容，这里为示例 */}
+              <p className="text-sm text-gray-600 dark:text-gray-400">No relevant strings found in the glossary.</p>
             </TabsContent>
             <TabsContent value="info">
               <div className="space-y-2">
-                <p>
-                  <strong>Key:</strong> {strings[currentIndex].id} {/* 显示字符串的键 */}
-                </p>
-                <p>
-                  <strong>Index:</strong> {strings[currentIndex].index} {/* 显示字符串的索引 */}
-                </p>
-                {/* 根据需要添加更多信息 */}
+                <p><strong>Key:</strong> {strings[currentIndex]?.msgid}</p>
+                <p><strong>String added:</strong> 1 year ago</p>
+                <p><strong>Last updated:</strong> 1 year ago</p>
+                <p><strong>Source string added:</strong> 3 years ago</p>
+                <p><strong>Translation file:</strong> apps/werkplek-reservering/i18n/en.json, string 1 of 1</p>
               </div>
             </TabsContent>
           </Tabs>
         </aside>
       </div>
-
-      {/* 底部区域，包含附近字符串、相似键、其他语言、历史和注释的标签页 */}
       <footer className="bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700">
         <Tabs defaultValue="nearby">
           <TabsList>
-            <TabsTrigger value="nearby">Nearby Strings</TabsTrigger> {/* 附近字符串标签 */}
-            <TabsTrigger value="similar">Similar Keys</TabsTrigger> {/* 相似键标签 */}
-            <TabsTrigger value="other">Other Languages</TabsTrigger> {/* 其他语言标签 */}
-            <TabsTrigger value="history">History</TabsTrigger> {/* 历史标签 */}
-            <TabsTrigger value="comment">Comment</TabsTrigger> {/* 注释标签 */}
+            <TabsTrigger value="nearby">Nearby Strings</TabsTrigger>
+            <TabsTrigger value="similar">Similar Keys</TabsTrigger>
+            <TabsTrigger value="other">Other Languages</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
           <TabsContent value="nearby">
-            {/* 附近字符串表格 */}
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="text-left">Key</th>
+                  <th className="text-left">Reference</th>
                   <th className="text-left">Source</th>
                   <th className="text-left">Translation</th>
                   <th className="text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {nearbyStrings.map((str, index) => (
-                  <tr
-                    key={str.id}
-                    className={
-                      str.index === strings[currentIndex].index
-                        ? "bg-blue-100 dark:bg-blue-900" // 高亮当前条目
-                        : ""
-                    }
-                  >
-                    <td>{str.id}</td> {/* 显示键 */}
-                    <td>{str.source}</td> {/* 显示源文本 */}
-                    <td>{str.target}</td> {/* 显示翻译文本 */}
+                {strings.map((str, index) => (
+                  <tr key={str.index} className={index === currentIndex ? "bg-blue-100 dark:bg-blue-900" : ""}>
+                    <td>{str.index}</td>
+                    <td>{str.msgid}</td>
+                    <td>{str.msgstr[0]?.msg}</td>
                     <td>
-                      {/* 复制翻译文本按钮 */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleTranslationChange(str.target)}
-                      >
+                      <Button variant="ghost" size="icon">
                         <Copy className="h-4 w-4" /> {/* 复制图标 */}
                       </Button>
                     </td>
@@ -423,7 +393,7 @@ export default function TranslationInterface() {
           <TabsContent value="history">History content</TabsContent> {/* 历史内容 */}
           <TabsContent value="comment">
             <div className="p-2">
-              <p>{strings[currentIndex].comments || "No comments available."}</p> {/* 显示注释内容 */}
+              {/* <p>{strings[currentIndex].comments || "No comments available."}</p> 显示注释内容 */}
             </div>
           </TabsContent>
         </Tabs>

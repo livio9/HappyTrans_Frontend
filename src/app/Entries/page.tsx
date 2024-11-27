@@ -140,7 +140,7 @@ export default function ProjectDetails() {
           throw new Error("Failed to fetch entries data");
         }
         const data: Entries = await response.json();
-        console.log(data);
+        // console.log(data);
         setEntriesData(data); // 保存 entriesdata 到状态
         // console.log("here is entriesdata");
         // console.log(entriesdata);
