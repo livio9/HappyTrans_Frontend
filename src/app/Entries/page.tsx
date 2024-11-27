@@ -379,9 +379,7 @@ export default function ProjectDetails() {
                     style={style} 
                     key={entry.index} 
                     className="flex items-center border-b hover:bg-muted/50"
-                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}
-                                                                    &language_code=${encodeURIComponent(languageCode!)}
-                                                                    &index=${entry.index}`)
+                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&index=${entry.index}`)
                             }
                   >
                     <div className="w-[100px] font-medium pl-4">{entry.index}</div>
