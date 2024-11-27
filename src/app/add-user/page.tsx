@@ -62,45 +62,60 @@ const AddUserPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Add New User</h2>
+    <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-3xl font-semibold text-center mb-6">Add New User</h2>
 
       {/* 用户输入表单 */}
-      <div className="mb-4">
-        <Input
-          name="username"
-          type="text"
-          placeholder="Username"
-          value={newUser.username}
-          onChange={handleInputChange}
-          className="mb-2"
-        />
-        <Input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={newUser.email}
-          onChange={handleInputChange}
-          className="mb-2"
-        />
-        <Input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={newUser.password}
-          onChange={handleInputChange}
-          className="mb-2"
-        />
+      <div className="space-y-4">
+        <div>
+          <Input
+            name="username"
+            type="text"
+            placeholder="Username"
+            value={newUser.username}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <Input
+            name="email"
+            type="email"
+            placeholder="Email (可省略)"
+            value={newUser.email}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <Input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={newUser.password}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       {/* 错误信息 */}
-      {error && <p className="text-red-500">{error}</p>}
+      {error && <p className="text-red-500 text-center mt-4">{error}</p>}
 
       {/* 加载状态 */}
       {loading ? (
-        <p>Loading...</p>
+        <div className="text-center mt-4">
+          <p>Loading...</p>
+        </div>
       ) : (
-        <Button onClick={addUser}>Add User</Button>
+        <div className="text-center mt-6">
+          <Button
+            onClick={addUser}
+            className="w-full py-2 bg-black text-white rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black"
+          >
+            Add User
+          </Button>
+        </div>
       )}
     </div>
   );
