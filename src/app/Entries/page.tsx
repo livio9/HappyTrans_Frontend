@@ -140,7 +140,7 @@ export default function ProjectDetails() {
           throw new Error("Failed to fetch entries data");
         }
         const data: Entries = await response.json();
-        console.log(data);
+        // console.log(data);
         setEntriesData(data); // 保存 entriesdata 到状态
         // console.log("here is entriesdata");
         // console.log(entriesdata);
@@ -379,9 +379,7 @@ export default function ProjectDetails() {
                     style={style} 
                     key={entry.index} 
                     className="flex items-center border-b hover:bg-muted/50"
-                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}
-                                                                    &language_code=${encodeURIComponent(languageCode!)}
-                                                                    &index=${entry.index}`)
+                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&index=${entry.index}`)
                             }
                   >
                     <div className="w-[100px] font-medium pl-4">{entry.index}</div>
