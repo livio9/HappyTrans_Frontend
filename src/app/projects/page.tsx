@@ -110,6 +110,10 @@ export default function Projects() {
   const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
   const [newProjectFile, setNewProjectFile] = useState<File | null>(null); // 新项目的 PO 文件
 
+  // 在组件内部定义编辑项目的状态
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  
   const isAdmin = user?.role === "admin"; // 判断当前用户是否为管理员
 
   // 定义分页相关的状态
@@ -240,6 +244,51 @@ export default function Projects() {
   };
 
   /**
+  * 管理项目的函数
+  */
+  const handleManageClick = (project: Project) => {
+    setEditingProject(project);
+    setNewProjectName(project.name);
+    setNewProjectDescription(project.description);
+    setNewProjectLanguageCode(project.languages[0]?.code || ""); // 默认选择第一个语言
+    setIsEditDialogOpen(true);
+  };
+
+  /**
+  * 更新项目的处理函数
+  */
+  const handleSaveProject = async () => {
+    if (!editingProject) return;
+
+    try {
+      const response = await fetch(`${ process.env.NEXT_PUBLIC_API_BASE_URL }/project-info?project_name=${editingProject.name}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          name: newProjectName,
+          description: newProjectDescription,
+          language_code: newProjectLanguageCode,
+        }),
+      });
+
+      if (response.ok) {
+        // 更新成功，关闭弹窗并更新项目列表
+        setIsEditDialogOpen(false);
+        fetchProjects(); // 重新获取项目列表
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update project");
+      }
+    } catch (error) {
+      console.error("Error updating project:", error);
+      alert("An error occurred while updating the project.");
+    }
+  };
+
+  /**
    * 处理删除按钮点击事件，打开删除确认对话框
    * @param {string} projectId - 要删除的项目名称
    */
@@ -343,7 +392,7 @@ export default function Projects() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => console.log(`Manage Project ${project.name}`)}>
+                <DropdownMenuItem onSelect={() => handleManageClick(project)}>
                   Manage Project {/* 管理项目 */}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
@@ -532,6 +581,84 @@ export default function Projects() {
           </form>
         </DialogContent>
       </Dialog>
+      {/* 编辑项目的对话框 */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Modify the project details below.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSaveProject();
+            }}
+          >
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="project-name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Enter project name"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="project-description" className="text-right">
+                  Description
+                </Label>
+                <Textarea
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Enter project description"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="language-code" className="text-right">
+                  Target Language
+                </Label>
+                <Select
+                  value={newProjectLanguageCode}
+                  onValueChange={(value) => setNewProjectLanguageCode(value)}
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Target Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((lang: string) => {
+                      const [name, code] = lang.split(" (");
+                      return (
+                        <SelectItem key={code} value={code.replace(")", "")}>
+                          {name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* 删除项目确认对话框 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
