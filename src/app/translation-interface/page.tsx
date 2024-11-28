@@ -23,7 +23,16 @@ import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
-import { useState } from "react";
+import { useEffect, useState } from "react";
+// 辅助函数：从 Cookie 中获取 CSRF token
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(";").shift() || null;
+  }
+  return null;
+}
 
 type msgstr = {
   msg: string;
@@ -89,20 +98,21 @@ export default function TranslationInterface() {
   const searchParams = new URLSearchParams(window.location.search);
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const index = searchParams.get("index");
+  const index1 = parseInt(searchParams.get("index") || "0") -1;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (projectName && languageCode) {
-      fetchEntriesData(projectName, languageCode);
+      setCurrentIndex(index1);  // 设置当前索引
+      fetchEntriesData(projectName, languageCode); // 获取词条数据
     }
-  }, [projectName, languageCode]);
-  React.useEffect(() => {
-    // 假设项目数据和语言数据已加载
-    if (strings.length > 0) {
-      setOriginalTranslation(strings[currentIndex]?.msgstr[0]?.msg || "");
-      setCurrentTranslation(strings[currentIndex]?.msgstr[0]?.msg || "");
+  }, [projectName, languageCode, index1]); // 加入 index 作为依赖项，确保在 index 更新时重新加载数据
+
+  useEffect(() => {
+    if (strings.length > 0 && currentIndex < strings.length) {
+      const currentEntry = strings[currentIndex];
+      setCurrentTranslation(currentEntry?.msgstr[0]?.msg || ""); // 设置当前翻译文本
     }
-  }, [currentIndex, strings]);
+  }, [currentIndex, strings]); // 监听 currentIndex 更新
 
   // 获取项目翻译条目数据
   const fetchEntriesData = async (projectName: string, languageCode: string) => {
@@ -152,14 +162,7 @@ export default function TranslationInterface() {
         }
       );
 
-      if (response.ok) {
-        const data: EntryData = await response.json();
-        const { previous, current, next } = data.entries;
-        
-        // 将前后条目存入附近字符串状态
-        setNearbyStrings([previous, current, next].filter(Boolean)); // 只保留有效条目
-        setStrings([current]); // 只显示当前条目
-      }
+      
     } catch (error) {
       console.error(error);
     }
@@ -173,33 +176,39 @@ export default function TranslationInterface() {
   };
 
   const saveTranslation = async (msgstr: string) => {
-    if (currentIndex < 0 || currentIndex >= strings.length) {
-      throw new Error('Invalid currentIndex');
-    }
+    console.log('currentIndex:', currentIndex);
+console.log('strings[currentIndex]:', strings[currentIndex]);
+console.log('index value:', strings[currentIndex]?.index);
+console.log('msgstr:', msgstr);
+      const formData = new FormData();
+      if (projectName) {
+        formData.append("project_name", projectName);
+      }
+      if (languageCode) {
+        formData.append("language_code", languageCode);
+      }
+      formData.append("index", strings[currentIndex]?.index.toString());
+      
+      formData.append("msgstr", msgstr);
+      
+      const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
     
-    const index2 = strings[currentIndex]?.index;
-    if (index2 === undefined || index2 < 0) {
-      throw new Error('Invalid index value');
-    }
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry`, // 后端接口 URL
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify({
-            project_name: projectName,
-            language_code: languageCode,
-            index: strings[currentIndex]?.index,
-            msgstr: msgstr,
-          }),
-        }
-      );
+        headers: {
+          Authorization: `Token ${token}`, // 使用认证令牌
+          "X-CSRFToken": csrfToken || "", // 添加 CSRF token
+        },
+        credentials: "include", // 包含凭证
+        body: formData, // 发送表单数据
+        mode: "cors", // 跨域请求模式
+      });
 
       if (!response.ok) {
+        
         throw new Error("Failed to save translation");
       }
 
