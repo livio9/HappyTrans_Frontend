@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from 'react';
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
@@ -42,18 +42,18 @@ type msgstr = {
 };
 
 type Entry = {
-  comments: string;
-  extracted_comments: string;
-  flags: string;
-  msgctxt: string | null;
-  index: number;
-  msgid: string;
-  msgid_plural: string;
-  msgstr: msgstr[];
-  msgstr_plural: string;
-  updated_at: string;
-  selected_msgstr_index: number;
-  references: string;
+  comments: string; // 注释
+  extracted_comments: string; // 提取的注释
+  flags: string; 
+  msgctxt: string | null; // 上下文
+  index: number; // 索引
+  msgid: string;  // 源文本
+  msgid_plural: string; // 复数形式的源文本
+  msgstr: msgstr[]; // 翻译文本
+  msgstr_plural: string; // 复数形式的翻译文本
+  updated_at: string; // 更新时间
+  selected_msgstr_index: number; // 选择的翻译文本索引
+  references: string; // 引用
 };
 
 type LanguageData = {
@@ -69,11 +69,9 @@ type Entries = {
 type EntryData = {
   project: string;
   entries: {
-    [languageCode: string]: {
-      previous: Entry | null;
-      current: Entry;
-      next: Entry | null;
-    };
+    previous: { [languageCode: string]: Entry } | null;
+    current: { [languageCode: string]: Entry };
+    next: { [languageCode: string]: Entry } | null;
   };
 };
 
@@ -84,161 +82,179 @@ type TranslationSuggestion = {
 };
 
 export default function TranslationInterface() {
-  const { user, token } = useAuth(); // 使用用户上下文获取当前用户
-  const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [strings, setStrings] = React.useState<Entry[]>([]); // 动态获取的翻译条目
-  const [nearbyStrings, setNearbyStrings] = React.useState<(Entry | null)[]>([]); // 存储附近的字符串
-  const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
-  const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
-  const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
-  const [originalTranslation, setOriginalTranslation] = useState<string>(""); // 原始翻译内容
 
-
+  const router = useRouter();//用于跳转
+  const searchParams = useSearchParams();
   // 从 URL 获取参数
-  const searchParams = new URLSearchParams(window.location.search);
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const index1 = parseInt(searchParams.get("index") || "0") -1;
+  const indexParam = searchParams.get("index");
+  const index1 = indexParam ? parseInt(indexParam) - 1 : 0;
+  // const index1 = searchParams.get("index");
+
+  const { user, token } = useAuth(); // 使用用户上下文获取当前用户
+  
+  const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
+  const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
+  const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
+  const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
+
+  const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+  
+  const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
 
   useEffect(() => {
+    console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
+  
     if (projectName && languageCode) {
-      setCurrentIndex(index1);  // 设置当前索引
-      fetchEntriesData(projectName, languageCode); // 获取词条数据
-    }
-  }, [projectName, languageCode, index1]); // 加入 index 作为依赖项，确保在 index 更新时重新加载数据
-
-  useEffect(() => {
-    if (strings.length > 0 && currentIndex < strings.length) {
-      const currentEntry = strings[currentIndex];
-      setCurrentTranslation(currentEntry?.msgstr[0]?.msg || ""); // 设置当前翻译文本
-    }
-  }, [currentIndex, strings]); // 监听 currentIndex 更新
-
-  // 获取项目翻译条目数据
-  const fetchEntriesData = async (projectName: string, languageCode: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
-          projectName
-        )}&language_code=${encodeURIComponent(languageCode)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
+      // 获取词条数据
+      const fetchEntriesData = async () => {
+        console.log("Fetching entries data...");
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
+              projectName
+            )}&language_code=${encodeURIComponent(languageCode)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error("Failed to fetch entries data");
+          }
+          const data: Entries = await response.json();
+          console.log("Fetched entries data:", data);
+  
+          const languageData = data.languages.find(
+            (language) => language.language_code === languageCode
+          );
+  
+          if (languageData) {
+            console.log("Found language data:", languageData);
+            setStrings(languageData.entries); // 更新 strings
+          } else {
+            console.log(`No language data found for ${languageCode}`);
+          }
+        } catch (error) {
+          console.error("Error fetching entries data:", error);
         }
-      );
+      };
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch entries data");
+      // 仅在 entries 数据未加载时获取
+      if (!fetchedEntries.current) {
+        fetchEntriesData(); // 立即调用
+        fetchedEntries.current = true; // 防止再次请求
       }
-      const data: Entries = await response.json();
-      const languageData = data.languages.find(
-        (language) => language.language_code === languageCode
-      );
 
-      if (languageData) {
-        setStrings(languageData.entries);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // 获取特定翻译条目的数据
-  const fetchEntryData = async (projectName: string, languageCode: string, index: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
-          projectName
-        )}&language_code=${encodeURIComponent(languageCode)}&index=${encodeURIComponent(index)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
+      // 获取当前词条数据
+      const fetchEntryData = async () => {
+        console.log("Fetching entry data for index:", currentIndex);
+  
+        if (strings.length > 0 && currentIndex < strings.length) {
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
+                projectName
+              )}&language_code=${encodeURIComponent(languageCode)}&index=${encodeURIComponent(
+                currentIndex
+              )}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Token ${token}`,
+                },
+              }
+            );
+  
+            if (!response.ok) {
+              throw new Error("Failed to fetch entry data");
+            }
+            const data: EntryData = await response.json();
+            console.log("Fetched entry data:", data);
+  
+            const { previous, current, next } = data.entries;
+            console.log("Previous, current, next entries:", { previous, current, next });
+  
+            setNearbyStrings([
+              previous?.[languageCode] || null,
+              current[languageCode],
+              next?.[languageCode] || null, // 只取第一个元素
+            ]);
+            console.log("Nearby strings:", nearbyStrings);
+          } catch (error) {
+            console.error("Error fetching entry data:", error);
+          }
+        } else {
+          console.log("No entries or invalid currentIndex for fetching entry data.");
         }
-      );
+      };
 
-      
-    } catch (error) {
-      console.error(error);
+      // 确保 `strings` 已经加载，才能获取当前词条数据
+      if (strings.length > 0 && currentIndex >= 0) {
+        console.log("Strings loaded, fetching entry data...");
+        fetchEntryData();
+      }
+  
+      // 获取并设置当前翻译文本
+      if (strings.length > 0 && currentIndex < strings.length) {
+        const currentEntry = strings[currentIndex];
+        console.log("Current entry:", currentEntry);
+        length = currentEntry?.msgstr.length;
+        setCurrentTranslation(currentEntry?.msgstr[length-1]?.msg || ""); // 设置当前翻译文本
+      } else {
+        console.log("Strings not yet loaded or currentIndex is invalid.");
+      }
+    } else {
+      console.log("Project name or language code is missing");
     }
-  };
+  }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
+  
+  // 发送翻译更新请求
+  const updateTranslation = async (newTranslation: string) => {
+    const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
 
-  // 处理翻译内容变化
-  const handleTranslationChange = (value: string) => {
-    // const updatedStrings = [...strings];
-    // updatedStrings[currentIndex].msgstr[updatedStrings[currentIndex].selected_msgstr_index].msg = value;
-    // setStrings(updatedStrings);
-  };
-
-  const saveTranslation = async (msgstr: string) => {
-    console.log('currentIndex:', currentIndex);
-console.log('strings[currentIndex]:', strings[currentIndex]);
-console.log('index value:', strings[currentIndex]?.index);
-console.log('msgstr:', msgstr);
-      const formData = new FormData();
-      if (projectName) {
-        formData.append("project_name", projectName);
-      }
-      if (languageCode) {
-        formData.append("language_code", languageCode);
-      }
-      formData.append("index", strings[currentIndex]?.index.toString());
-      
-      formData.append("msgstr", msgstr);
-      
-      const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-    
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry`, // 后端接口 URL
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry?index=${currentIndex}&language_code=${languageCode}&msgstr=${encodeURIComponent(newTranslation)}&project_name=${projectName}`,
         {
           method: "POST",
-        headers: {
-          Authorization: `Token ${token}`, // 使用认证令牌
-          "X-CSRFToken": csrfToken || "", // 添加 CSRF token
-        },
-        credentials: "include", // 包含凭证
-        body: formData, // 发送表单数据
-        mode: "cors", // 跨域请求模式
-      });
-
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
+          },
+        }
+      );
+  
       if (!response.ok) {
-        
-        throw new Error("Failed to save translation");
+        throw new Error("Failed to update translation");
       }
 
-      // 成功保存翻译，跳转到下一个条目
-      setCurrentIndex((prevIndex) => Math.min(strings.length - 1, prevIndex + 1));
+      console.log("Translation updated successfully");
     } catch (error) {
-      console.error("Error saving translation:", error);
+      console.error("Error updating translation:", error);
     }
   };
 
-  const handleSaveAndContinue = () => {
-    
-    if (currentTranslation !== originalTranslation) {
-      // 检查文本是否变化，若有变化，保存并跳转
-      saveTranslation(currentTranslation);
-    } else {
-      // 如果没有变化，则直接跳转到下一个条目
-      setCurrentIndex((prevIndex) => Math.min(strings.length - 1, prevIndex + 1));
-    }
+  // 处理保存并跳转到下一个词条
+  const handleSaveAndContinue = async () => {
+    await updateTranslation(currentTranslation); // 保存当前翻译
+    setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
+    router.push(`/translation?project_name=${projectName}&language_code=${languageCode}&index=${currentIndex + 2}`); // 使用router跳转
   };
 
-  const handleSaveAndStay = () => {
-    if (currentTranslation !== originalTranslation) {
-      // 检查文本是否变化，若有变化，保存当前翻译
-      saveTranslation(currentTranslation);
-    }
-    // 如果没有变化，保持当前条目，不跳转
+  // 处理保存但不跳转
+  const handleSaveAndStay = async () => {
+    await updateTranslation(currentTranslation); // 保存当前翻译
   };
 
-  
 
   // 处理翻译建议
   const handleSuggest = async () => {
@@ -253,7 +269,7 @@ console.log('msgstr:', msgstr);
 
   const handleSelectSuggestion = () => {
     if (selectedSuggestion) {
-      handleTranslationChange(selectedSuggestion);
+      setCurrentTranslation(selectedSuggestion);
     }
   };
 
@@ -288,17 +304,17 @@ console.log('msgstr:', msgstr);
           <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-2">Dutch</h2>
+                <h2 className="text-lg font-semibold mb-2">Source</h2>
                 <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                  {strings[currentIndex]?.msgid}
+                  {strings[currentIndex]?.msgid || "No source text available"}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-2">English</h2>
+                <h2 className="text-lg font-semibold mb-2">Translation</h2>
                 <Textarea
-                  value={currentTranslation}
+                  value={currentTranslation || ""}
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
@@ -314,7 +330,7 @@ console.log('msgstr:', msgstr);
             </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" onClick={handleSuggest}>Suggest</Button>
+                  <Button variant="outline" >Suggest</Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
@@ -325,17 +341,17 @@ console.log('msgstr:', msgstr);
                   </DialogHeader>
                   <div className="py-4">
                     <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
-                      {suggestions.map((suggestion, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <RadioGroupItem value={suggestion.translation} id={`suggestion-${index}`} />
-                          <Label htmlFor={`suggestion-${index}`}>
-                            <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
-                          </Label>
-                        </div>
-                      ))}
+                        {suggestions.map((suggestion, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${index}`} />
+                            <Label htmlFor={`suggestion-${index}`}>
+                              <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
+                            </Label>
+                          </div>
+                        ))}
                     </RadioGroup>
                   </div>
-                  <Button onClick={handleSelectSuggestion}>Use Selected Suggestion</Button>
+                  <Button>Use Selected Suggestion</Button>
                 </DialogContent>
               </Dialog>
               <Button variant="outline">Skip</Button>
@@ -382,17 +398,19 @@ console.log('msgstr:', msgstr);
                 </tr>
               </thead>
               <tbody>
-                {strings.map((str, index) => (
-                  <tr key={str.index} className={index === currentIndex ? "bg-blue-100 dark:bg-blue-900" : ""}>
-                    <td>{str.index}</td>
-                    <td>{str.msgid}</td>
-                    <td>{str.msgstr[0]?.msg}</td>
-                    <td>
-                      <Button variant="ghost" size="icon">
-                        <Copy className="h-4 w-4" /> {/* 复制图标 */}
-                      </Button>
-                    </td>
-                  </tr>
+                {nearbyStrings.filter(entry => entry !=null ).map((entry, idx) => (
+                  entry && (
+                    <tr key={idx}>
+                      <td>{entry.references}</td>
+                      <td>{entry.msgid}</td>
+                      <td>{entry.msgstr[entry.msgstr.length-1]?.msg || "No translation"}</td>
+                      <td>
+                        <Button variant="ghost" size="icon">
+                          <Copy className="h-4 w-4" /> {/* 复制图标 */}
+                        </Button>
+                      </td>
+                    </tr>
+                  )
                 ))}
               </tbody>
             </table>
