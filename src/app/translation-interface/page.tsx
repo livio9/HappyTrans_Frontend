@@ -386,6 +386,7 @@ export default function TranslationInterface() {
             <TabsTrigger value="similar">Similar Keys</TabsTrigger>
             <TabsTrigger value="other">Other Languages</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="comment">Comment</TabsTrigger>
           </TabsList>
           <TabsContent value="nearby">
             <table className="w-full text-sm">
@@ -418,9 +419,10 @@ export default function TranslationInterface() {
           <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
           <TabsContent value="other">Other languages content</TabsContent> {/* 其他语言内容 */}
           <TabsContent value="history">History content</TabsContent> {/* 历史内容 */}
+
           <TabsContent value="comment">
             <div className="p-2">
-              {/* <p>{strings[currentIndex].comments || "No comments available."}</p> 显示注释内容 */}
+              <p>{strings[currentIndex]?.comments || "No comments available."}</p> {/* 评论 */}
             </div>
           </TabsContent>
         </Tabs>

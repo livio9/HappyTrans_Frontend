@@ -389,7 +389,7 @@ export default function ProjectDetails() {
                       {/* {entry.msgstr.map((str) => (
                         <div key={str.id}>{str.msg}</div>
                       ))} */}
-                      {entry.msgstr[entry.msgstr.length-1]?.msg || "No translation"}
+                      {entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
                   </div>
