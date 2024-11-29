@@ -418,7 +418,32 @@ export default function TranslationInterface() {
           </TabsContent>
           <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
           <TabsContent value="other">Other languages content</TabsContent> {/* 其他语言内容 */}
-          <TabsContent value="history">History content</TabsContent> {/* 历史内容 */}
+          <TabsContent value="history">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">User ID</th>
+                  <th className="text-left">Translation</th>
+                  <th className="text-left">Update At</th>
+                  <th className="text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {strings[currentIndex]?.msgstr.map((msgstr, id) => (
+                  <tr key={id}>
+                    <td>{msgstr.user_id}</td>
+                    <td>{msgstr.msg}</td>
+                    <td>{new Date(msgstr.timestamp).toLocaleString()}</td>
+                    <td>
+                      <Button variant="ghost" size="icon">
+                        <Copy className="h-4 w-4" /> {/* 复制图标 */}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent> {/* 历史内容 */}
 
           <TabsContent value="comment">
             <div className="p-2">
