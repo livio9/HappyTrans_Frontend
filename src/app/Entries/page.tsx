@@ -343,7 +343,7 @@ export default function ProjectDetails() {
                       </Button>
                     </TableHead>
                     <TableHead className="w-[400px]">
-                      Original
+                      Source
                       <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
@@ -386,9 +386,10 @@ export default function ProjectDetails() {
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
                     <div className="w-[400px]">
-                      {entry.msgstr.map((str) => (
+                      {/* {entry.msgstr.map((str) => (
                         <div key={str.id}>{str.msg}</div>
-                      ))}
+                      ))} */}
+                      {entry.msgstr[entry.msgstr.length-1]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
                   </div>
