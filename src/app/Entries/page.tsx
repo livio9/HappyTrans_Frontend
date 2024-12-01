@@ -1,8 +1,8 @@
-"use client";
-import { useAuth } from "@/context/AuthContext";
+"use client"; // 使用客户端模式
+import { useAuth } from "@/context/AuthContext"; // 使用认证上下文获取用户信息和认证令牌
 import React, { useEffect, useState, useMemo } from "react"; //添加useMemo实现缓存排序和筛选结果
-import { useSearchParams ,useRouter} from "next/navigation";
-import { FixedSizeList as List } from "react-window";
+import { useSearchParams ,useRouter} from "next/navigation"; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
+import { FixedSizeList as List } from "react-window"; // 使用 react-window 渲染虚拟列表， 提高性能
 import {
   Table,
   TableBody,
@@ -10,41 +10,41 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Search } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/components/ui/table";//使用表格组件
+import { Input } from "@/components/ui/input" //使用输入框组件
+import { Button } from "@/components/ui/button" //使用按钮组件
+import { Progress } from "@/components/ui/progress" //使用进度条组件
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" //使用下拉选择组件
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Search } from 'lucide-react' //使用lucide图标
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" //  使用卡片组件
 
 //用于entries返回的数据结构中的msgstr数组
 type msgstr = {
-  msg: string;
-  timestamp: string;
-  user_id: string;
-  id: string;
+  msg: string; //翻译内容
+  timestamp: string; //时间戳，更新时间
+  user_id: string; //提交翻译的用户id
+  id: string; //在 msgstr 数组中的索引
 }
 
 //用于entries返回的数据结构中的entry数组
 type Entry = {
-  comments: string;
-  extracted_comments: string;
-  flags: string;
-  msgctxt: string | null;
-  index: number;
-  msgid: string;
-  msgid_plural: string;
-  msgstr: msgstr[];
-  msgstr_plural: string;
-  updated_at: string;
-  selected_msgstr_index: number;
-  references: string;
+  comments: string; // 提交翻译时的注释
+  extracted_comments: string; //  提取的注释
+  flags: string; // 标记
+  msgctxt: string | null; // 上下文
+  index: number; // 索引
+  msgid: string; // 原文
+  msgid_plural: string; // 复数原文
+  msgstr: msgstr[]; // 翻译内容数组
+  msgstr_plural: string; // 复数翻译
+  updated_at: string; // 最近一次更新时间
+  selected_msgstr_index: number; // 选中的翻译内容索引
+  references: string; // 字符串位置
 };
 
 type LanguageData = {
-  language_code: string;
-  entries: Entry[];
+  language_code: string; // 语言代码
+  entries: Entry[]; // 翻译条目数组
 };
 //这两个LanguageData的区别在于第二个是从project_info返回的数据结构中的languages数组中取出的，第一个是从entries返回的数据结构中取出的
 type ProjectLanguageData= {
@@ -54,55 +54,57 @@ type ProjectLanguageData= {
 }
 //用于project_info返回的数据结构
 type ProjectData = {
-  name: string;
-  description: string;
-  sorce_language: string;
-  languages: ProjectLanguageData[];
-  created_at: string;
+  name: string; // 项目名称
+  description: string; // 项目描述
+  sorce_language: string; // 源语言
+  languages: ProjectLanguageData[]; // 语言数组
+  created_at: string; // 创建时间
 
 };
 
 type Entries = {
-  project: string;
-  languages: LanguageData[];
+  project: string; // 项目名称
+  languages: LanguageData[]; // 语言数组
 }
 
 export default function ProjectDetails() {
   const router = useRouter(); // 使用路由钩子跳转页面
   const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
-  const searchParams = useSearchParams();
-  const projectName = searchParams.get("project_name");
-  const languageCode = searchParams.get("language_code");
-  const query = searchParams.get("query");
-  // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算
+  const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
+  const projectName = searchParams.get("project_name"); //  获取项目名称
+  const languageCode = searchParams.get("language_code"); // 获取语言代码
+  const query = searchParams.get("query"); // 获取查询参数，只有在搜索时才会使用
+
+
+  // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
     return new URLSearchParams({
       project_name: projectName || "",
       language_code: languageCode || "",
-      ...(query ? { query } : {}),
+      ...(query ? { query } : {}),  // 只有在 query 存在时才添加到查询参数中
     });
   }, [projectName, languageCode, query]);
   
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [currentPage, setCurrentPage] = useState(1);//当前页码
+  const itemsPerPage = 8; // 每页显示的条目数
 
-  const [entriesdata, setEntriesData] = useState<Entries>();
-  const [projectData, setProjectData] = useState<ProjectData | null >(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [entriesdata, setEntriesData] = useState<Entries>(); // 保存 entries 数据到状态
+  const [projectData, setProjectData] = useState<ProjectData | null >(null); // 保存 project_info 数据到状态
+  const [loading, setLoading] = useState<boolean>(true); // 加载状态
 
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
   
   
 
-  // Add new state for sorting
-  
-  const [sortColumn, setSortColumn] = useState<string>("index");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  // 添加新的状态用于排序
+
+  const [sortColumn, setSortColumn] = useState<string>("index"); //选择用于排序的列，默认使用index
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); //排序方向，默认升序
 
   useEffect(() => {
-    const fetchProjectData = async () => {
+    const fetchProjectData = async () => { // 获取 project_info 数据
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName!)}`, {
@@ -124,7 +126,7 @@ export default function ProjectDetails() {
       }
     };
 
-    const fetchEntriesData = async () => {
+    const fetchEntriesData = async () => { // 获取 entries 数据
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`, {
@@ -149,7 +151,7 @@ export default function ProjectDetails() {
       }
     };
 
-    const fetchData = async () => {
+    const fetchData = async () => { // 获取数据，设置加载状态，调用fetchProjectData和fetchEntriesData
       setLoading(true);
       if (projectName && languageCode) {
         await fetchProjectData(); // 获取 project_info 数据
@@ -163,7 +165,7 @@ export default function ProjectDetails() {
     fetchData();
   }, [projectName, languageCode, query, token]);
 
-  // Add a new function for handling sort
+  // 添加排序逻辑，根据点击的列名和当前排序方向进行排序
   const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -189,23 +191,23 @@ export default function ProjectDetails() {
 
     // 排序
     const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
-      if (sortColumn === "index") {
+      if (sortColumn === "index") { // 根据索引排序
         return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
-      } else if (sortColumn === "key") {
+      } else if (sortColumn === "key") { // 根据references排序
         return sortDirection === "asc"
           ? a.references.localeCompare(b.references)
           : b.references.localeCompare(a.references);
-      } else if (sortColumn === "original") {
+      } else if (sortColumn === "original") { // 根据msgid排序
         return sortDirection === "asc"
           ? a.msgid.localeCompare(b.msgid)
           : b.msgid.localeCompare(a.msgid);
-      } else if (sortColumn === "translation") {
+      } else if (sortColumn === "translation") { // 根据msgstr排序
         const aTranslation = a.msgstr[0]?.msg || "";
         const bTranslation = b.msgstr[0]?.msg || "";
         return sortDirection === "asc"
           ? aTranslation.localeCompare(bTranslation)
           : bTranslation.localeCompare(aTranslation);
-      } else if (sortColumn === "updatedAt") {
+      } else if (sortColumn === "updatedAt") {// 根据更新时间排序
         return sortDirection === "asc"
           ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
           : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
@@ -343,7 +345,7 @@ export default function ProjectDetails() {
                       </Button>
                     </TableHead>
                     <TableHead className="w-[400px]">
-                      Original
+                      Source
                       <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
@@ -386,9 +388,10 @@ export default function ProjectDetails() {
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
                     <div className="w-[400px]">
-                      {entry.msgstr.map((str) => (
+                      {/* {entry.msgstr.map((str) => (
                         <div key={str.id}>{str.msg}</div>
-                      ))}
+                      ))} */}
+                      {entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
                   </div>
