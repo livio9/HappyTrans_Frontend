@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef } from 'react';
+import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
@@ -101,6 +102,10 @@ export default function TranslationInterface() {
 
   const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+
+  // 在TranslationInterface组件中增加新的状态和方法
+  const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
+  const [selectedMsgstrID, setSelectedMsgstrID] = useState<string>(""); // 选定的 msgstr
   
   const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
 
@@ -216,6 +221,7 @@ export default function TranslationInterface() {
     }
   }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
   
+  // 处理保存翻译结果
   // 发送翻译更新请求
   const updateTranslation = async (newTranslation: string) => {
     const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
@@ -273,9 +279,51 @@ export default function TranslationInterface() {
     }
   };
 
-  const progress = ((currentIndex + 1) / strings.length) * 100;
-  
 
+  // 选择某一翻译作为默认翻译
+  // 新的 select-msgstr API 调用函数
+  const selectMsgstr = async (id: string) => {
+    try {
+      const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/select-msgstr?entry_index=${currentIndex}&language_code=${languageCode}&msgstr_index=${encodeURIComponent(id)}&project=${projectName}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to select msgstr");
+      }
+      console.log("msgstr selected successfully");
+    } catch (error) {
+      console.error("Error selecting msgstr:", error);
+    }
+  };
+
+  const handleSelectHistory = (id: string) => {
+    setSelectedMsgstrID(id);
+    setShowSelectDialog(true); // 显示弹窗
+  };
+
+  const handleConfirmSelect = () => {
+    if (selectedMsgstrID) {
+      selectMsgstr(selectedMsgstrID); // 执行 select-msgstr API 调用
+    }
+    setShowSelectDialog(false); // 关闭弹窗
+  };
+
+  const handleCancelSelect = () => {
+    setShowSelectDialog(false); // 关闭弹窗
+  };
+
+  const progress = ((currentIndex + 1) / strings.length) * 100;
+
+  
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow p-4">
@@ -419,30 +467,48 @@ export default function TranslationInterface() {
           <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
           <TabsContent value="other">Other languages content</TabsContent> {/* 其他语言内容 */}
           <TabsContent value="history">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left">User ID</th>
-                  <th className="text-left">Translation</th>
-                  <th className="text-left">Update At</th>
-                  <th className="text-left">Actions</th>
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="text-left">User ID</th>
+                <th className="text-left">Translation</th>
+                <th className="text-left">Update At</th>
+                <th className="text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {strings[currentIndex]?.msgstr.map((msgstr, id) => (
+                <tr key={id}>
+                  <td>{msgstr.user_id}</td>
+                  <td>{msgstr.msg}</td>
+                  <td>{new Date(msgstr.timestamp).toLocaleString()}</td>
+                  <td>
+                    <Button variant="default" className="md:w-1/4" onClick={() => handleSelectHistory(msgstr.id)}>
+                      Select it
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {strings[currentIndex]?.msgstr.map((msgstr, id) => (
-                  <tr key={id}>
-                    <td>{msgstr.user_id}</td>
-                    <td>{msgstr.msg}</td>
-                    <td>{new Date(msgstr.timestamp).toLocaleString()}</td>
-                    <td>
-                      <Button variant="ghost" size="icon">
-                        <Copy className="h-4 w-4" /> {/* 复制图标 */}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Select dialog */}
+          {showSelectDialog && (
+            <Dialog open={showSelectDialog} onOpenChange={setShowSelectDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Selection</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to select this translation?
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex space-x-4 mt-4">
+                  <Button variant="outline" onClick={handleCancelSelect}>Cancel</Button>
+                  <Button onClick={handleConfirmSelect}>Confirm</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           </TabsContent> {/* 历史内容 */}
 
           <TabsContent value="comment">
