@@ -22,8 +22,10 @@ export const AuthProvider = ({ children }) => {
   // 用户信息状态，包括用户角色
   const [user, setUser] = useState(null);
   
-  // 用户认证令牌状态
-  const [token, setToken] = useState(null);
+   // 初次加载时从 localStorage 获取 token（如果存在）
+  const [token, setToken] = useState(() => { 
+    return localStorage.getItem("authToken"); 
+  });
 
   /**
    * useEffect 钩子

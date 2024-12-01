@@ -423,7 +423,7 @@ export default function Projects() {
         {/* 搜索框 */}
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" /> {/* 搜索图标 */}
-          <Input type="text" placeholder="搜索项目..." className="pl-8 pr-4 w-64" />
+          <Input type="text" placeholder="Search Project..." className="pl-8 pr-4 w-64" />
         </div>
         {isAdmin && ( // 如果用户是管理员，显示创建项目按钮
           <Button onClick={() => setIsCreateDialogOpen(true)}>

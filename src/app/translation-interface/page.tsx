@@ -212,7 +212,7 @@ export default function TranslationInterface() {
         const currentEntry = strings[currentIndex];
         console.log("Current entry:", currentEntry);
         length = currentEntry?.msgstr.length;
-        setCurrentTranslation(currentEntry?.msgstr[length-1]?.msg || ""); // 设置当前翻译文本
+        setCurrentTranslation(currentEntry?.msgstr[currentEntry.selected_msgstr_index]?.msg || ""); // 设置当前翻译文本
       } else {
         console.log("Strings not yet loaded or currentIndex is invalid.");
       }
@@ -253,7 +253,7 @@ export default function TranslationInterface() {
   const handleSaveAndContinue = async () => {
     await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
-    router.push(`/translation?project_name=${projectName}&language_code=${languageCode}&index=${currentIndex + 2}`); // 使用router跳转
+    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&index=${currentIndex + 2}`); // 使用router跳转
   };
 
   // 处理保存但不跳转
@@ -452,7 +452,7 @@ export default function TranslationInterface() {
                     <tr key={idx}>
                       <td>{entry.references}</td>
                       <td>{entry.msgid}</td>
-                      <td>{entry.msgstr[entry.msgstr.length-1]?.msg || "No translation"}</td>
+                      <td>{entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
                       <td>
                         <Button variant="ghost" size="icon">
                           <Copy className="h-4 w-4" /> {/* 复制图标 */}
