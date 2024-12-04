@@ -21,9 +21,8 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
-import { useProject } from "@/context/ProjectContext"; // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
@@ -323,7 +322,20 @@ export default function TranslationInterface() {
 
   const progress = ((currentIndex + 1) / strings.length) * 100;
 
-  
+  //历史记录分页显示
+  const [currentHisPage, setCurrentHisPage] = useState(1);//当前页码
+  const itemsPerPage = 5; // 每页显示的条目数
+
+  //分页数据
+  const paginatedHistory = useMemo(() => {
+    const startIndex = (currentHisPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return strings[currentIndex]?.msgstr.slice(startIndex, endIndex) || [];
+  }, [strings, currentIndex, currentHisPage]);
+
+  //总页数
+  const totalPages = Math.ceil(strings[currentIndex]?.msgstr.length / itemsPerPage);
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       <header className="bg-white dark:bg-gray-800 shadow p-4">
@@ -476,21 +488,81 @@ export default function TranslationInterface() {
                 <th className="text-left">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {strings[currentIndex]?.msgstr.map((msgstr, id) => (
-                <tr key={id}>
-                  <td>{msgstr.user_id}</td>
-                  <td>{msgstr.msg}</td>
-                  <td>{new Date(msgstr.timestamp).toLocaleString()}</td>
-                  <td>
-                    <Button variant="default" className="md:w-1/4" onClick={() => handleSelectHistory(msgstr.id)}>
-                      Select it
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
           </table>
+            <div className="flex justify-end space-x-2">
+              <List
+                height={200} // 设置列表高度
+                itemCount={paginatedHistory.length} // 设置列表项数
+                itemSize={40} // 设置列表项高度
+                width={"100%"} // 设置列表宽度
+              >
+                {({ index, style }) => {
+                  const item = paginatedHistory[index];
+                  return (
+                    <div
+                      style={style} 
+                      key={item.timestamp} 
+                      className="flex items-center border-b hover:bg-muted/50"
+                    >
+                      <div className="w-[100px] font-medium pl-4">{item.user_id}</div>
+                      <div className="w-[270px] font-mono text-sm">{item.msg}</div>
+                      <div className="w-[400px]">{new Date(item.timestamp).toLocaleString()}</div>
+                      <div>
+                      <Button variant="default" className="md:w-1/4" onClick={() => handleSelectHistory(item.id)}>
+                        Select it
+                      </Button>
+                      </div>
+                      
+                    </div>
+                  );
+                }}
+              </List>
+            </div>
+          {/* 分页控制 */}
+          {/* 分页控制 */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
+            <div className="text-sm text-muted-foreground">
+              Showing {(currentHisPage - 1) * itemsPerPage + 1} to {Math.min(currentHisPage * itemsPerPage, paginatedHistory.length)} of {paginatedHistory.length} entries
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentHisPage(1)}
+                disabled={currentHisPage === 1}
+                aria-label="First page"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentHisPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentHisPage === 1}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentHisPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentHisPage === totalPages}
+                aria-label="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentHisPage(totalPages)}
+                disabled={currentHisPage === totalPages}
+                aria-label="Last page"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
           {/* Select dialog */}
           {showSelectDialog && (
