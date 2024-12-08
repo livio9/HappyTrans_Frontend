@@ -32,7 +32,7 @@ type Entry = {
   extracted_comments: string; //  提取的注释
   flags: string; // 标记
   msgctxt: string | null; // 上下文
-  index: number; // 索引
+  idx_in_language: number; // 索引
   msgid: string; // 原文
   msgid_plural: string; // 复数原文
   msgstr: msgstr[]; // 翻译内容数组
@@ -40,6 +40,7 @@ type Entry = {
   updated_at: string; // 最近一次更新时间
   selected_msgstr_index: number; // 选中的翻译内容索引
   references: string; // 字符串位置
+  tag: [string]; // 新增：标签
 };
 
 type LanguageData = {
@@ -75,6 +76,8 @@ export default function ProjectDetails() {
   const languageCode = searchParams.get("language_code"); // 获取语言代码
   const query = searchParams.get("query"); // 获取查询参数，只有在搜索时才会使用
 
+  const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
+
 
   // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
@@ -100,14 +103,14 @@ export default function ProjectDetails() {
 
   // 添加新的状态用于排序
 
-  const [sortColumn, setSortColumn] = useState<string>("index"); //选择用于排序的列，默认使用index
+  const [sortColumn, setSortColumn] = useState<string>("idx_in_language"); //选择用于排序的列，默认使用index
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); //排序方向，默认升序
 
   useEffect(() => {
     const fetchProjectData = async () => { // 获取 project_info 数据
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName!)}`, {
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName || "")}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -151,11 +154,38 @@ export default function ProjectDetails() {
       }
     };
 
+    const fetchLanguageInfo = async () => { // 获取语言版本信息
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
+            projectName || ""
+          )}&language_code=${encodeURIComponent(languageCode || "")}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch language info");
+        }
+        const data = await response.json();
+        console.log("Fetched language info:", data);
+        setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
+      } catch (error) {
+        console.error("Error fetching language info:", error);
+      }
+    }
+
     const fetchData = async () => { // 获取数据，设置加载状态，调用fetchProjectData和fetchEntriesData
       setLoading(true);
       if (projectName && languageCode) {
         await fetchProjectData(); // 获取 project_info 数据
         await fetchEntriesData(); // 获取 entriesdata 数据
+        await fetchLanguageInfo(); // 获取语言版本信息
       } else {
         console.error("Missing project_name or language_code in URL.");
       }
@@ -191,8 +221,8 @@ export default function ProjectDetails() {
 
     // 排序
     const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
-      if (sortColumn === "index") { // 根据索引排序
-        return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
+      if (sortColumn === "idx_in_language") { // 根据索引排序
+        return sortDirection === "asc" ? a.idx_in_language - b.idx_in_language : b.idx_in_language - a.idx_in_language;
       } else if (sortColumn === "key") { // 根据references排序
         return sortDirection === "asc"
           ? a.references.localeCompare(b.references)
@@ -298,7 +328,7 @@ export default function ProjectDetails() {
           </div>
           <div className="md:col-span-2">
             <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
-            <Progress value={(filteredAndSortedEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full h-4" />
+            <Progress value={languageProcess} className="w-full h-4" />
           </div>
         </CardContent>
       </Card>
@@ -334,7 +364,7 @@ export default function ProjectDetails() {
                   <TableRow className="bg-muted">
                     <TableHead className="w-[100px]">
                       Index
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("index")} className="ml-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
@@ -379,16 +409,16 @@ export default function ProjectDetails() {
                 return (
                   <div
                     style={style} 
-                    key={entry.index} 
+                    key={entry.idx_in_language} 
                     className="flex items-center border-b hover:bg-muted/50"
-                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&index=${entry.index}`)
+                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`)
                             }
                   >
-                    <div className="w-[100px] font-medium pl-4">{entry.index}</div>
+                    <div className="w-[100px] font-medium pl-4">{entry.idx_in_language}</div>
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
                     <div className="w-[400px]">
-                      {entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
+                      {entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
                   </div>

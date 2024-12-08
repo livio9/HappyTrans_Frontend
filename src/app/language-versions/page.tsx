@@ -45,7 +45,7 @@ export default function LanguageVersions() {
                 // 确保返回的数据中包含 languages
                 const languages = data.languages || [];
                 // 映射语言版本
-                const formattedLanguages = languages.map((lang: { language_code: string; po_revision_date?: string }) => {
+                const formattedLanguages = languages.map((lang: { language_code: string; selected_entries_ratio?: number }) => {
                     // 语言代码与名称的映射
                     const languageNames: { [key: string]: string } = {
                         "zh-hans": "Simplified Chinese",
@@ -54,7 +54,7 @@ export default function LanguageVersions() {
                     };
 
                     // 计算进度（假定翻译进度逻辑）
-                    const progress = lang.po_revision_date ? 50 : 0;
+                    const progress = lang.selected_entries_ratio ? lang.selected_entries_ratio : 0;
 
                     return {
                         code: lang.language_code, // 语言代码

@@ -46,7 +46,7 @@ type Entry = {
   extracted_comments: string; // 提取的注释
   flags: string; 
   msgctxt: string | null; // 上下文
-  index: number; // 索引
+  idx_in_language: number; // 索引
   msgid: string;  // 源文本
   msgid_plural: string; // 复数形式的源文本
   msgstr: msgstr[]; // 翻译文本
@@ -54,6 +54,7 @@ type Entry = {
   updated_at: string; // 更新时间
   selected_msgstr_index: number; // 选择的翻译文本索引
   references: string; // 引用
+  tag: [string]; // 标签
 };
 
 type LanguageData = {
@@ -88,9 +89,9 @@ export default function TranslationInterface() {
   // 从 URL 获取参数
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const indexParam = searchParams.get("index");
-  const index1 = indexParam ? parseInt(indexParam) - 1 : 0;
-  // const index1 = searchParams.get("index");
+  const indexParam = searchParams.get("idx_in_language");
+  const index1 = indexParam ? parseInt(indexParam) : 0;
+  // const index1 = searchParams.get("idx_in_language");
 
   const { user, token } = useAuth(); // 使用用户上下文获取当前用户
   
@@ -99,8 +100,12 @@ export default function TranslationInterface() {
   const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
   const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
 
+  const [languageprocess, setLanguageProcess] = useState(0); // 进度条进度
+
   const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+
+
 
   // 在TranslationInterface组件中增加新的状态和方法
   const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
@@ -158,7 +163,7 @@ export default function TranslationInterface() {
 
       // 获取当前词条数据
       const fetchEntryData = async () => {
-        console.log("Fetching entry data for index:", currentIndex);
+        console.log("Fetching entry data for idx_in_language:", currentIndex);
   
         if (strings.length > 0 && currentIndex < strings.length) {
           try {
@@ -184,6 +189,7 @@ export default function TranslationInterface() {
             console.log("Fetched entry data:", data);
   
             const { previous, current, next } = data.entries;
+            console.log("successfuly fetched entry data");
             console.log("Previous, current, next entries:", { previous, current, next });
   
             setNearbyStrings([
@@ -215,6 +221,39 @@ export default function TranslationInterface() {
       } else {
         console.log("Strings not yet loaded or currentIndex is invalid.");
       }
+
+      // 设置进度条进度
+      const fetchLanguageInfo = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
+              projectName
+            )}&language_code=${encodeURIComponent(languageCode)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error("Failed to fetch language info");
+          }
+          const data = await response.json();
+          console.log("Fetched language info:", data);
+          setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
+        } catch (error) {
+          console.error("Error fetching language info:", error);
+        }
+      };
+
+      if(projectName && languageCode){
+        fetchLanguageInfo();
+      }
+
+
     } else {
       console.log("Project name or language code is missing");
     }
@@ -252,7 +291,7 @@ export default function TranslationInterface() {
   const handleSaveAndContinue = async () => {
     await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
-    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&index=${currentIndex + 2}`); // 使用router跳转
+    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 2}`); // 使用router跳转
   };
 
   // 处理保存但不跳转
@@ -320,7 +359,7 @@ export default function TranslationInterface() {
     setShowSelectDialog(false); // 关闭弹窗
   };
 
-  const progress = ((currentIndex + 1) / strings.length) * 100;
+
 
   //历史记录分页显示
   const [currentHisPage, setCurrentHisPage] = useState(1);//当前页码
@@ -356,7 +395,7 @@ export default function TranslationInterface() {
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-          <Progress value={progress} className="w-64" />
+          <Progress value={languageprocess} className="w-64" />
         </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
@@ -401,10 +440,10 @@ export default function TranslationInterface() {
                   </DialogHeader>
                   <div className="py-4">
                     <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
-                        {suggestions.map((suggestion, index) => (
-                          <div key={index} className="flex items-center space-x-2">
-                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${index}`} />
-                            <Label htmlFor={`suggestion-${index}`}>
+                        {suggestions.map((suggestion, idx_in_language) => (
+                          <div key={idx_in_language} className="flex items-center space-x-2">
+                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${idx_in_language}`} />
+                            <Label htmlFor={`suggestion-${idx_in_language}`}>
                               <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
                             </Label>
                           </div>
@@ -459,12 +498,12 @@ export default function TranslationInterface() {
                 </tr>
               </thead>
               <tbody>
-                {nearbyStrings.filter(entry => entry !=null ).map((entry, idx) => (
+                {nearbyStrings.filter(entry => entry !=null && Object.keys(entry).length > 0).map((entry, idx) => (
                   entry && (
                     <tr key={idx}>
-                      <td>{entry.references}</td>
-                      <td>{entry.msgid}</td>
-                      <td>{entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
+                      <td>{entry.references || ""}</td>
+                      <td>{entry.msgid || ""}</td>
+                      <td>{entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
                       <td>
                         <Button variant="ghost" size="icon">
                           <Copy className="h-4 w-4" /> {/* 复制图标 */}

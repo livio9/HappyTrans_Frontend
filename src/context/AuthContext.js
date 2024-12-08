@@ -24,7 +24,10 @@ export const AuthProvider = ({ children }) => {
   
    // 初次加载时从 localStorage 获取 token（如果存在）
   const [token, setToken] = useState(() => { 
-    return localStorage.getItem("authToken"); 
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("authToken"); 
+    }
+    return null; // 或者返回一个默认值
   });
 
   /**
