@@ -98,6 +98,7 @@ export default function TranslationInterface() {
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
   const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
+  const [otherLanguagesEntry, setOtherLanguagesEntry] = useState<{ languageCode: string; entry: Entry }[]>([]); // 其他语言的词条
   const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
 
   const [languageprocess, setLanguageProcess] = useState(0); // 进度条进度
@@ -161,7 +162,7 @@ export default function TranslationInterface() {
         fetchedEntries.current = true; // 防止再次请求
       }
 
-      // 获取当前词条数据
+      // 获取相邻词条数据
       const fetchEntryData = async () => { 
         console.log("Fetching entry data for idx_in_language:", currentIndex);
   
@@ -170,7 +171,7 @@ export default function TranslationInterface() {
             const response = await fetch(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
                 projectName
-              )}&language_code=${encodeURIComponent(languageCode)}&index=${encodeURIComponent(
+              )}&index=${encodeURIComponent(
                 currentIndex
               )}`,
               {
@@ -191,7 +192,11 @@ export default function TranslationInterface() {
             const { previous, current, next } = data.entries; // 解构赋值
             console.log("successfuly fetched entry data");
             console.log("Previous, current, next entries:", { previous, current, next });
-  
+
+            const currentOtherLanguagesEntry = Object.entries(current).map(([languageCode, entry]) => ({ languageCode, entry }));
+            
+            setOtherLanguagesEntry(currentOtherLanguagesEntry); // 设置其他语言词条
+            console.log("Other languages entries:", otherLanguagesEntry);
             setNearbyStrings([ // 设置附近字符串
               previous?.[languageCode] || null,
               current[languageCode],
@@ -527,8 +532,34 @@ export default function TranslationInterface() {
               </tbody>
             </table>
           </TabsContent>
+
           <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
-          <TabsContent value="other">Other languages content</TabsContent> {/* 其他语言内容 */}
+
+          <TabsContent value="other">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">Language</th>
+                  <th className="text-left">Translation</th>
+                  <th className="text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {otherLanguagesEntry.map((entry, idx) => (
+                  <tr key={idx}>
+                    <td>{entry.languageCode}</td>
+                    <td>{entry.entry.selected_msgstr_index === -1 ? "(No translation yet)" : entry.entry.msgstr[entry.entry.selected_msgstr_index]?.msg || "No translation"} </td>
+                    <td>
+                      <Button variant="ghost" size="icon">
+                        <Copy className="h-4 w-4" /> {/* 复制图标 */}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent> {/* 其他语言内容 */}
+
           {/* 历史翻译结果 */}
           <TabsContent value="history">
             <table className="w-full text-sm">
