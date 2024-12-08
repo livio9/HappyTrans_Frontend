@@ -76,6 +76,8 @@ export default function ProjectDetails() {
   const languageCode = searchParams.get("language_code"); // 获取语言代码
   const query = searchParams.get("query"); // 获取查询参数，只有在搜索时才会使用
 
+  const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
+
 
   // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
@@ -108,7 +110,7 @@ export default function ProjectDetails() {
     const fetchProjectData = async () => { // 获取 project_info 数据
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName!)}`, {
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName || "")}`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -152,11 +154,38 @@ export default function ProjectDetails() {
       }
     };
 
+    const fetchLanguageInfo = async () => { // 获取语言版本信息
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
+            projectName || ""
+          )}&language_code=${encodeURIComponent(languageCode || "")}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch language info");
+        }
+        const data = await response.json();
+        console.log("Fetched language info:", data);
+        setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
+      } catch (error) {
+        console.error("Error fetching language info:", error);
+      }
+    }
+
     const fetchData = async () => { // 获取数据，设置加载状态，调用fetchProjectData和fetchEntriesData
       setLoading(true);
       if (projectName && languageCode) {
         await fetchProjectData(); // 获取 project_info 数据
         await fetchEntriesData(); // 获取 entriesdata 数据
+        await fetchLanguageInfo(); // 获取语言版本信息
       } else {
         console.error("Missing project_name or language_code in URL.");
       }
@@ -299,7 +328,7 @@ export default function ProjectDetails() {
           </div>
           <div className="md:col-span-2">
             <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
-            <Progress value={(filteredAndSortedEntries.length / (projectData?.languages.length || 1)) * 100} className="w-full h-4" />
+            <Progress value={languageProcess} className="w-full h-4" />
           </div>
         </CardContent>
       </Card>

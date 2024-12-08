@@ -100,8 +100,12 @@ export default function TranslationInterface() {
   const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
   const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
 
+  const [languageprocess, setLanguageProcess] = useState(0); // 进度条进度
+
   const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState("");
+
+
 
   // 在TranslationInterface组件中增加新的状态和方法
   const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
@@ -217,6 +221,39 @@ export default function TranslationInterface() {
       } else {
         console.log("Strings not yet loaded or currentIndex is invalid.");
       }
+
+      // 设置进度条进度
+      const fetchLanguageInfo = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
+              projectName
+            )}&language_code=${encodeURIComponent(languageCode)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error("Failed to fetch language info");
+          }
+          const data = await response.json();
+          console.log("Fetched language info:", data);
+          setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
+        } catch (error) {
+          console.error("Error fetching language info:", error);
+        }
+      };
+
+      if(projectName && languageCode){
+        fetchLanguageInfo();
+      }
+
+
     } else {
       console.log("Project name or language code is missing");
     }
@@ -322,7 +359,7 @@ export default function TranslationInterface() {
     setShowSelectDialog(false); // 关闭弹窗
   };
 
-  const progress = ((currentIndex + 1) / strings.length) * 100;
+
 
   //历史记录分页显示
   const [currentHisPage, setCurrentHisPage] = useState(1);//当前页码
@@ -358,7 +395,7 @@ export default function TranslationInterface() {
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-          <Progress value={progress} className="w-64" />
+          <Progress value={languageprocess} className="w-64" />
         </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
