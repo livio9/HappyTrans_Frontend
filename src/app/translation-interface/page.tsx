@@ -46,7 +46,7 @@ type Entry = {
   extracted_comments: string; // 提取的注释
   flags: string; 
   msgctxt: string | null; // 上下文
-  index: number; // 索引
+  idx_in_language: number; // 索引
   msgid: string;  // 源文本
   msgid_plural: string; // 复数形式的源文本
   msgstr: msgstr[]; // 翻译文本
@@ -54,6 +54,7 @@ type Entry = {
   updated_at: string; // 更新时间
   selected_msgstr_index: number; // 选择的翻译文本索引
   references: string; // 引用
+  tag: [string]; // 标签
 };
 
 type LanguageData = {
@@ -88,9 +89,9 @@ export default function TranslationInterface() {
   // 从 URL 获取参数
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
-  const indexParam = searchParams.get("index");
+  const indexParam = searchParams.get("idx_in_language");
   const index1 = indexParam ? parseInt(indexParam) - 1 : 0;
-  // const index1 = searchParams.get("index");
+  // const index1 = searchParams.get("idx_in_language");
 
   const { user, token } = useAuth(); // 使用用户上下文获取当前用户
   
@@ -158,7 +159,7 @@ export default function TranslationInterface() {
 
       // 获取当前词条数据
       const fetchEntryData = async () => {
-        console.log("Fetching entry data for index:", currentIndex);
+        console.log("Fetching entry data for idx_in_language:", currentIndex);
   
         if (strings.length > 0 && currentIndex < strings.length) {
           try {
@@ -252,7 +253,7 @@ export default function TranslationInterface() {
   const handleSaveAndContinue = async () => {
     await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
-    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&index=${currentIndex + 2}`); // 使用router跳转
+    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 2}`); // 使用router跳转
   };
 
   // 处理保存但不跳转
@@ -401,10 +402,10 @@ export default function TranslationInterface() {
                   </DialogHeader>
                   <div className="py-4">
                     <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
-                        {suggestions.map((suggestion, index) => (
-                          <div key={index} className="flex items-center space-x-2">
-                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${index}`} />
-                            <Label htmlFor={`suggestion-${index}`}>
+                        {suggestions.map((suggestion, idx_in_language) => (
+                          <div key={idx_in_language} className="flex items-center space-x-2">
+                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${idx_in_language}`} />
+                            <Label htmlFor={`suggestion-${idx_in_language}`}>
                               <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
                             </Label>
                           </div>

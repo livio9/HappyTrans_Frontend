@@ -32,7 +32,7 @@ type Entry = {
   extracted_comments: string; //  提取的注释
   flags: string; // 标记
   msgctxt: string | null; // 上下文
-  index: number; // 索引
+  idx_in_language: number; // 索引
   msgid: string; // 原文
   msgid_plural: string; // 复数原文
   msgstr: msgstr[]; // 翻译内容数组
@@ -40,6 +40,7 @@ type Entry = {
   updated_at: string; // 最近一次更新时间
   selected_msgstr_index: number; // 选中的翻译内容索引
   references: string; // 字符串位置
+  tag: [string]; // 新增：标签
 };
 
 type LanguageData = {
@@ -100,7 +101,7 @@ export default function ProjectDetails() {
 
   // 添加新的状态用于排序
 
-  const [sortColumn, setSortColumn] = useState<string>("index"); //选择用于排序的列，默认使用index
+  const [sortColumn, setSortColumn] = useState<string>("idx_in_language"); //选择用于排序的列，默认使用index
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); //排序方向，默认升序
 
   useEffect(() => {
@@ -191,8 +192,8 @@ export default function ProjectDetails() {
 
     // 排序
     const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
-      if (sortColumn === "index") { // 根据索引排序
-        return sortDirection === "asc" ? a.index - b.index : b.index - a.index;
+      if (sortColumn === "idx_in_language") { // 根据索引排序
+        return sortDirection === "asc" ? a.idx_in_language - b.idx_in_language : b.idx_in_language - a.idx_in_language;
       } else if (sortColumn === "key") { // 根据references排序
         return sortDirection === "asc"
           ? a.references.localeCompare(b.references)
@@ -334,7 +335,7 @@ export default function ProjectDetails() {
                   <TableRow className="bg-muted">
                     <TableHead className="w-[100px]">
                       Index
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("index")} className="ml-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
@@ -379,12 +380,12 @@ export default function ProjectDetails() {
                 return (
                   <div
                     style={style} 
-                    key={entry.index} 
+                    key={entry.idx_in_language} 
                     className="flex items-center border-b hover:bg-muted/50"
-                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&index=${entry.index}`)
+                    onClick={() => router.push(`/translation-interface?project_name=${encodeURIComponent(projectName!)}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`)
                             }
                   >
-                    <div className="w-[100px] font-medium pl-4">{entry.index}</div>
+                    <div className="w-[100px] font-medium pl-4">{entry.idx_in_language}</div>
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
                     <div className="w-[400px]">
