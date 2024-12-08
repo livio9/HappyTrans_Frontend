@@ -389,7 +389,7 @@ export default function ProjectDetails() {
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
                     <div className="w-[400px]">
-                      {entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
+                      {entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
                   </div>

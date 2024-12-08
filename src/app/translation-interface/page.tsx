@@ -90,7 +90,7 @@ export default function TranslationInterface() {
   const projectName = searchParams.get("project_name");
   const languageCode = searchParams.get("language_code");
   const indexParam = searchParams.get("idx_in_language");
-  const index1 = indexParam ? parseInt(indexParam) - 1 : 0;
+  const index1 = indexParam ? parseInt(indexParam) : 0;
   // const index1 = searchParams.get("idx_in_language");
 
   const { user, token } = useAuth(); // 使用用户上下文获取当前用户
@@ -185,6 +185,7 @@ export default function TranslationInterface() {
             console.log("Fetched entry data:", data);
   
             const { previous, current, next } = data.entries;
+            console.log("successfuly fetched entry data");
             console.log("Previous, current, next entries:", { previous, current, next });
   
             setNearbyStrings([
@@ -460,12 +461,12 @@ export default function TranslationInterface() {
                 </tr>
               </thead>
               <tbody>
-                {nearbyStrings.filter(entry => entry !=null ).map((entry, idx) => (
+                {nearbyStrings.filter(entry => entry !=null && Object.keys(entry).length > 0).map((entry, idx) => (
                   entry && (
                     <tr key={idx}>
-                      <td>{entry.references}</td>
-                      <td>{entry.msgid}</td>
-                      <td>{entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
+                      <td>{entry.references || ""}</td>
+                      <td>{entry.msgid || ""}</td>
+                      <td>{entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
                       <td>
                         <Button variant="ghost" size="icon">
                           <Copy className="h-4 w-4" /> {/* 复制图标 */}
