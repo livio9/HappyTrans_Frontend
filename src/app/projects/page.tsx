@@ -127,11 +127,13 @@ export default function Projects() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // 使用认证令牌
         },
       });
       
       if (response.ok) {
         const data: Project[] = await response.json(); // 解析响应数据
+        console.log("data", data)
         const validatedData = data.filter((project) => typeof project.name === "string");
         setProjects(validatedData);
       } else {
