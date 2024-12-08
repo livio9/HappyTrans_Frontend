@@ -45,7 +45,7 @@ export default function LanguageVersions() {
                 // 确保返回的数据中包含 languages
                 const languages = data.languages || [];
                 // 映射语言版本
-                const formattedLanguages = languages.map((lang: { language_code: string; selected_entries_ratio?: number }) => {
+                const formattedLanguages = languages.map((lang: { language_code: string; selected_entries_ratio?: number }) => { // fix： selected_entries_ratio 为翻译进度
                     // 语言代码与名称的映射
                     const languageNames: { [key: string]: string } = {
                         "zh-hans": "Simplified Chinese",

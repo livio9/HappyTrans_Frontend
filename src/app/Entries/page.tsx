@@ -108,7 +108,7 @@ export default function ProjectDetails() {
 
   useEffect(() => {
     const fetchProjectData = async () => { // 获取 project_info 数据
-      try {
+      try { 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName || "")}`, {
             method: "GET",
@@ -154,7 +154,7 @@ export default function ProjectDetails() {
       }
     };
 
-    const fetchLanguageInfo = async () => { // 获取语言版本信息
+    const fetchLanguageInfo = async () => { // 获取语言版本信息，主要目的是获取语言类的翻译进度
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
@@ -249,7 +249,7 @@ export default function ProjectDetails() {
   }, [entriesdata, searchTerm, sortColumn, sortDirection, languageCode]);
 
   // 分页数据
-  const paginatedEntries = useMemo(() => {
+  const paginatedEntries = useMemo(() => { // 使用 useMemo 缓存entries的分页结果
     return filteredAndSortedEntries.slice(
       (currentPage - 1) * itemsPerPage,
       currentPage * itemsPerPage
@@ -258,7 +258,7 @@ export default function ProjectDetails() {
 
   const totalPages = Math.ceil(filteredAndSortedEntries.length / itemsPerPage);
 
-  const handleLanguageChange = (newLanguageCode: string) => {
+  const handleLanguageChange = (newLanguageCode: string) => { // 处理语言切换功能
     if (projectName) {
       router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
     }
@@ -278,7 +278,7 @@ export default function ProjectDetails() {
     }
   };
   
-  if (loading) {
+  if (loading) { // 加载状态，显示加载动画
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
@@ -286,7 +286,7 @@ export default function ProjectDetails() {
     );
   }
 
-  //现在不区分错误和没有数据的情况，显示一个友好的消息
+  //现在不区分错误和没有数据的情况，显示一个友好的消息，一般是因为没有数据
   if (!entriesdata?.languages.length) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -306,13 +306,13 @@ export default function ProjectDetails() {
     <div className="container mx-auto p-6 space-y-8">
       {/* 项目信息部分 */}
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle>
+        <CardHeader> {/* 项目标题和描述 */}
+          <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle> 
           <p className="text-muted-foreground mt-2">{projectData?.description}</p>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-3">
+        <CardContent className="grid gap-6 md:grid-cols-3"> {/* 项目信息 */}
           <div>
-            <h2 className="text-lg font-semibold mb-2">Current Language</h2>
+            <h2 className="text-lg font-semibold mb-2">Current Language</h2> {/* 当前语言, 可以快速选择其他语言项*/}
             <Select value={languageCode || undefined} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select language" />
@@ -326,20 +326,20 @@ export default function ProjectDetails() {
               </SelectContent>
             </Select>
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-2"> {/* 翻译进度 */}
             <h2 className="text-lg font-semibold mb-2">Translation Progress</h2>
             <Progress value={languageProcess} className="w-full h-4" />
           </div>
         </CardContent>
       </Card>
 
-      {/* 表格部分 */}
+      {/* 当前语言下的词条信息部分 */}
       <Card>
         <CardHeader>
-          <CardTitle>Translations</CardTitle>
+          <CardTitle>Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6"> {/* 搜索框和搜索按钮 */}
             <div className="relative md:w-2/3">
               <Input
                 type="text"
@@ -355,38 +355,38 @@ export default function ProjectDetails() {
             </Button>
           </div>
 
-          {/* 使用 react-window 渲染虚拟列表 */}
+          {/* 使用 react-window 渲染虚拟列表，分页显示当前项目语言下的所有词条 */}
           <div className="overflow-x-auto rounded-md border">
             {/* 表头部分 */}
             <div className="sticky top-0 bg-muted z-10">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
-                    <TableHead className="w-[100px]">
+                    <TableHead className="w-[100px]"> {/* 索引 */}
                       Index
                       <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[270px]">
+                    <TableHead className="w-[270px]"> {/* references */}
                       Key
                       <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]">
+                    <TableHead className="w-[400px]"> {/* 翻译原文 */}
                       Source
                       <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]">
+                    <TableHead className="w-[400px]"> {/* 被选中的翻译结果，如果没有被选中的结果将呈现空白结果 */}
                       Translation
                       <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead>
+                    <TableHead> {/* 更新时间 */}
                       Updated At
                       <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
@@ -404,7 +404,7 @@ export default function ProjectDetails() {
               itemSize={50} // 每个条目的固定高度
               width="100%" // 列表宽度
             >
-              {({ index, style }) => {
+              {({ index, style }) => { // 渲染每一行
                 const entry = paginatedEntries[index];
                 return (
                   <div
@@ -417,7 +417,7 @@ export default function ProjectDetails() {
                     <div className="w-[100px] font-medium pl-4">{entry.idx_in_language}</div>
                     <div className="w-[270px] font-mono text-sm">{entry.references}</div>
                     <div className="w-[400px]">{entry.msgid}</div>
-                    <div className="w-[400px]">
+                    <div className="w-[400px]"> {/* 如果没有被选中的翻译结果将呈现空白结果 */}
                       {entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
                     <div className="text-muted-foreground">{new Date(entry.updated_at).toLocaleString()}</div>
@@ -432,8 +432,9 @@ export default function ProjectDetails() {
             <div className="text-sm text-muted-foreground">
               Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredAndSortedEntries.length)} of {filteredAndSortedEntries.length} entries
             </div>
-            <div className="flex space-x-2">
-              <Button
+            <div className="flex space-x-2"> {/* 分页按钮 */}
+              {/* 第一页 */}
+              <Button 
                 variant="outline"
                 size="icon"
                 onClick={() => setCurrentPage(1)}
@@ -442,6 +443,7 @@ export default function ProjectDetails() {
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Button>
+              {/* 上一页 */}
               <Button
                 variant="outline"
                 size="icon"
@@ -451,6 +453,7 @@ export default function ProjectDetails() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
+              {/* 下一页 */}
               <Button
                 variant="outline"
                 size="icon"
@@ -460,6 +463,7 @@ export default function ProjectDetails() {
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
+              {/* 最后一页 */}
               <Button
                 variant="outline"
                 size="icon"
