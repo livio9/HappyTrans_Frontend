@@ -622,7 +622,6 @@ export default function Projects() {
         </DialogContent>
       </Dialog>
       {/* 编辑项目的对话框 */}
-      {/* 编辑项目的对话框 */}
       <EditProjectDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
