@@ -57,10 +57,10 @@ const Header: React.FC = () => {
                 <div className="flex items-center relative">
                     <Avatar className="ml-4" onClick={handleAvatarClick}> {/* 添加头像点击事件 */}
                         <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                        <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                        <AvatarFallback>{user?.username?.charAt(0) || "U"}</AvatarFallback>
                     </Avatar>
                     <Button variant="ghost" className="ml-2" onClick={toggleDropdown}>
-                        {user?.name || "John Doe"}
+                        {user?.username || "J"}
                         <ChevronDown className="ml-2 h-4 w-4 z-20" />
                     </Button>
                     {dropdownOpen && (

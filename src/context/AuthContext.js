@@ -4,7 +4,7 @@ import { createContext, useState, useEffect, useContext } from "react";
 
 /**
  * @typedef {Object} AuthContextType
- * @property {{ role?: string } | null} user - 用户信息
+ * @property {{ username?: string, role?: string } | null} user - 用户信息
  * @property {string | null} token - 用户认证令牌
  * @property {(authToken: string) => void} login - 登录方法
  * @property {() => void} logout - 登出方法
@@ -58,7 +58,10 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const userData = await response.json(); // 解析响应数据
-        setUser(userData); // 设置用户信息状态
+        setUser(prevUser => ({
+          ...prevUser,        // 保留原有的 user 信息
+          ...userData,        // 合并后端返回的用户数据
+        }));
         checkUserRole(userData.role); // 根据用户角色执行相应逻辑
       } else if (response.status === 401) {
         logout(); // 如果认证失败，执行登出操作
@@ -92,10 +95,15 @@ export const AuthProvider = ({ children }) => {
    * login 函数
    * 处理用户登录，设置认证令牌并获取用户信息
    */
-  const login = (authToken) => {
+  const login = (authToken, username) => {
     setToken(authToken); // 设置 token 状态
+    setUser(prevUser => ({
+      ...prevUser,      // 保留原来的 user 信息
+      username,         // 设置新的 username
+    }));
     localStorage.setItem("authToken", authToken); // 将 token 存储到 localStorage
     fetchUserInfo(authToken); // 使用 token 获取用户信息
+    // setUser({ username }); // 将 username 存储到 user 中
   };
 
   /**
