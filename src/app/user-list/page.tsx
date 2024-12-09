@@ -27,7 +27,7 @@ const UserList: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`http://127.0.0.1:8000/user-list?start_id=0&length=10&username=${search}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${search}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
