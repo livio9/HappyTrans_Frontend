@@ -24,6 +24,7 @@ interface User {
 interface AddPeopleDialogProps {
   projectName: string
   role: string
+  setShouldFetch: (value: boolean) => void
   isOpen: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -31,6 +32,7 @@ interface AddPeopleDialogProps {
 export function AddPeopleDialog({
   projectName,
   role,
+  setShouldFetch,
   isOpen,
   onOpenChange,
 }: AddPeopleDialogProps) {
@@ -99,6 +101,7 @@ export function AddPeopleDialog({
           console.error("Error adding users:", error)
       }
     })
+    setShouldFetch(true)
     setSelectedUsers([])
     setSearchTerm("")
     setSearchResults([])

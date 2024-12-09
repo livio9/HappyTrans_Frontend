@@ -37,6 +37,7 @@ export function CollaboratorList({
   const [filterTerm, setFilterTerm] = React.useState("")
   const [isAddPeopleOpen, setIsAddPeopleOpen] = React.useState(false)
   const [collaborators, setCollaborators] = React.useState<User[]>([])
+  const [shouldFetch, setShouldFetch] = React.useState(true);
 
   React.useEffect(() => {
     const fetchCollaborators = async () => {
@@ -58,9 +59,11 @@ export function CollaboratorList({
         console.error(error)
       }
     }
-
-    fetchCollaborators()
-  }, [collaborators])
+    if (shouldFetch) {
+      fetchCollaborators();
+      setShouldFetch(false);  // 重置标记
+    }
+  }, [projectName, type, shouldFetch])
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -101,6 +104,7 @@ export function CollaboratorList({
       if (!response.ok) throw new Error("Failed to remove collaborator")
 
       setCollaborators((prev) => prev.filter((c) => c.id !== id))
+      setShouldFetch(true);  // 设置标记，触发 useEffect 请求
     } catch (error) {
       console.error(error)
     }
@@ -178,6 +182,7 @@ export function CollaboratorList({
       <AddPeopleDialog
         projectName={projectName}
         role={type}
+        setShouldFetch={setShouldFetch}
         isOpen={isAddPeopleOpen}
         onOpenChange={setIsAddPeopleOpen}
       />
