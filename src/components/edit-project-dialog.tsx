@@ -30,8 +30,6 @@ interface EditProjectDialogProps {
   onProjectNameChange: (value: string) => void
   onProjectDescriptionChange: (value: string) => void
   onProjectLanguageCodeChange: (value: string) => void
-  onRemoveManager: (id: string) => void
-  onRemoveTranslator: (id: string) => void
   onSave: () => void
 }
 
@@ -45,8 +43,6 @@ export function EditProjectDialog({
   onProjectNameChange,
   onProjectDescriptionChange,
   onProjectLanguageCodeChange,
-  onRemoveManager,
-  onRemoveTranslator,
   onSave,
 }: EditProjectDialogProps) {
   return (
@@ -118,13 +114,11 @@ export function EditProjectDialog({
               <CollaboratorList
                 type="managers"
                 projectName={projectName}
-                onRemove={onRemoveManager}
               />
 
               <CollaboratorList
                 type="translators"
                 projectName={projectName}
-                onRemove={onRemoveTranslator}
               />
             </div>
           </div>

@@ -380,39 +380,7 @@ export default function Projects() {
     }
   };
 
-  /**
-   * 获取用户列表的函数
-   * @param {string}
-   */
-     // 获取用户列表
-  const fetchUsers = async (role: string, search = "") => {
-    setLoading(true);
-    
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${search}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${localStorage.getItem("authToken")}`,
-        },
-      });
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (role === "manager") {
-        setManagers(data.results || []);
-      } else {
-        setTranslators(data.results || []);
-      }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   /**
@@ -485,18 +453,6 @@ export default function Projects() {
     );
   };
 
-  const handleAddManager = (users: User[]): void => {
-    throw new Error("Function not implemented.");
-  }
-  const handleAddTranslator = (users: User[]): void => {
-    throw new Error("Function not implemented.");
-  }
-  const handleRemoveManager = (id: string): void => {
-    throw new Error("Function not implemented.");
-  }
-  const handleRemoveTranslator = (id: string): void => {
-    throw new Error("Function not implemented.");
-  }
 
   return (
     <div className="container mx-auto p-4">
@@ -677,8 +633,6 @@ export default function Projects() {
         onProjectNameChange={setNewProjectName}
         onProjectDescriptionChange={setNewProjectDescription}
         onProjectLanguageCodeChange={setNewProjectLanguageCode}
-        onRemoveManager={handleRemoveManager}
-        onRemoveTranslator={handleRemoveTranslator}
         onSave={handleSaveProject}
       />
 
