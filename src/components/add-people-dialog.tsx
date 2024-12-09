@@ -86,9 +86,9 @@ export function AddPeopleDialog({
   }
 
   const handleAddUsers = (addrole: string) => {
-    selectedUsers.forEach((user) => {
+    selectedUsers.forEach(async(user) => {
       try {
-          const response = fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=${role}&project_name=${projectName}&user_id=${user.id}`, {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=${role}&project_name=${projectName}&user_id=${user.id}`, {
               method: "POST",
               headers: {
                   "Content-Type": "application/json",
@@ -96,6 +96,7 @@ export function AddPeopleDialog({
               },
               
               })
+          if (!response.ok) throw new Error("Failed to add users")
       }
       catch (error) {
           console.error("Error adding users:", error)
