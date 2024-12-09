@@ -36,8 +36,13 @@ export const AuthProvider = ({ children }) => {
    */
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken"); // 从 localStorage 获取存储的 token
+    const storedUsername = localStorage.getItem("username"); // 获取存储的 username
     if (storedToken) {
       setToken(storedToken); // 设置 token 状态
+      setUser(prevUser => ({
+        ...prevUser,
+        username: storedUsername, // 恢复 username
+      }));
       fetchUserInfo(storedToken); // 使用 token 获取用户信息
     }
   }, []); // 只在组件挂载时执行一次
@@ -102,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       username,         // 设置新的 username
     }));
     localStorage.setItem("authToken", authToken); // 将 token 存储到 localStorage
+    localStorage.setItem("username", username);  // 存储 username
     fetchUserInfo(authToken); // 使用 token 获取用户信息
     // setUser({ username }); // 将 username 存储到 user 中
   };
@@ -114,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null); // 清除 token 状态
     setUser(null); // 清除用户信息状态
     localStorage.removeItem("authToken"); // 从 localStorage 中移除 token
+    localStorage.removeItem("username"); // 从 localStorage 中移除 username
   };
 
   return (
