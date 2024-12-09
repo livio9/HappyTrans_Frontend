@@ -1,262 +1,412 @@
+"use client"
 import * as React from "react"
+import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarDays, Mail, MapPin, MessageCircle, Star, ImportIcon as Translate, User, Globe, Briefcase, Award, TrendingUp } from 'lucide-react'
+import { User, Globe, Briefcase } from 'lucide-react'
 
-type Language = {
-  name: string
-  proficiency: "Native" | "Fluent" | "Advanced" | "Intermediate" | "Beginner"
-}
+// 定义语言选项
+const languageOptions = [
+  { code: "en", name: "English" },
+  { code: "zh-hans", name: "简体中文" },
+  { code: "zh-hant", name: "繁體中文" },
+  { code: "es", name: "Español" },
+  { code: "fr", name: "Français" },
+  { code: "de", name: "Deutsch" },
+  { code: "it", name: "Italiano" },
+  { code: "ja", name: "日本語" },
+  { code: "ko", name: "한국어" },
+  { code: "ru", name: "Русский" },
+  { code: "ar", name: "العربية" },
+  { code: "pt", name: "Português" },
+  { code: "hi", name: "हिन्दी" },
+  { code: "tr", name: "Türkçe" },
+  { code: "pl", name: "Polski" },
+  { code: "nl", name: "Nederlands" },
+  { code: "sv", name: "Svenska" },
+  { code: "no", name: "Norsk" },
+  { code: "da", name: "Dansk" },
+]
 
-type UserBadge = {
+// 定义项目和用户资料的数据类型
+type Project = {
+  id: number
   name: string
   description: string
-  color: "default" | "secondary" | "destructive" | "outline"
 }
 
-type UserProfile = {
-  id: string
-  avatar: string
-  nickname: string
-  fullName: string
-  email: string
-  location: string
-  joinDate: string
-  contributionValue: number
-  badges: UserBadge[]
+type ProfileData = {
+  id: number
+  role: string
   bio: string
-  translatedEntries: number
-  commentsPosted: number
-  projectsContributed: number
-  languages: Language[]
-  specializations: string[]
-  topContributedProjects: { name: string; entries: number }[]
-  recentActivity: { action: string; date: string }[]
-  qualityScore: number
-}
-
-const userProfile: UserProfile = {
-  id: "user123",
-  avatar: "/placeholder.svg?height=128&width=128",
-  nickname: "TranslationPro",
-  fullName: "Alex Johnson",
-  email: "alex.johnson@example.com",
-  location: "San Francisco, CA",
-  joinDate: "2022-03-15",
-  contributionValue: 1250,
-  badges: [
-    { name: "Top Contributor", description: "Awarded to users in the top 1% of contributors", color: "default" },
-    { name: "Language Expert", description: "Certified expert in multiple languages", color: "secondary" },
-    { name: "Community Leader", description: "Recognized for outstanding community support", color: "destructive" },
-    { name: "Quality Champion", description: "Consistently high translation quality scores", color: "outline" },
-  ],
-  bio: "Passionate about breaking language barriers and connecting cultures through translation. Specializing in technical and medical translations with 5+ years of experience.",
-  translatedEntries: 500,
-  commentsPosted: 75,
-  projectsContributed: 12,
-  languages: [
-    { name: "English", proficiency: "Native" },
-    { name: "Spanish", proficiency: "Fluent" },
-    { name: "French", proficiency: "Advanced" },
-    { name: "German", proficiency: "Intermediate" },
-  ],
-  specializations: ["Technical Documentation", "Medical", "Legal", "Software Localization"],
-  topContributedProjects: [
-    { name: "Medical Handbook Translation", entries: 150 },
-    { name: "Tech Startup Website Localization", entries: 120 },
-    { name: "Legal Document Translation", entries: 80 },
-  ],
-  recentActivity: [
-    { action: "Translated 20 entries in 'Software UI Project'", date: "2023-05-18" },
-    { action: "Reviewed 15 translations in 'Marketing Campaign'", date: "2023-05-17" },
-    { action: "Commented on 5 discussions in 'Terminology Forum'", date: "2023-05-16" },
-  ],
-  qualityScore: 98.5,
-}
-
-function getBadgeLevel(contributionValue: number): string {
-  if (contributionValue >= 1000) return "Gold"
-  if (contributionValue >= 500) return "Silver"
-  return "Bronze"
+  native_language: string
+  preferred_languages: string[] | null
+  accepted_entries: number
+  managed_projects: Project[]
+  translated_projects: Project[]
 }
 
 export default function UserProfile() {
-  const badgeLevel = getBadgeLevel(userProfile.contributionValue)
+  const [profileData, setProfileData] = useState<ProfileData | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+
+  // 编辑时的临时状态
+  const [editBio, setEditBio] = useState("")
+  const [editNativeLanguage, setEditNativeLanguage] = useState("")
+  const [editPreferredLanguages, setEditPreferredLanguages] = useState<string[]>([])
+
+  // 错误消息状态
+  const [errorMessage, setErrorMessage] = useState("")
+
+  // 定义有效的语言代码列表
+  const validLanguageCodes = languageOptions.map(lang => lang.code.toLowerCase())
+
+  useEffect(() => {
+    const authToken = localStorage.getItem("authToken") || ""
+    if (!authToken) {
+      console.error("No authentication token found.")
+      setErrorMessage("认证信息丢失，请重新登录。")
+      return
+    }
+
+    // 获取用户资料
+    fetch("http://localhost:8000/profile", {
+      method: "GET",
+      credentials: "include", // 包含Cookies
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${authToken}`, // 使用Token进行认证
+      },
+    })
+      .then(async res => {
+        if (!res.ok) {
+          const contentType = res.headers.get("Content-Type")
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json()
+            throw new Error(errorData.error || '未知错误')
+          } else {
+            const text = await res.text()
+            throw new Error(`意外的响应格式: ${text}`)
+          }
+        }
+        return res.json()
+      })
+      .then(data => {
+        setProfileData(data)
+        setEditBio(data.bio || "")
+        setEditNativeLanguage(data.native_language || "")
+        setEditPreferredLanguages(data.preferred_languages || [])
+        setErrorMessage("") // 清除任何之前的错误消息
+      })
+      .catch(err => {
+        console.error("Error fetching profile:", err)
+        setErrorMessage(err.message || "获取用户资料时出错")
+      })
+  }, [])
+
+  const handleEdit = () => {
+    setIsEditing(true)
+    setErrorMessage("") // 清除错误消息
+  }
+
+  const handleCancel = () => {
+    if (profileData) {
+      setEditBio(profileData.bio || "")
+      setEditNativeLanguage(profileData.native_language || "")
+      setEditPreferredLanguages(profileData.preferred_languages || [])
+    }
+    setIsEditing(false)
+    setErrorMessage("") // 清除错误消息
+  }
+
+  const handleSave = () => {
+    if (!profileData) return
+
+    // 前端验证
+    const nativeLangValid = validLanguageCodes.includes(editNativeLanguage.toLowerCase())
+    const preferredLangsValid = editPreferredLanguages.every(lang => validLanguageCodes.includes(lang.toLowerCase()))
+
+    if (!nativeLangValid || !preferredLangsValid) {
+      setErrorMessage("请输入规范的偏好语言格式，例如：“en,zh-hans”。")
+      // 重置输入字段为之前的有效状态
+      setEditBio(profileData.bio || "")
+      setEditNativeLanguage(profileData.native_language || "")
+      setEditPreferredLanguages(profileData.preferred_languages || [])
+      return // 不发送请求到后端
+    }
+
+    const updatedData = {
+      bio: editBio,
+      native_language: editNativeLanguage.toLowerCase(),
+      preferred_languages: editPreferredLanguages.map(lang => lang.toLowerCase()),
+    }
+
+    const authToken = localStorage.getItem("authToken") || ""
+    if (!authToken) {
+      console.error("No authentication token found.")
+      setErrorMessage("认证信息丢失，请重新登录。")
+      return
+    }
+
+    // 发送PUT请求更新用户资料
+    fetch("http://localhost:8000/profile", {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${authToken}`,
+      },
+      body: JSON.stringify(updatedData),
+    })
+      .then(async res => {
+        if (!res.ok) {
+          const contentType = res.headers.get("Content-Type")
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await res.json()
+            throw new Error(errorData.error || "未知错误")
+          } else {
+            const text = await res.text()
+            throw new Error(`意外的响应格式: ${text}`)
+          }
+        }
+        return res.json()
+      })
+      .then(data => {
+        setProfileData(data)
+        setIsEditing(false)
+        setErrorMessage("") // 清除任何错误消息
+      })
+      .catch(err => {
+        console.error("Update failed:", err)
+        setErrorMessage("保存失败: " + (err.message || "未知错误"))
+        // 重置输入字段为之前的有效状态
+        if (profileData) {
+          setEditBio(profileData.bio || "")
+          setEditNativeLanguage(profileData.native_language || "")
+          setEditPreferredLanguages(profileData.preferred_languages || [])
+        }
+      })
+  }
+
+  if (!profileData) {
+    return <div className="container mx-auto p-4">加载中...</div>
+  }
+
+  // 处理头像占位
+  const displayName = `User${profileData.id}`
+  const avatarSrc = "/placeholder.svg?height=128&width=128"
+  
+  // 处理进度条
+  function getAcceptedEntriesLevel(entries: number) {
+    if (entries < 50) {
+      return { level: "0 - Bronze Medal", color: "bg-yellow-600" };
+    } else if (entries < 200) {
+      return { level: "1 - Silver Medal", color: "bg-gray-400" };
+    } else if (entries < 500) {
+      return { level: "2 - Gold Medal", color: "bg-yellow-500" };
+    } else {
+      return { level: "3 - Diamond Medal", color: "bg-blue-600" };
+    }
+  }
+
+  // 显示角色badge
+  function getRoleBadge() {
+    return <Badge variant="secondary"></Badge>
+  }
+
+  // 根据 accepted_entries 显示不同的徽章
+  function getAcceptedEntriesBadge(entries: number) {
+    if (entries < 50) {
+      return <Badge className="bg-yellow-600 text-white">Bronze</Badge>
+    } else if (entries < 200) {
+      return <Badge className="bg-gray-400 text-white">Silver</Badge>
+    } else if (entries < 500) {
+      return <Badge className="bg-yellow-500 text-white">Gold</Badge>
+    } else {
+      return <Badge className="bg-purple-600 text-white">Diamond</Badge>
+    }
+  }
 
   return (
     <div className="container mx-auto p-4">
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="w-24 h-24">
-            <AvatarImage src={userProfile.avatar} alt={userProfile.nickname} />
-            <AvatarFallback>{userProfile.nickname.slice(0, 2).toUpperCase()}</AvatarFallback>
+            <AvatarImage src={avatarSrc} alt={displayName} />
+            <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-2xl">{userProfile.nickname}</CardTitle>
-                <CardDescription>{userProfile.fullName}</CardDescription>
-                <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {userProfile.location}
+                <CardTitle className="text-2xl">{displayName}</CardTitle>
+                <CardDescription>User ID: {profileData.id}</CardDescription>
+                <div className="flex items-center mt-2 text-sm text-muted-foreground space-x-2">
+                 <span>{getAcceptedEntriesBadge(profileData.accepted_entries)}</span>
                 </div>
               </div>
-              <Badge variant="secondary" className="text-lg">
-                {badgeLevel} Translator
-              </Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* 显示错误消息 */}
+          {errorMessage && (
+            <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+              {errorMessage}
+            </div>
+          )}
+
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="languages">Languages</TabsTrigger>
-              <TabsTrigger value="badges">Badges</TabsTrigger>
+              <TabsTrigger value="contributions">Contributions</TabsTrigger>
+              <TabsTrigger value="projects">Projects</TabsTrigger>
             </TabsList>
+
+            {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-4">
               <div className="grid gap-4">
-                <div className="flex items-center">
+                <div className="flex items-center mb-2">
                   <User className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Bio:</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{userProfile.bio}</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Email:</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{userProfile.email}</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <CalendarDays className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Joined:</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(userProfile.joinDate).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Briefcase className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Specializations:</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {userProfile.specializations.map((spec, index) => (
-                    <Badge key={index} variant="outline">{spec}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Recent Activity:</span>
-                </div>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  {userProfile.recentActivity.map((activity, index) => (
-                    <li key={index}>
-                      {activity.action} - {new Date(activity.date).toLocaleDateString()}
-                    </li>
-                  ))}
-                </ul>
+                {isEditing ? (
+                  <textarea
+                    className="border border-gray-300 p-2 rounded text-sm w-full"
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{profileData.bio}</p>
+                )}
               </div>
             </TabsContent>
+
+            {/* Languages Tab */}
+            <TabsContent value="languages" className="space-y-4">
+              <div className="grid gap-4">
+                {/* Native Language */}
+                <div className="flex items-center mb-2">
+                  <Globe className="w-4 h-4 mr-2" />
+                  <span className="text-sm font-medium">Native Language:</span>
+                </div>
+                {isEditing ? (
+                  <select
+                    className="border border-gray-300 p-2 rounded text-sm w-full"
+                    value={editNativeLanguage}
+                    onChange={(e) => setEditNativeLanguage(e.target.value)}
+                  >
+                    <option value="">Select a language</option>
+                    {languageOptions.map(lang => (
+                      <option key={lang.code} value={lang.code}>
+                        {`${lang.code} - ${lang.name}`}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {languageOptions.find(lang => lang.code === profileData.native_language)?.name || profileData.native_language}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-4">
+                {/* Preferred Languages */}
+                <div className="flex items-center mb-2">
+                  <Globe className="w-4 h-4 mr-2" />
+                  <span className="text-sm font-medium">Preferred Languages:</span>
+                </div>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    className="border border-gray-300 p-2 rounded text-sm w-full"
+                    placeholder="Use comma to separate multiple languages"
+                    value={editPreferredLanguages.join(", ")}
+                    onChange={(e) => setEditPreferredLanguages(e.target.value.split(",").map(s => s.trim()))}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {profileData.preferred_languages && profileData.preferred_languages.length > 0
+                      ? profileData.preferred_languages.map(code => {
+                          const lang = languageOptions.find(lang => lang.code === code)
+                          return lang ? lang.name : code
+                        }).join(", ")
+                      : "None"}
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Contributions Tab */}
             <TabsContent value="contributions" className="space-y-4">
               <div className="grid gap-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Contribution Value:</span>
-                  <span className="text-sm font-medium">{userProfile.contributionValue}</span>
+                  <span className="text-sm font-medium">Accepted Entries:</span>
+                  <span className="text-sm font-medium">{profileData.accepted_entries}</span>
                 </div>
-                <Progress value={(userProfile.contributionValue / 1500) * 100} className="w-full" />
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Translate className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Translated Entries:</span>
+
+                {/* 进度条 */}
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                  <div
+                    className={`h-2.5 rounded-full ${getAcceptedEntriesLevel(profileData.accepted_entries).color}`}
+                    style={{ width: `${(profileData.accepted_entries / 5000) * 100}%` }}
+                  />
                 </div>
-                <p className="text-sm text-muted-foreground">{userProfile.translatedEntries}</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Comments Posted:</span>
+
+                {/* Level 和 Level 信息 */}
+                <div className="flex justify-end items-center">
+                  <span className="text-sm font-medium mr-2">Level:</span>
+                  <span className="text-sm font-medium">
+                    {getAcceptedEntriesLevel(profileData.accepted_entries).level}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{userProfile.commentsPosted}</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Projects Contributed:</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{userProfile.projectsContributed}</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Award className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Quality Score:</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{userProfile.qualityScore}%</p>
-              </div>
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Star className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Top Contributed Projects:</span>
-                </div>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  {userProfile.topContributedProjects.map((project, index) => (
-                    <li key={index}>
-                      {project.name} - {project.entries} entries
-                    </li>
-                  ))}
-                </ul>
               </div>
             </TabsContent>
-            <TabsContent value="languages" className="space-y-4">
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <Globe className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Languages:</span>
-                </div>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  {userProfile.languages.map((lang, index) => (
-                    <li key={index} className="flex justify-between">
-                      <span>{lang.name}</span>
-                      <Badge variant="outline">{lang.proficiency}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </TabsContent>
-            <TabsContent value="badges" className="space-y-4">
-              <div className="grid gap-4">
-                <div className="flex items-center">
-                  <span className="text-sm font-medium mr-2">Overall Badge:</span>
-                  <Badge variant="secondary">{badgeLevel}</Badge>
-                </div>
-              </div>
-              <div className="grid gap-4">
-                <span className="text-sm font-medium">Earned Badges:</span>
-                <div className="space-y-2">
-                  {userProfile.badges.map((badge, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Badge variant={badge.color}>{badge.name}</Badge>
-                      <span className="text-sm text-muted-foreground">{badge.description}</span>
+
+            {/* Projects Tab */}
+            <TabsContent value="projects" className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">To translate:</h3>
+                {profileData.managed_projects.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No projects are waiting for translation yet.</p>
+                ) : (
+                  profileData.managed_projects.map(project => (
+                    <div key={project.id} className="flex items-center justify-between">
+                      <span className="text-sm">{project.name}</span>
+                      <span className="text-sm text-muted-foreground">{project.description}</span>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">In progress:</h3>
+                {profileData.translated_projects.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No projects are being translated yet.</p>
+                ) : (
+                  profileData.translated_projects.map(project => (
+                    <div key={project.id} className="flex items-center justify-between">
+                      <span className="text-sm">{project.name}</span>
+                      <span className="text-sm text-muted-foreground">{project.description}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
         <CardFooter>
-          <Button variant="outline" className="w-full">Edit Profile</Button>
+          {isEditing ? (
+            <div className="flex gap-4">
+              <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+              <Button onClick={handleSave}>Save</Button>
+            </div>
+          ) : (
+            <Button onClick={handleEdit}>Edit Profile</Button>
+          )}
         </CardFooter>
       </Card>
     </div>
