@@ -127,11 +127,13 @@ export default function Projects() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // 使用认证令牌
         },
       });
       
       if (response.ok) {
         const data: Project[] = await response.json(); // 解析响应数据
+        console.log("data", data)
         const validatedData = data.filter((project) => typeof project.name === "string");
         setProjects(validatedData);
       } else {
@@ -423,7 +425,7 @@ export default function Projects() {
         {/* 搜索框 */}
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" /> {/* 搜索图标 */}
-          <Input type="text" placeholder="搜索项目..." className="pl-8 pr-4 w-64" />
+          <Input type="text" placeholder="Search Project..." className="pl-8 pr-4 w-64" />
         </div>
         {isAdmin && ( // 如果用户是管理员，显示创建项目按钮
           <Button onClick={() => setIsCreateDialogOpen(true)}>
