@@ -380,8 +380,67 @@ export default function TranslationInterface() {
   //总页数
   const totalPages = Math.ceil(strings[currentIndex]?.msgstr.length / itemsPerPage);
 
+  /**
+ * 跳转到项目页面
+ */
+  const handleProjectNavigation = () => {
+    router.push("/projects");
+  };
+  /**
+   * 跳转到语言版本
+   */
+  const handleProjectLanguage = () => {
+    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+  };
+  /**
+   * 跳转到词条页面
+   */
+  const handleProjectEntries = () => {
+    router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+      {/* 项目导航面包屑 */}
+      <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+        {/* Projects按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectNavigation}
+          className="text-gray-800 font-semibold"
+        >
+          Projects
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectLanguage} 
+          className="text-gray-800 font-semibold"
+        >
+          {projectName}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目语言按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectEntries}
+          className="text-gray-800 font-semibold"
+        >
+          {languageCode}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目词条按钮 */}
+        <Button
+          variant="link"
+          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+        >
+          entries
+        </Button>
+      </div>
       <header className="bg-white dark:bg-gray-800 shadow p-4"> {/* 页头，包括项目名称，语言项和跳转按钮等等 */}
         <div className="text-sm text-gray-600 dark:text-gray-400">{projectName}  / {languageCode} / Translate</div>
         <div className="flex items-center justify-between mt-2">

@@ -88,13 +88,36 @@ export default function LanguageVersions() {
         router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
     };
 
+    /**
+    * 跳转到项目页面
+    */
+    const handleProjectNavigation = () => {
+        router.push("/projects");
+    };
+
     return (
         <div className="container mx-auto p-4">
-            {/* 返回按钮 */}
-            <Button variant="ghost" onClick={() => router.back()} className="mb-4">
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back to the project
-            </Button>
+            {/* 项目导航面包屑 */}
+            <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+                {/* Projects按钮 */}
+                <Button
+                    variant="link"
+                    onClick={handleProjectNavigation}
+                    className="text-gray-800 font-semibold"
+                >
+                    Projects
+                </Button>
+                {/* 分隔符 */}
+                <span className="text-gray-400">/</span>
+                {/* 当前项目按钮 */}
+                <Button
+                    variant="link"
+                    className="text-blue-500 hover:text-blue-700 focus:outline-none"
+                >
+                    {projectName}
+                </Button>
+            </div>
+
 
             {/* 项目标题 */}
             <h1 className="text-2xl font-bold mb-6">Language Versions - {projectName}</h1>

@@ -302,8 +302,51 @@ export default function ProjectDetails() {
     );
   }
 
+  /**
+   * 跳转到项目页面
+   */
+  const handleProjectNavigation = () => {
+    router.push("/projects");
+  };
+  /**
+   * 跳转到语言版本
+   */
+  const handleProjectLanguage = () => {
+    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);  // 跳转到语言版本页面
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-8">
+      {/* 项目导航面包屑 */}
+      <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+        {/* Projects按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectNavigation}
+          className="text-gray-800 font-semibold"
+        >
+          Projects
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectLanguage}
+          className="text-gray-800 font-semibold"
+        >
+          {projectName}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目语言按钮 */}
+        <Button
+          variant="link"
+          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+        >
+          {languageCode}
+        </Button>
+      </div>
       {/* 项目信息部分 */}
       <Card className="w-full">
         <CardHeader> {/* 项目标题和描述 */}
