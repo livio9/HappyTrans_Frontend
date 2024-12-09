@@ -4,13 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Trash2, UserPlus } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { AddPeopleDialog } from "./add-people-dialog"
 import { useAuth } from "@/context/AuthContext"
 
@@ -166,6 +159,7 @@ export function CollaboratorList({
               aria-label="Select all"
             />
             <Button
+              type="button"
               variant="ghost"
               size="icon"
               onClick={() => handleRemoveSelectedCollaborator()}
@@ -196,6 +190,7 @@ export function CollaboratorList({
                 </div>
               </div>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 onClick={() => handleRemoveCollaborator(collaborator.id)}
