@@ -134,6 +134,12 @@ export default function Projects() {
   const [createdProjectName, setCreatedProjectName] = useState(""); // 创建的项目名称
   const [projectFilterTerm, setProjectFilterTerm] = useState(""); // 项目过滤条件
 
+  // 管理项目的状态
+  const [manSearchTerm, setManSearchTerm] = useState(""); // 管理者搜索关键字
+  const [tranSearchTerm, setTranSearchTerm] = useState(""); // 翻译者搜索关键字
+  const [managers, setManagers] = useState<User[]>([]); // 管理者列表
+  const [translators, setTranslators] = useState<User[]>([]); // 翻译者列表
+
   // 在组件内部定义编辑项目的状态
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -555,6 +561,41 @@ export default function Projects() {
       alert("无法启动翻译工作，请稍后再试。"); // 提示用户错误信息
     }
   };
+
+  /**
+   * 获取用户列表的函数
+   * @param {string}
+   */
+     // 获取用户列表
+  const fetchUsers = async (role: string, search = "") => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${search}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${localStorage.getItem("authToken")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (role === "manager") {
+        setManagers(data.results || []);
+      } else {
+        setTranslators(data.results || []);
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   /**
    * 实现分页功能的函数

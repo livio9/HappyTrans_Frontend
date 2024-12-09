@@ -84,7 +84,6 @@ export function AddPeopleDialog({
   }
 
   const handleAddUsers = (addrole: string) => {
-    const role = addrole === "manager" ? "managers" : "translators"
     selectedUsers.forEach((user) => {
       try {
           const response = fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=${role}&project_name=${projectName}&user_id=${user.id}`, {
