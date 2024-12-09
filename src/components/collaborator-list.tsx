@@ -24,13 +24,11 @@ interface User {
 interface CollaboratorListProps {
   type: "managers" | "translators"
   projectName: string
-  onRemove: (id: string) => void
 }
 
 export function CollaboratorList({
   type,
   projectName,
-  onRemove,
 }: CollaboratorListProps) {
   const { token } = useAuth()
   const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set())
@@ -110,6 +108,27 @@ export function CollaboratorList({
     }
   }
 
+  const handleRemoveSelectedCollaborator = async () => {
+    selectedIds.forEach(async (id) => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-project-group-user?group=${type}&project_name=${projectName}&user_id=${id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+        })
+        if (!response.ok) throw new Error("Failed to remove collaborator")
+
+        setCollaborators((prev) => prev.filter((c) => c.id !== id))
+        setShouldFetch(true);  // 设置标记，触发 useEffect 请求
+      } catch (error) {
+        console.error(error)
+      }
+    })
+    setSelectedIds(new Set())
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -140,11 +159,21 @@ export function CollaboratorList({
 
       <div className="rounded-md border">
         <div className="border-b p-4">
-          <Checkbox
-            checked={selectedIds.size === filteredCollaborators.length}
-            onCheckedChange={handleSelectAll}
-            aria-label="Select all"
-          />
+          <div className="flex justify-between items-center">
+            <Checkbox
+              checked={selectedIds.size === filteredCollaborators.length}
+              onCheckedChange={handleSelectAll}
+              aria-label="Select all"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleRemoveSelectedCollaborator()}
+              className="ml-auto text-muted-foreground hover:text-foreground"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="max-h-30 overflow-y-auto">
           {filteredCollaborators.map((collaborator) => (
