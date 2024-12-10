@@ -91,7 +91,14 @@ const SettingsPage: React.FC = () => {
 
         // 设置语言设置
         setPrimaryLanguage(data.native_language || "");
-        setSecondaryLanguages(data.preferred_languages.join(", ") || "");
+        
+        // 检查并设置默认偏好语言
+        if (data.preferred_languages && data.preferred_languages.length > 0) {
+          setSecondaryLanguages(data.preferred_languages.join(", ") || "");
+        } else {
+          // 如果没有偏好语言，默认设置为 "en"
+          setSecondaryLanguages("en");
+        }
 
         setErrorMessage("");
       })
@@ -244,42 +251,43 @@ const SettingsPage: React.FC = () => {
         <CardContent className="space-y-4">
           {/* 母语选择框 */}
           <div className="space-y-2">
-          <Label htmlFor="native-language">Native Language</Label>
-        <select
-          id="native-language"
-          value={primaryLanguage}
-          onChange={(e) => setPrimaryLanguage(e.target.value)}
-          className="w-full p-2 border rounded"
-        >
-          {languageOptions.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.name}
-            </option>
-          ))}
-        </select>
-      </div>
+            <Label htmlFor="native-language">Native Language</Label>
+            <select
+              id="native-language"
+              value={primaryLanguage}
+              onChange={(e) => setPrimaryLanguage(e.target.value)}
+              className="w-full p-2 border rounded"
+            >
+              {languageOptions.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* 偏好语言输入框 */}
-      <div className="space-y-2">
-        <Label htmlFor="preferred-languages">Preferred Languages</Label>
-        <Input
-          id="preferred-languages"
-          type="text"
-          value={secondaryLanguages}
-          onChange={(e) => setSecondaryLanguages(e.target.value)}
-          placeholder="Use comma to separate multiple languages"
-        />
-        {languageError && <p className="text-red-500 text-sm">{languageError}</p>}
-        {languageSuccessMessage && <p className="text-green-500 text-sm">{languageSuccessMessage}</p>}
-      </div>
+          {/* 偏好语言输入框 */}
+          <div className="space-y-2">
+            <Label htmlFor="preferred-languages">Preferred Languages</Label>
+            <Input
+              id="preferred-languages"
+              type="text"
+              value={secondaryLanguages}
+              onChange={(e) => setSecondaryLanguages(e.target.value)}
+              placeholder="Use comma to separate multiple languages"
+            />
+            {languageError && <p className="text-red-500 text-sm">{languageError}</p>}
+            {languageSuccessMessage && <p className="text-green-500 text-sm">{languageSuccessMessage}</p>}
+          </div>
 
-      {/* 保存按钮 */}
-      <Button onClick={handleSaveLanguages} disabled={isLanguageSaving}>
-        {isLanguageSaving ? "Saving..." : "Save Languages"}
-      </Button>
-    </CardContent>
-  </Card>
-</div>
-); };
+          {/* 保存按钮 */}
+          <Button onClick={handleSaveLanguages} disabled={isLanguageSaving}>
+            {isLanguageSaving ? "Saving..." : "Save Languages"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 export default SettingsPage;
