@@ -179,6 +179,16 @@ export default function LanguageVersions() {
             </div>
 
 
+            {/* Community按钮（放在项目标题下方） */}
+            <div className="mb-6">
+                <Button
+                    onClick={handleCommunityNavigation}
+                    className="text-white bg-blue-500 hover:bg-blue-700"
+                >
+                    Go to Community
+                </Button>
+            </div>
+
             {/* 加载状态显示 */}
             {loading ? (
                 <p>Loading language versions...</p>
