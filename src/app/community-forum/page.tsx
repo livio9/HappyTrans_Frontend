@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"; // 导入输入框组件
 import { Textarea } from "@/components/ui/textarea"; // 导入多行文本框组件
 import { Badge } from "@/components/ui/badge"; // 导入徽章组件
 import { MessageCircle, ThumbsUp, Eye } from "lucide-react"; // 导入图标组件
+import { useSearchParams, useRouter } from "next/navigation"; 
+import { useProject } from "@/context/ProjectContext";
 
 // 定义用户类型
 type User = {
@@ -113,6 +115,9 @@ export default function CommunityForum() {
   const [replyingTo, setReplyingTo] = React.useState<{ commentId: string; replyId: string | null } | null>(null); // 当前正在回复的评论或回复的状态
   const [newReply, setNewReply] = React.useState(""); // 新回复内容的状态
   const [expandedComments, setExpandedComments] = React.useState<Set<string>>(new Set()); // 展开评论的ID集合
+  const router = useRouter(); // 使用路由钩子跳转页面
+  const { getProjectName } = useProject();
+  const projectName = getProjectName(); // 获取项目名称
 
   // 切换评论的展开状态
   const toggleCommentExpansion = (commentId: string) => {
@@ -142,8 +147,56 @@ export default function CommunityForum() {
     setReplyingTo(null); // 清除正在回复的状态
   };
 
+  /**
+   * 跳转到项目页面
+   */
+  const handleProjectNavigation = () => {
+    router.push("/projects");
+  };
+  /**
+   * 跳转到语言版本
+   */
+  const handleProjectLanguage = () => {
+    if (projectName) {
+      // 只有当 projectName 有值时，才会进行跳转
+      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+    } else {
+      console.error("Project name is missing");
+    }
+  };
+
   return (
     <div className="container mx-auto p-4">
+      {/* 项目导航面包屑 */}
+      <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+        {/* Projects按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectNavigation}
+          className="text-gray-800 font-semibold"
+        >
+          Projects
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectLanguage}
+          className="text-gray-800 font-semibold"
+        >
+          {projectName}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目语言按钮 */}
+        <Button
+          variant="link"
+          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+        >
+          Community Forum
+        </Button>
+      </div>
       <h1 className="text-2xl font-bold mb-4">Community Forum</h1> {/* 页面标题 */}
 
       {/* 创建新讨论的卡片 */}

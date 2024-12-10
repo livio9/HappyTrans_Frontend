@@ -312,8 +312,14 @@ export default function ProjectDetails() {
    * 跳转到语言版本
    */
   const handleProjectLanguage = () => {
-    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);  // 跳转到语言版本页面
+    if (projectName) {
+      // 只有当 projectName 有值时，才会进行跳转
+      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+    } else {
+      console.error("Project name is missing");
+    }
   };
+
 
   return (
     <div className="container mx-auto p-6 space-y-8">
