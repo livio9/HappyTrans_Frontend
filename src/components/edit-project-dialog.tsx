@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { CollaboratorList } from "./collaborator-list"
+import { on } from 'events'
 
 interface EditProjectDialogProps {
   isOpen: boolean
@@ -27,6 +28,8 @@ interface EditProjectDialogProps {
   projectName: string
   projectDescription: string
   projectLanguageCode: string
+  ispublic: boolean
+  onIsPublicChange: (value: boolean) => void
   languages: string[]
   onProjectNameChange: (value: string) => void
   onProjectDescriptionChange: (value: string) => void
@@ -40,6 +43,8 @@ export function EditProjectDialog({
   projectName,
   projectDescription,
   projectLanguageCode,
+  ispublic,
+  onIsPublicChange,
   languages,
   onProjectNameChange,
   onProjectDescriptionChange,
@@ -109,6 +114,25 @@ export function EditProjectDialog({
                       </SelectItem>
                     );
                   })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="is_public" className="text-right">
+                visibility
+              </Label>
+              <Select
+                value={ispublic.toString()}
+                onValueChange={(value) => onIsPublicChange(value === 'true')}
+                required
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Target Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">True</SelectItem>
+                  <SelectItem value="false">False</SelectItem>
                 </SelectContent>
               </Select>
             </div>
