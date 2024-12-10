@@ -45,15 +45,42 @@ import { Input } from "@/components/ui/input"; // 导入输入框组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 导入标签页组件
 import { Label } from "@/components/ui/label"; // 导入标签组件
 import { Textarea } from "@/components/ui/textarea"; // 导入多行文本输入框组件
+import { EditProjectDialog } from "@/components/edit-project-dialog";
 
 // 定义项目类型
 interface Project {
   name: string; // 项目名称
   description: string; // 项目描述
   source_language: string; // 源语言代码
+  create_at: string; // 创建日期
   language_code: string; // 目标语言代码
   po_file?: File; // 可选的 PO 文件
-  languages: { code: string; name: string }[]; // 目标语言列表
+  languages: {
+    language_code: string;
+    total_entries_count: number;
+    selected_entries_count: number;
+    selected_entries_ratio: number;
+  }[]; // 目标语言列表
+  overall_statistics: {
+    total_languages: number; // 总语言数
+    total_entries: number; // 总字符串数
+    total_selected_entries: number; // 已选择的字符串数
+    overall_selected_ratio: number; // 已选择的字符串比例
+  }
+  translators: {
+    id: number;
+    username: string;
+  }[]; // 翻译者列表
+  managers: {
+    id: number;
+    username: string;
+  }[]; // 项目管理员列表
+  is_public: boolean; // 是否为公共项目
+}
+
+interface User {
+  id: number;
+  username: string;
 }
 
 // 假设的语言列表，您可以根据实际情况从后端获取或定义在其他地方
@@ -109,6 +136,12 @@ export default function Projects() {
   const [newProjectSourceLanguage, setNewProjectSourceLanguage] = useState("en"); // 新项目源语言代码
   const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
   const [newProjectFile, setNewProjectFile] = useState<File | null>(null); // 新项目的 PO 文件
+
+  // 管理项目的状态
+  const [manSearchTerm, setManSearchTerm] = useState(""); // 管理者搜索关键字
+  const [tranSearchTerm, setTranSearchTerm] = useState(""); // 翻译者搜索关键字
+  const [managers, setManagers] = useState<User[]>([]); // 管理者列表
+  const [translators, setTranslators] = useState<User[]>([]); // 翻译者列表
 
   // 在组件内部定义编辑项目的状态
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -252,7 +285,7 @@ export default function Projects() {
     setEditingProject(project);
     setNewProjectName(project.name);
     setNewProjectDescription(project.description);
-    setNewProjectLanguageCode(project.languages[0]?.code || ""); // 默认选择第一个语言
+    setNewProjectLanguageCode(project.languages[0]?.language_code || ""); // 默认选择第一个语言
     setIsEditDialogOpen(true);
   };
 
@@ -273,6 +306,7 @@ export default function Projects() {
           name: newProjectName,
           description: newProjectDescription,
           language_code: newProjectLanguageCode,
+
         }),
       });
 
@@ -346,6 +380,9 @@ export default function Projects() {
     }
   };
 
+
+
+
   /**
    * 实现分页功能的函数
    */
@@ -415,6 +452,7 @@ export default function Projects() {
       </Card>
     );
   };
+
 
   return (
     <div className="container mx-auto p-4">
@@ -584,82 +622,18 @@ export default function Projects() {
         </DialogContent>
       </Dialog>
       {/* 编辑项目的对话框 */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
-            <DialogDescription>
-              Modify the project details below.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSaveProject();
-            }}
-          >
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project-name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Enter project name"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project-description" className="text-right">
-                  Description
-                </Label>
-                <Textarea
-                  value={newProjectDescription}
-                  onChange={(e) => setNewProjectDescription(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Enter project description"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="language-code" className="text-right">
-                  Target Language
-                </Label>
-                <Select
-                  value={newProjectLanguageCode}
-                  onValueChange={(value) => setNewProjectLanguageCode(value)}
-                  required
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Target Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang: string) => {
-                      const [name, code] = lang.split(" (");
-                      return (
-                        <SelectItem key={code} value={code.replace(")", "")}>
-                          {name}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Save</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <EditProjectDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        projectName={newProjectName}
+        projectDescription={newProjectDescription}
+        projectLanguageCode={newProjectLanguageCode}
+        languages={languages}
+        onProjectNameChange={setNewProjectName}
+        onProjectDescriptionChange={setNewProjectDescription}
+        onProjectLanguageCodeChange={setNewProjectLanguageCode}
+        onSave={handleSaveProject}
+      />
 
       {/* 删除项目确认对话框 */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
