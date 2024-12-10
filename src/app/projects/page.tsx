@@ -507,8 +507,22 @@ export default function Projects() {
           <TabsContent value="in-progress">
             {/* 翻译中项目网格（示例，可根据实际数据调整） */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* 这里可以添加翻译中项目的展示 */}
-              <p>There are no projects in translation.</p>
+              {paginatedProjects.map((project) => (
+                <ProjectCard key={project.name} project={project} />
+              ))}
+            </div>
+            {/* 分页导航 */}
+            <div className="flex justify-center mt-6 space-x-2">
+              {/* 页码按钮 */}
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "outline" : "ghost"} // 当前页码为主按钮
+                  onClick={() => goToPage(page)}
+                >
+                  {page} {/* 显示页码 */}
+                </Button>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
