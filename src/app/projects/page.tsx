@@ -134,6 +134,7 @@ export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]); // 项目列表
   const [loading, setLoading] = useState(true); // 加载状态
   const [newProjectSourceLanguage, setNewProjectSourceLanguage] = useState("en"); // 新项目源语言代码
+  const [newIsPublic, setNewIsPublic] = useState(false); // 新项目源语言代码
   const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
   const [newProjectFile, setNewProjectFile] = useState<File | null>(null); // 新项目的 PO 文件
 
@@ -240,6 +241,7 @@ export default function Projects() {
       formData.append("description", description);
       formData.append("language_code", newProjectLanguageCode);
       formData.append("source_language", newProjectSourceLanguage);
+      formData.append("is_public", newIsPublic.toString());
       formData.append("po_file", newProjectFile);
 
       const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
@@ -286,6 +288,7 @@ export default function Projects() {
     setNewProjectName(project.name);
     setNewProjectDescription(project.description);
     setNewProjectLanguageCode(project.languages[0]?.language_code || ""); // 默认选择第一个语言
+    setNewIsPublic(project.is_public);
     setIsEditDialogOpen(true);
   };
 
@@ -306,7 +309,7 @@ export default function Projects() {
           name: newProjectName,
           description: newProjectDescription,
           language_code: newProjectLanguageCode,
-
+          is_public: newIsPublic,
         }),
       });
 
@@ -595,6 +598,25 @@ export default function Projects() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* 设置是否公开 */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="source-language" className="text-right">
+                  Is Public
+                </Label>
+                <Select
+                  value={newIsPublic.toString()}
+                  onValueChange={(value) => setNewIsPublic(value === "true")}
+                  required // 设置为必填项
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Is Public" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="false">False</SelectItem>
+                    <SelectItem value="true">True</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {/* PO 文件上传 */}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="po-file" className="text-right">
@@ -629,6 +651,8 @@ export default function Projects() {
         projectDescription={newProjectDescription}
         projectLanguageCode={newProjectLanguageCode}
         languages={languages}
+        ispublic={newIsPublic}
+        onIsPublicChange={setNewIsPublic}
         onProjectNameChange={setNewProjectName}
         onProjectDescriptionChange={setNewProjectDescription}
         onProjectLanguageCodeChange={setNewProjectLanguageCode}
