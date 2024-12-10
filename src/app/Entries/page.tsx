@@ -312,7 +312,7 @@ export default function ProjectDetails() {
    * 跳转到语言版本
    */
   const handleProjectLanguage = () => {
-    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);  // 跳转到语言版本页面
+    router.push(`/language-versions?project=${encodeURIComponent(projectName || "")}`);  // 跳转到语言版本页面
   };
 
   return (
