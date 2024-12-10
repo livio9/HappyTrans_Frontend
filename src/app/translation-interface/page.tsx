@@ -98,6 +98,7 @@ export default function TranslationInterface() {
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
   const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
+  const [otherLanguagesEntry, setOtherLanguagesEntry] = useState<{ languageCode: string; entry: Entry }[]>([]); // 其他语言的词条
   const [currentTranslation, setCurrentTranslation] = useState<string>(""); // 当前文本框内容
 
   const [languageprocess, setLanguageProcess] = useState(0); // 进度条进度
@@ -161,7 +162,7 @@ export default function TranslationInterface() {
         fetchedEntries.current = true; // 防止再次请求
       }
 
-      // 获取当前词条数据
+      // 获取相邻词条数据
       const fetchEntryData = async () => { 
         console.log("Fetching entry data for idx_in_language:", currentIndex);
   
@@ -170,7 +171,7 @@ export default function TranslationInterface() {
             const response = await fetch(
               `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
                 projectName
-              )}&language_code=${encodeURIComponent(languageCode)}&index=${encodeURIComponent(
+              )}&index=${encodeURIComponent(
                 currentIndex
               )}`,
               {
@@ -191,7 +192,11 @@ export default function TranslationInterface() {
             const { previous, current, next } = data.entries; // 解构赋值
             console.log("successfuly fetched entry data");
             console.log("Previous, current, next entries:", { previous, current, next });
-  
+
+            const currentOtherLanguagesEntry = Object.entries(current).map(([languageCode, entry]) => ({ languageCode, entry }));
+            
+            setOtherLanguagesEntry(currentOtherLanguagesEntry); // 设置其他语言词条
+            console.log("Other languages entries:", otherLanguagesEntry);
             setNearbyStrings([ // 设置附近字符串
               previous?.[languageCode] || null,
               current[languageCode],
@@ -375,8 +380,67 @@ export default function TranslationInterface() {
   //总页数
   const totalPages = Math.ceil(strings[currentIndex]?.msgstr.length / itemsPerPage);
 
+  /**
+ * 跳转到项目页面
+ */
+  const handleProjectNavigation = () => {
+    router.push("/projects");
+  };
+  /**
+   * 跳转到语言版本
+   */
+  const handleProjectLanguage = () => {
+    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+  };
+  /**
+   * 跳转到词条页面
+   */
+  const handleProjectEntries = () => {
+    router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+      {/* 项目导航面包屑 */}
+      <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+        {/* Projects按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectNavigation}
+          className="text-gray-800 font-semibold"
+        >
+          Projects
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectLanguage} 
+          className="text-gray-800 font-semibold"
+        >
+          {projectName}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目语言按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectEntries}
+          className="text-gray-800 font-semibold"
+        >
+          {languageCode}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目词条按钮 */}
+        <Button
+          variant="link"
+          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+        >
+          entries
+        </Button>
+      </div>
       <header className="bg-white dark:bg-gray-800 shadow p-4"> {/* 页头，包括项目名称，语言项和跳转按钮等等 */}
         <div className="text-sm text-gray-600 dark:text-gray-400">{projectName}  / {languageCode} / Translate</div>
         <div className="flex items-center justify-between mt-2">
@@ -527,8 +591,34 @@ export default function TranslationInterface() {
               </tbody>
             </table>
           </TabsContent>
+
           <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
-          <TabsContent value="other">Other languages content</TabsContent> {/* 其他语言内容 */}
+
+          <TabsContent value="other">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="text-left">Language</th>
+                  <th className="text-left">Translation</th>
+                  <th className="text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {otherLanguagesEntry.map((entry, idx) => (
+                  <tr key={idx}>
+                    <td>{entry.languageCode}</td>
+                    <td>{entry.entry.selected_msgstr_index === -1 ? "(No translation yet)" : entry.entry.msgstr[entry.entry.selected_msgstr_index]?.msg || "No translation"} </td>
+                    <td>
+                      <Button variant="ghost" size="icon">
+                        <Copy className="h-4 w-4" /> {/* 复制图标 */}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TabsContent> {/* 其他语言内容 */}
+
           {/* 历史翻译结果 */}
           <TabsContent value="history">
             <table className="w-full text-sm">

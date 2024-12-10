@@ -48,8 +48,7 @@ export default function SignIn() {
 
             if (response.ok) {
                 // 响应码为200，代表成功登陆
-                
-                login(result.token); // 成功登录后调用 login 方法
+                login(result.token, formData.username); // 成功登录后调用 login 方法
                 setError("");//清空错误信息
                 // console.log(token);
                 router.push("/dashboard");// 使用router.push跳转到dashboard界面
