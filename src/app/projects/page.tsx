@@ -595,6 +595,7 @@ export default function Projects() {
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         projectName={newProjectName}
+        originalProjectName={editingProject?.name || ""}
         projectDescription={newProjectDescription}
         projectLanguageCode={newProjectLanguageCode}
         languages={languages}
