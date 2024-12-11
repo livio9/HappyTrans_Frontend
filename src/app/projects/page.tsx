@@ -76,6 +76,7 @@ interface Project {
     username: string;
   }[]; // 项目管理员列表
   is_public: boolean; // 是否为公共项目
+  is_managed: boolean; // 是否为管理员
 }
 
 interface User {
@@ -137,12 +138,11 @@ export default function Projects() {
   const [newIsPublic, setNewIsPublic] = useState(false); // 新项目源语言代码
   const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
   const [newProjectFile, setNewProjectFile] = useState<File | null>(null); // 新项目的 PO 文件
+  const [projectNameManaged, setProjectNameManaged] = useState<string[]>([]); // 要编辑的项目
+  const [projectNameTranslating, setProjectNameTranslating] = useState<string[]>([]); // 翻译中的项目
+  const [projectInProcess, setProjectInProcess] = useState<Project[]>([]); // 翻译中的项目
+  const [shouldFetchProjects, setShouldFetchProjects] = useState(false); // 是否应该获取项目列表
 
-  // 管理项目的状态
-  const [manSearchTerm, setManSearchTerm] = useState(""); // 管理者搜索关键字
-  const [tranSearchTerm, setTranSearchTerm] = useState(""); // 翻译者搜索关键字
-  const [managers, setManagers] = useState<User[]>([]); // 管理者列表
-  const [translators, setTranslators] = useState<User[]>([]); // 翻译者列表
 
   // 在组件内部定义编辑项目的状态
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -154,6 +154,31 @@ export default function Projects() {
   const [currentPage, setCurrentPage] = useState(1); // 当前页码
 
   // 获取项目列表的函数，使用 useCallback 以避免不必要的重新创建
+  const fetchProjectsInProcess = useCallback(async () => {
+    setLoading(true); // 设置加载状态为加载中
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?username=${user?.username}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // 使用认证令牌
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("data", data);
+        
+        setProjectNameManaged(data.managed_projects.map((project: { id: number, name: string, description: string }) => project.name));
+        setProjectNameTranslating(data.translated_projects.map((project: { id: number, name: string, description: string }) => project.name));
+      }
+    } catch (error) {
+      console.error("Error fetching projects in process:", error); // 捕获并打印错误
+    } finally {
+      setLoading(false); // 结束加载状态
+      setShouldFetchProjects(true);
+    }
+  }, [token, user?.username]);
+  
   const fetchProjects = useCallback(async () => {
     setLoading(true); // 设置加载状态为加载中
     try {
@@ -167,9 +192,30 @@ export default function Projects() {
       
       if (response.ok) {
         const data: Project[] = await response.json(); // 解析响应数据
-        console.log("data", data)
+        console.log("data", data);
         const validatedData = data.filter((project) => typeof project.name === "string");
         setProjects(validatedData);
+        // 筛选名字在 projectNameManaged 中的项目
+        console.log("projectNameManaged", projectNameManaged);
+        console.log("projectNameTranslating", projectNameTranslating);
+        
+        const ManagedProjects = validatedData.filter((project) =>
+          projectNameManaged.includes(project.name)
+        ).map((project) => ({
+          ...project,
+          is_managed: projectNameManaged.includes(project.name),
+        }));
+        const TranslatingProjects = validatedData.filter((project) =>
+          projectNameTranslating.includes(project.name) && !projectNameManaged.includes(project.name)
+        ).map((project) => ({
+          ...project,
+          is_managed: false,
+        }));
+  
+        // 使用 Set 防止重复项目
+        const allProjects = [...ManagedProjects, ...TranslatingProjects];
+        setProjectInProcess(allProjects);
+  
       } else {
         console.error("Failed to fetch projects"); // 打印错误日志
       }
@@ -177,14 +223,20 @@ export default function Projects() {
       console.error("Error fetching projects:", error); // 捕获并打印错误
     } finally {
       setLoading(false); // 结束加载状态
+      setShouldFetchProjects(false);
     }
-  }, [token]); 
-
+  }, [token, projectNameManaged, projectNameTranslating]);
+  
   // 组件挂载时获取项目列表
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
+    fetchProjectsInProcess();
+  }, [fetchProjectsInProcess]);
+  
+  useEffect(() => {
+    if (shouldFetchProjects) {
+      fetchProjects();
+    }
+  }, [fetchProjects, projectNameManaged, projectNameTranslating]);
   /**
    * 点击外部区域关闭下拉菜单的事件处理
    */
@@ -384,8 +436,6 @@ export default function Projects() {
   };
 
 
-
-
   /**
    * 实现分页功能的函数
    */
@@ -418,7 +468,7 @@ export default function Projects() {
    */
   const ProjectCard = ({ project }: { project: Project }) => {
     const { user } = useAuth(); // 使用认证上下文
-    const isAdmin = user?.role === "admin"; // 判断用户是否为管理员
+    const isAdmin = user?.role === "admin" || project.is_managed; // 判断用户是否为管理员
 
     return (
       <Card>
@@ -507,7 +557,7 @@ export default function Projects() {
           <TabsContent value="in-progress">
             {/* 翻译中项目网格（示例，可根据实际数据调整） */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {paginatedProjects.map((project) => (
+              {projectInProcess.map((project) => (
                 <ProjectCard key={project.name} project={project} />
               ))}
             </div>
