@@ -1,5 +1,4 @@
 import React from 'react'
-import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,13 +19,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { CollaboratorList } from "./collaborator-list"
+import { on } from 'events'
 
 interface EditProjectDialogProps {
+  isadmin: boolean
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   projectName: string
+  originalProjectName: string; // 新增原始项目名称
   projectDescription: string
   projectLanguageCode: string
+  ispublic: boolean
+  onIsPublicChange: (value: boolean) => void
   languages: string[]
   onProjectNameChange: (value: string) => void
   onProjectDescriptionChange: (value: string) => void
@@ -35,19 +39,21 @@ interface EditProjectDialogProps {
 }
 
 export function EditProjectDialog({
+  isadmin,
   isOpen,
   onOpenChange,
   projectName,
+  originalProjectName, // 接收原始项目名称
   projectDescription,
   projectLanguageCode,
+  ispublic,
+  onIsPublicChange,
   languages,
   onProjectNameChange,
   onProjectDescriptionChange,
   onProjectLanguageCodeChange,
   onSave,
 }: EditProjectDialogProps) {
-  const [newProjectName, setNewProjectName] = useState(""); // 新项目名称
-  const [newProjectDescription, setNewProjectDescription] = useState(""); // 新项目描述
   return (
     
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -113,15 +119,36 @@ export function EditProjectDialog({
               </Select>
             </div>
 
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="is_public" className="text-right">
+                visibility
+              </Label>
+              <Select
+                value={ispublic.toString()}
+                onValueChange={(value) => onIsPublicChange(value === 'true')}
+                required
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Target Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">True</SelectItem>
+                  <SelectItem value="false">False</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-6">
               <CollaboratorList
+                isadmin={isadmin}
                 type="managers"
-                projectName={projectName}
+                projectName={originalProjectName}
               />
 
               <CollaboratorList
+                isadmin={isadmin}
                 type="translators"
-                projectName={projectName}
+                projectName={originalProjectName}
               />
             </div>
           </div>
