@@ -293,7 +293,9 @@ const CommunityForumPage = () => {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+      router.push(
+        `/language-versions?project=${encodeURIComponent(projectName)}`
+      );
     } else {
       console.error("Project name is missing");
     }
