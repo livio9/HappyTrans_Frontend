@@ -24,6 +24,7 @@ import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
+
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
@@ -105,6 +106,9 @@ export default function TranslationInterface() {
 
   const [suggestions, setSuggestions] = React.useState<TranslationSuggestion[]>([]); // 翻译建议
   const [selectedSuggestion, setSelectedSuggestion] = React.useState(""); // 选定的翻译建议
+  const [isSuggestDialogOpen, setIsSuggestDialogOpen] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
 
 
 
@@ -307,20 +311,48 @@ export default function TranslationInterface() {
 // 关于翻译建议的处理，现在还会实现相关功能。
   // 处理翻译建议
   const handleSuggest = async () => {
-    // 模拟获取翻译建议
-    const mockSuggestions = [
-      { source: "DeepL", translation: "Administrator" },
-      { source: "Google Translate", translation: "Manager" },
-      { source: "ChatGPT", translation: "Supervisor" },
-    ];
-    setSuggestions(mockSuggestions);
-  };
-
-  const handleSelectSuggestion = () => { // 选择翻译建议
-    if (selectedSuggestion) {
-      setCurrentTranslation(selectedSuggestion);
+    setIsLoadingSuggestions(true);
+    try {
+      console.log("Fetching translation suggestions...");
+      console.log("Current index:", currentIndex);
+      console.log("Current string:", strings[currentIndex]?.msgid);
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: strings[currentIndex]?.msgid || '',
+          // text: "Hello, world!", // 传递源文本
+          targetLanguage: languageCode, // 根据需要调整目标语言，DeepL 需要大写
+          // targetLanguage: "zh-CHS", // 目标语言为中文
+        }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '获取翻译建议失败');
+      }
+  
+      const data = await response.json();
+  
+      setSuggestions(data.suggestions); // 设置多个翻译建议
+      setIsSuggestDialogOpen(true); // 打开 Dialog
+    } catch (error) {
+      console.error('获取翻译建议时出错:', error);
+    } finally {
+      setIsLoadingSuggestions(false);
     }
   };
+  
+  
+  const handleSelectSuggestion = () => {
+    if (selectedSuggestion) {
+      setCurrentTranslation(selectedSuggestion);
+      setIsSuggestDialogOpen(false);
+    }
+  };
+  
 
 
   // 管理员选择某一翻译作为最终结果
@@ -390,13 +422,13 @@ export default function TranslationInterface() {
    * 跳转到语言版本
    */
   const handleProjectLanguage = () => {
-    router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+    router.push(`/language-versions?project=${encodeURIComponent(projectName || "")}`);
   };
   /**
    * 跳转到词条页面
    */
   const handleProjectEntries = () => {
-    router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
+    router.push(`/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
   };
 
   return (
@@ -499,34 +531,39 @@ export default function TranslationInterface() {
             <Button variant="outline" onClick={handleSaveAndStay}> {/* 保存并停留 */}
               Save and Stay
             </Button>
-            {/* 翻译建议按钮 */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" >Suggest</Button> 
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Translation Suggestions</DialogTitle>
-                    <DialogDescription>
-                      Choose a translation suggestion from the options below.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
-                        {suggestions.map((suggestion, idx_in_language) => (
-                          <div key={idx_in_language} className="flex items-center space-x-2">
-                            <RadioGroupItem value={suggestion.translation} id={`suggestion-${idx_in_language}`} />
-                            <Label htmlFor={`suggestion-${idx_in_language}`}>
-                              <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
-                            </Label>
-                          </div>
-                        ))}
-                    </RadioGroup>
-                  </div>
-                  <Button>Use Selected Suggestion</Button>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline">Skip</Button>
+            
+            {/* 修改 Suggest 按钮，直接调用 handleSuggest */}
+            <Button variant="outline" onClick={handleSuggest} disabled={isLoadingSuggestions}>
+              {isLoadingSuggestions ? 'loading...' : 'Suggest'}
+            </Button>
+            {/* 翻译建议的 Dialog */}
+            <Dialog open={isSuggestDialogOpen} onOpenChange={setIsSuggestDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Translation suggestions</DialogTitle>
+                  <DialogDescription>
+                    Select a translation suggestion from the options below.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <RadioGroup value={selectedSuggestion} onValueChange={setSelectedSuggestion}>
+                    {suggestions.map((suggestion, idx) => (
+                      <div key={idx} className="flex items-center space-x-2">
+                        <RadioGroupItem value={suggestion.translation} id={`suggestion-${idx}`} />
+                        <Label htmlFor={`suggestion-${idx}`}>
+                          <span className="font-semibold">{suggestion.source}:</span> {suggestion.translation}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+                <Button onClick={handleSelectSuggestion} disabled={!selectedSuggestion}>
+                  Use of selected Suggestion
+                </Button>
+              </DialogContent>
+            </Dialog>
+
+              {/* <Button variant="outline">Skip</Button> */}
             </div>
           </div>
         </main>
@@ -737,6 +774,10 @@ export default function TranslationInterface() {
           </TabsContent>
         </Tabs>
       </footer>
+       
+      {/* 添加 ToastContainer */}
+      {/* <ToastContainer /> */}
+    
     </div>
   );
 }
