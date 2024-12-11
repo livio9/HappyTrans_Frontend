@@ -110,7 +110,7 @@ const languages = [
 
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
-  const value = `; ${document.cookie}`;
+  const value = `${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
     return parts.pop()?.split(";").shift() || null;
@@ -141,7 +141,8 @@ export default function Projects() {
   const [projectNameTranslating, setProjectNameTranslating] = useState<string[]>([]); // 翻译中的项目
   const [projectInProcess, setProjectInProcess] = useState<Project[]>([]); // 翻译中的项目
   const [shouldFetchProjects, setShouldFetchProjects] = useState(false); // 是否应该获取项目列表
-
+  const [shouldAddAdmin, setShouldAddAdmin] = useState(false); // 是否应该添加管理员
+  const [createdProjectName, setCreatedProjectName] = useState(""); // 创建的项目名称
 
   // 在组件内部定义编辑项目的状态
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -151,6 +152,7 @@ export default function Projects() {
 
   // 定义分页相关的状态
   const [currentPage, setCurrentPage] = useState(1); // 当前页码
+  const [currentPageInProcess, setCurrentPageInProcess] = useState(1); // 当前页码
 
   // 获取项目列表的函数，使用 useCallback 以避免不必要的重新创建
   const fetchProjectsInProcess = useCallback(async () => {
@@ -319,6 +321,9 @@ export default function Projects() {
         const newProject = await response.json(); // 解析响应数据
         setProjects((prevProjects) => [...prevProjects, newProject]); // 将新项目添加到项目列表
         setIsCreateDialogOpen(false); // 关闭创建项目对话框
+        setShouldAddAdmin(true); // 设置标记以添加管理员
+        console.log("Project created successfully:", projectData); // 打印成功日志
+        setCreatedProjectName(projectData.name); // 设置创建的项目名称
         // 无需重置状态，因为子组件已处理
       } else {
         const errorData = await response.json();
@@ -328,6 +333,29 @@ export default function Projects() {
     } catch (error) {
       console.error("Error creating project:", error); // 打印错误日志
       alert(error instanceof Error ? error.message : "Failed to create project"); // 提示用户错误信息
+    }
+  };
+
+  /**
+   * 添加项目管理员的函数
+   */
+  const addAdminToProject = async (projectName: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=managers&project_name=${projectName}&user_id=${2}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`, // 使用认证令牌
+        },
+      });
+      if (response.ok) {
+        console.log("Admin added to project successfully");
+      } else {
+        throw new Error("Failed to add admin to project"); // 抛出错误
+      }
+    } catch (error) {
+      console.error("Error adding admin to project:", error); // 打印错误日志
+      throw error; // 重新抛出错误
     }
   };
 
@@ -419,12 +447,31 @@ export default function Projects() {
     }
     try {
       await createProject(projectData); // 传递整个项目数据对象
+      // await addAdminToProject(projectData.name); // 添加管理员
       await fetchProjects(); // 重新获取项目列表以确保数据一致性
+      await fetchProjectsInProcess();
     } catch (error) {
       console.error("Error creating project:", error);
       alert("Failed to create project. Please try again.");
     }
   };
+
+  useEffect(() => {
+    if (shouldAddAdmin) {
+      console.log("Adding admin to project:", createdProjectName);
+      addAdminToProject(createdProjectName)
+        .then(() => {
+          console.log("管理员添加成功");
+        })
+        .catch((error) => {
+          console.error("添加管理员失败:", error);
+        })
+        .finally(() => {
+          setShouldAddAdmin(false);
+        });
+    }
+  }, [shouldAddAdmin, createdProjectName]);
+  
 
   /**
    * 启动翻译项目的函数
@@ -454,19 +501,34 @@ export default function Projects() {
       return nameA.localeCompare(nameB);
     });
   }, [projects]);
+  const sortedProjectsInProcess = React.useMemo(() => {
+    return [...projectInProcess].sort((a, b) => {
+      const nameA = a.name || ""; // 如果 a.name 为 undefined，使用空字符串兜底
+      const nameB = b.name || ""; // 如果 b.name 为 undefined，使用空字符串兜底
+      return nameA.localeCompare(nameB);
+    });
+  }, [projectInProcess]);
 
   // 计算分页相关的变量
   const itemsPerPage = 6; // 每页显示的项目数量
   const totalPages = Math.ceil(sortedProjects.length / itemsPerPage);
+  const totalPagesInProcess = Math.ceil(sortedProjectsInProcess.length / itemsPerPage);
   const paginatedProjects = sortedProjects.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
+  );
+  const paginatedProjectsInProcess = sortedProjectsInProcess.slice(
+    (currentPageInProcess - 1) * itemsPerPage,
+    currentPageInProcess * itemsPerPage
   );
 
   // 跳转到指定页码
   const goToPage = (page: number) => {
     setCurrentPage(page);
   };
+  const goToPageInProcess = (page: number) => {
+    setCurrentPageInProcess(page);
+  }
 
   /**
    * 项目卡片组件
@@ -563,18 +625,18 @@ export default function Projects() {
           <TabsContent value="in-progress">
             {/* 翻译中项目网格（示例，可根据实际数据调整） */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {projectInProcess.map((project) => (
+              {paginatedProjectsInProcess.map((project) => (
                 <ProjectCard key={project.name} project={project} />
               ))}
             </div>
             {/* 分页导航 */}
             <div className="flex justify-center mt-6 space-x-2">
               {/* 页码按钮 */}
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+              {Array.from({ length: totalPagesInProcess }, (_, index2) => index2 + 1).map((page) => (
                 <Button
                   key={page}
-                  variant={page === currentPage ? "outline" : "ghost"} // 当前页码为主按钮
-                  onClick={() => goToPage(page)}
+                  variant={page === currentPageInProcess ? "outline" : "ghost"} // 当前页码为主按钮
+                  onClick={() => goToPageInProcess(page)}
                 >
                   {page} {/* 显示页码 */}
                 </Button>
