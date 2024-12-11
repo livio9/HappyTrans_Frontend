@@ -1,6 +1,7 @@
 "use client"; // 指定该文件为客户端组件，确保在客户端渲染
 
 import * as React from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // 导入头像组件
 import { Button } from "@/components/ui/button"; // 导入按钮组件
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"; // 导入卡片组件
@@ -11,96 +12,29 @@ import { Badge } from "@/components/ui/badge"; // 导入徽章组件
 import { MessageCircle, ThumbsUp, Eye } from "lucide-react"; // 导入图标组件
 import { useSearchParams, useRouter } from "next/navigation"; 
 import { useProject } from "@/context/ProjectContext";
+import { useAuth } from "@/context/AuthContext"; 
+import TextareaAutosize from 'react-textarea-autosize';
 
-// 定义用户类型
-type User = {
-  id: string; // 用户唯一标识符
-  name: string; // 用户姓名
-  email: string; // 用户邮箱
-  avatar: string; // 用户头像的URL
-  contributionCount: number; // 用户贡献数量，用于计算徽章等级
+// 在组件加载时获取项目名称
+const usePersistentProjectName = () => {
+  const { getProjectName } = useProject();
+  const [projectName, setProjectName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedProjectName = localStorage.getItem("projectName");
+    if (storedProjectName) {
+      setProjectName(storedProjectName);
+    } else {
+      const currentProjectName = getProjectName();
+      if (currentProjectName) {
+        setProjectName(currentProjectName);
+        localStorage.setItem("projectName", currentProjectName);
+      }
+    }
+  }, [getProjectName]);
+
+  return projectName;
 };
-
-// 定义评论类型
-type Comment = {
-  id: string; // 评论唯一标识符
-  user: User; // 发表评论的用户
-  content: string; // 评论内容
-  likes: number; // 点赞数量
-  replies: Comment[]; // 回复列表，嵌套同类型的评论
-  createdAt: string; // 评论创建时间
-};
-
-// 示例用户数据
-const users: User[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    avatar: "/placeholder.svg?height=40&width=40", // 用户头像的占位图
-    contributionCount: 150, // 贡献数量，150代表高级别徽章
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    email: "bob@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-    contributionCount: 75, // 中等级别徽章
-  },
-  {
-    id: "3",
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-    contributionCount: 30, // 初级别徽章
-  },
-];
-
-// 示例评论数据
-const comments: Comment[] = [
-  {
-    id: "1",
-    user: users[0],
-    content: "This is a great feature! I've been waiting for something like this.", // 评论内容
-    likes: 5, // 点赞数
-    replies: [
-      {
-        id: "1.1",
-        user: users[1],
-        content: "I agree! It's really useful.", // 回复内容
-        likes: 2,
-        replies: [], // 无进一步回复
-        createdAt: "2023-05-15T10:30:00Z", // 回复创建时间
-      },
-      {
-        id: "1.2",
-        user: users[2],
-        content: "How does it compare to other solutions?", // 回复内容
-        likes: 1,
-        replies: [],
-        createdAt: "2023-05-15T11:15:00Z",
-      },
-    ],
-    createdAt: "2023-05-15T09:00:00Z", // 评论创建时间
-  },
-  {
-    id: "2",
-    user: users[1],
-    content: "I'm having trouble with the installation. Can someone help?", // 评论内容
-    likes: 2,
-    replies: [
-      {
-        id: "2.1",
-        user: users[2],
-        content: "What error are you seeing?", // 回复内容
-        likes: 1,
-        replies: [],
-        createdAt: "2023-05-16T14:30:00Z",
-      },
-    ],
-    createdAt: "2023-05-16T13:00:00Z",
-  },
-];
 
 // 根据用户的贡献数量返回对应的徽章等级
 function getBadge(contributionCount: number): string {
@@ -109,42 +43,758 @@ function getBadge(contributionCount: number): string {
   return "Bronze"; // 低于50为铜牌
 }
 
+// 定义用户类型
+type User = {
+  id: string;
+  role: string;
+  bio: string;
+  native_language: string;
+  preferred_languages: string;
+  accepted_entries: string;
+  managed_projects: string;
+  translated_projects: string;
+  username: string;
+  email: string;
+  avatar: string;
+  contributionCount: number;
+};
+
+// 定义评论类型
+type CommentType = {
+  id: string;
+  content: string;
+  likes: number;
+  replies: CommentType[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  parent?: string | null;
+};
+
+// 评论组件
+const Comment = ({
+  comment,
+  onReply,
+  onEditComment,
+  onEditReply,
+  onDeleteComment,
+  onDeleteReply,
+  onLike,
+  expandedComments,
+  toggleExpand,
+  isReply = false,  // 默认是评论，若为回复，传入 isReply: true
+}: {
+  comment: CommentType;
+  onReply: (commentId: string, replyContent: string) => void;
+  onEditComment: (commentId: string, newContent: string) => void;
+  onEditReply: (commentId: string, newContent: string) => void;
+  onDeleteComment: (commentId: string) => void;
+  onDeleteReply: (commentId: string) => void;
+  onLike: (commentId: string) => void;
+  expandedComments: Set<string>;
+  toggleExpand: (commentId: string) => void;
+  isReply?: boolean;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(comment.content);
+  const [replyContent, setReplyContent] = useState(""); // 回复内容
+  const [isReplying, setIsReplying] = useState(false); // 是否显示回复框
+  const [user, setUser] = useState<User | null>(null); // 使用 state 存储 user
+
+  // 请求用户数据并更新评论中的 user 信息
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?id=${comment.created_by}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': 'Token 11062b541ec273fdaffc6289c13862c698fdb59f'
+        }
+      });
+      const data = await response.json();
+      setUser(data); // 更新用户信息
+    };
+
+    if (!user) {  // 只有当 comment.user 为空时才请求数据
+      fetchUserData();
+    }
+  }, [comment.created_by]);
+
+  useEffect(() => {
+    setEditContent(comment.content); // 确保初始化 editContent
+  }, [comment.content]); // 当 comment 内容变化时，更新 editContent
+
+
+  // 编辑评论
+  const handleEditComment = async () => {
+    onEditComment(comment.id, editContent);
+  };
+
+  // 编辑回复
+  const handleEditReply = async () => {
+    onEditReply(comment.id, editContent);
+  };
+
+  // 删除评论
+  const handleDeleteComment = () => {
+    onDeleteComment(comment.id);
+  };
+
+  // 删除回复
+  const handleDeleteReply = () => {
+    onDeleteReply(comment.id);
+  };
+
+  // 进行回复
+  const handleReply = () => {
+    setIsReplying(true); // 显示回复框
+  };
+
+  // 发送回复
+  const handlePostReply = () => {
+    if (replyContent) {
+      onReply(comment.id, replyContent);
+      setReplyContent(""); // 清空输入框
+      setIsReplying(false); // 隐藏回复框
+    }
+  };
+
+  // 取消回复
+  const handleCancelReply = () => {
+    setIsReplying(false); // 隐藏回复框
+  };
+
+  // 点赞
+  const handleLike = () => {
+    onLike(comment.id);
+    comment.likes += 1; // 本地更新点赞数
+  };
+
+  return (
+    <Card className="mb-2 shadow-md rounded-lg border border-gray-200">
+      <CardHeader className="flex space-x-4 p-4 bg-white shadow rounded-md">
+        {/* 头像和用户信息 */}
+        <div className="flex items-center space-x-3 relative">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Avatar className="cursor-pointer">
+                <AvatarImage
+                  src={user?.avatar || "/placeholder.svg"}
+                  alt={user?.username || "User"}
+                  className="w-10 h-10 rounded-full"
+                />
+                <AvatarFallback>
+                  {user?.username ? user.username.charAt(0) : "U"}
+                </AvatarFallback>
+              </Avatar>
+            </DialogTrigger>
+            <DialogContent className="max-w-xs p-4 bg-gray-50 rounded-md shadow-lg">
+              <DialogHeader>
+                <DialogTitle className="text-lg font-semibold">
+                  {user?.username || "Anonymous"}
+                </DialogTitle>
+                <DialogDescription className="mt-2 text-sm text-gray-700">
+                  <div id="radix-:r2:" className="mt-2 text-sm text-gray-700" ref={null}>
+                    <div>
+                      <div>Email: {user?.email || "N/A"}</div>
+                      <div>Contributions: {user?.contributionCount || 0}</div>
+                      <div>
+                        Badge: <Badge className="mt-1">{getBadge(user?.contributionCount || 0)}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
+        
+          {/* 用户信息 */}
+          <div className="flex flex-col">
+            <h4 className="font-semibold text-sm text-gray-800">
+              {user?.username || "Anonymous"}
+            </h4>
+          </div>
+        </div>
+
+        {/* 评论内容 */}
+        <div className="flex-1">
+          <CardContent className="mt-1 p-3 bg-gray-100 rounded-md w-full">
+            {isEditing ? (
+              <TextareaAutosize
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                minRows={4}
+                maxRows={10}
+                className="w-full mb-2 text-sm border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="is editing..."
+              />
+            ) : (
+              <p className="text-gray-700 text-sm break-words">{comment.content}</p>
+            )}
+          </CardContent>
+        </div>
+
+        {/* 创建和更新日期 */}
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500">
+            createdAt:{new Date(comment.created_at).toLocaleString()}
+          </span>
+          <span className="text-xs text-gray-500">
+            updateAt: {new Date(comment.updated_at).toLocaleString()}
+          </span>
+        </div>
+      </CardHeader>
+
+      <CardFooter className="flex justify-between items-center mt-2">
+        <div className="flex items-center space-x-2">
+          {/* 点赞按键 */}
+          <Button
+            variant="ghost"
+            onClick={handleLike}
+            className="flex items-center space-x-1 p-1 transition-colors duration-200 hover:text-blue-500"
+          >
+            <ThumbsUp className="w-4 h-4" />
+            <span className="text-xs">{comment.likes}</span>
+          </Button>
+
+          {/* 回复按键 */}
+          <Button
+            variant="ghost"
+            onClick={handleReply}
+            className="flex items-center space-x-1 p-1 transition-colors duration-200 hover:text-blue-500"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-xs">Reply</span>
+          </Button>
+
+          {/* 编辑按键 */}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              if (isEditing) {
+                // 如果正在编辑，保存评论/回复内容
+                isReply ? handleEditReply() : handleEditComment();
+                setIsEditing(false); // 保存后，切换回非编辑状态
+              } else {
+                // 切换到编辑模式
+                setIsEditing(true);
+                setEditContent(comment.content); // 在开始编辑时，确保内容是最新的
+              }
+            }}
+            className="flex items-center space-x-1 p-1 transition-colors duration-200 hover:text-blue-500"
+          >
+            <span className="text-xs">{isEditing ? "Save" : "Edit"}</span>
+          </Button>
+
+          {/* 删除按键 */}
+          <Button
+            variant="ghost"
+            onClick={() => (isReply ? handleDeleteReply() : handleDeleteComment())}
+            className="flex items-center space-x-1 p-1 text-red-500 transition-colors duration-200 hover:text-red-700"
+          >
+            <span className="text-xs">Delete</span>
+          </Button>
+        </div>
+
+        <Button
+          variant="ghost"
+          onClick={() => toggleExpand(comment.id)}
+          className="flex items-center space-x-1 p-1 transition-colors duration-200 hover:text-blue-500"
+        >
+          <Eye className="w-4 h-4" />
+          <span className="text-xs">
+            {expandedComments.has(comment.id) ? "Hide" : "View"} Replies ({comment.replies?.length || 0})
+          </span>
+        </Button>
+      </CardFooter>
+
+      {/* 回复输入框 */}
+      {isReplying && (
+        <div className="ml-12 mt-2 space-y-2">
+          <TextareaAutosize
+            placeholder="Write you reply..."
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            minRows={3}
+            className="w-full mb-4 text-sm border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="flex space-x-2">
+            <Button onClick={handlePostReply} className="bg-green-500 text-white hover:bg-green-600">
+              Send
+            </Button>
+            <Button onClick={handleCancelReply} className="bg-gray-300 hover:bg-gray-400">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 回复列表 */}
+      {expandedComments.has(comment.id) && (
+        <div className="ml-12 mt-2 space-y-2">
+          {comment.replies.length === 0 ? (
+            <p className="text-gray-500 text-sm">No replies yet. Be the first to comment!</p>
+          ) : (
+            comment.replies.map((reply) => (
+              <Comment
+                key={reply.id}
+                comment={reply}
+                onReply={onReply}
+                onEditComment={onEditComment}
+                onEditReply={onEditReply}
+                onDeleteComment={onDeleteComment}
+                onDeleteReply={onDeleteReply}
+                onLike={onLike}
+                expandedComments={expandedComments}
+                toggleExpand={toggleExpand}
+                isReply={true} 
+              />
+            ))
+          )}
+        </div>
+      )}
+    </Card>
+  );
+};
+
 // 社区论坛组件
 export default function CommunityForum() {
-  const [newComment, setNewComment] = React.useState(""); // 新评论内容的状态
-  const [replyingTo, setReplyingTo] = React.useState<{ commentId: string; replyId: string | null } | null>(null); // 当前正在回复的评论或回复的状态
-  const [newReply, setNewReply] = React.useState(""); // 新回复内容的状态
-  const [expandedComments, setExpandedComments] = React.useState<Set<string>>(new Set()); // 展开评论的ID集合
+  const [newComment, setNewComment] = useState(""); // 新评论内容的状态
+  const [replyingTo, setReplyingTo] = useState<{
+    commentId: string;
+    replyId: string | null;
+  } | null>(null); // 当前正在回复的评论或回复的状态
+  const [newReply, setNewReply] = useState(""); // 新回复内容的状态
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(
+    new Set()
+  ); // 展开评论的ID集合
+  const [comments, setComments] = useState<CommentType[]>([]); // 评论列表
   const router = useRouter(); // 使用路由钩子跳转页面
-  const { getProjectName } = useProject();
-  const projectName = getProjectName(); // 获取项目名称
+  const projectName = usePersistentProjectName(); // 获取项目名称
+  const { token } = useAuth();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [showDeleteReplyDialog, setShowDeleteReplyDialog] = useState(false);
+  const [replyToDelete, setReplyToDelete] = useState<string | null>(null);
 
-  // 切换评论的展开状态
+  useEffect(() => {
+    // 在组件加载时，获取评论列表
+    if (projectName) {
+      fetchComments(projectName);
+    }
+  }, [projectName]);
+
+  // 获取讨论区的评论
+  const fetchComments = async (projectName: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${encodeURIComponent(
+          projectName || ""
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch comments");
+      }
+      const data = await response.json();
+      // 确保每个评论都有 replies 字段，即使是空数组
+      const commentsWithReplies = data.map((comment: CommentType) => ({
+        ...comment,
+        replies: comment.replies || [], // 如果没有 replies 字段，则初始化为空数组
+      }));
+      setComments(commentsWithReplies); // 设置评论列表
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
+
+  // 提交新评论
+  const handlePostComment = async () => {
+    if (!newComment) return;
+    try {
+      // 获取 CSRF token 和认证令牌
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content"); // 假设你有从 HTML meta 标签中获取的 CSRF token
+      const projectName = localStorage.getItem("projectName"); // 从 localStorage 获取项目名
+      if (!projectName) {
+        console.error("Project name is missing");
+        return;
+      }
+
+      // 发送 POST 请求
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${encodeURIComponent(
+          projectName || ""
+        )}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+            "X-CSRFTOKEN": csrfToken || "", // 获取 CSRF token
+          },
+          body: JSON.stringify({
+            title: "Example", // 作为默认标题
+            content: newComment, // 新评论内容
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to post comment");
+      }
+
+      const data = await response.json();
+      setComments([data, ...comments]); // 将新评论添加到评论列表
+      setNewComment(""); // 清空输入框
+    } catch (error) {
+      console.error("Error posting comment:", error);
+    }
+  };
+
+  // 切换评论展开/收起状态
   const toggleCommentExpansion = (commentId: string) => {
     setExpandedComments((prev) => {
-      const newSet = new Set(prev); // 创建一个新的Set以避免直接修改状态
-      if (newSet.has(commentId)) {
-        newSet.delete(commentId); // 如果已展开，则收起
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(commentId)) {
+        newExpanded.delete(commentId);
       } else {
-        newSet.add(commentId); // 如果未展开，则展开
+        newExpanded.add(commentId);
+        fetchReplies(commentId); // 展开评论时获取回复
       }
-      return newSet;
+      return newExpanded;
     });
   };
 
-  // 处理提交新评论的逻辑
-  const handlePostComment = () => {
-    // TODO: 在这里添加将新评论发送到后端的逻辑
-    console.log("Posting comment:", newComment); // 打印新评论内容到控制台
-    setNewComment(""); // 清空新评论输入框
+  // 提交编辑后的评论
+  const handleEditComment = async (commentId: string, newContent: string) => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${commentId}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({ content: newContent }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to edit comment");
+    }
+
+    const updatedComment = await response.json();
+    setComments(prevComments =>
+      prevComments.map(comment =>
+        comment.id === commentId ? { ...comment, content: updatedComment.content } : comment
+      )
+    );
+  } catch (error) {
+    console.error("Error editing comment:", error);
+  }
+};
+
+  // 递归函数：在评论列表中更新评论内容
+  const updateCommentInComments = (commentsList: CommentType[], commentId: string, updatedData: Partial<CommentType>): CommentType[] => {
+    return commentsList.map(comment => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          ...updatedData,
+        };
+      }
+      return {
+        ...comment,
+        replies: updateCommentInComments(comment.replies, commentId, updatedData),
+      };
+    });
   };
 
-  // 处理提交新回复的逻辑
-  const handlePostReply = (commentId: string, replyId: string | null) => {
-    // TODO: 在这里添加将新回复发送到后端的逻辑
-    console.log("Posting reply to comment", commentId, "reply", replyId, ":", newReply); // 打印新回复内容到控制台
-    setNewReply(""); // 清空新回复输入框
-    setReplyingTo(null); // 清除正在回复的状态
+  // 提交删除评论
+  const handleDeleteComment = async (commentId: string) => {
+    setCommentToDelete(commentId);
+    setShowDeleteDialog(true);
+  };
+
+  // 确认删除评论
+  const confirmDeleteComment = async () => {
+    if (commentToDelete) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${commentToDelete}/`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete comment");
+        }
+
+        setComments((prevComments) =>
+          prevComments.filter((comment) => comment.id !== commentToDelete)
+        );
+      } catch (error) {
+        console.error("Error deleting comment:", error);
+      }
+    }
+    setShowDeleteDialog(false); 
+  };
+
+  // 取消删除操作
+  const cancelDelete = () => {
+    setShowDeleteDialog(false); // Close the dialog if the user cancels
+  };
+
+  // 递归函数：在评论列表中移除评论
+  const removeCommentFromComments = (commentsList: CommentType[], commentId: string): CommentType[] => {
+    return commentsList
+      .filter(comment => comment.id !== commentId)
+      .map(comment => ({
+        ...comment,
+        replies: removeCommentFromComments(comment.replies, commentId),
+      }));
+  };
+
+  // 点赞评论
+  const handleLike = async (commentId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/${commentId}/like/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to like comment");
+      }
+
+      const data = await response.json();
+
+      setComments((prevComments) =>
+        updateLikesInComments(prevComments, commentId, data.likes)
+      );
+    } catch (error) {
+      console.error("Error liking comment:", error);
+    }
+  };
+
+  // 递归函数：在评论列表中更新点赞数
+  const updateLikesInComments = (commentsList: CommentType[], commentId: string, newLikes: number): CommentType[] => {
+    return commentsList.map(comment => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          likes: newLikes,
+        };
+      }
+      return {
+        ...comment,
+        replies: updateLikesInComments(comment.replies, commentId, newLikes),
+      };
+    });
+  };
+
+  // 获取评论的回复
+  const fetchReplies = async (commentId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${commentId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch replies");
+      }
+      const data = await response.json();
+      // 更新相应评论的回复
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId
+            ? { ...comment, replies: data || [] }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching replies:", error);
+    }
+  };
+
+  // 提交新回复
+  const handleReply = async (commentId: string, replyContent: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${commentId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+          },
+          body: JSON.stringify({
+            content: replyContent,
+            replyTo: null, // 如果有回复某个评论的逻辑，可以传递相应的ID
+            discussion_id: commentId, // 评论所属的讨论ID
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to post reply");
+      }
+
+      const data = await response.json(); // 获取新回复的数据
+
+      // 更新评论列表，添加新的回复
+      setComments((prevComments) =>
+        addReplyToComments(prevComments, commentId, data)
+      );
+    } catch (error) {
+      console.error("Error posting reply:", error);
+    }
+  };
+
+  // 递归函数：在评论列表中添加回复
+  const addReplyToComments = (commentsList: CommentType[], parentId: string, reply: CommentType): CommentType[] => {
+    return commentsList.map(comment => {
+      if (comment.id === parentId) {
+        return {
+          ...comment,
+          replies: [...comment.replies, reply],
+        };
+      }
+      return {
+        ...comment,
+        replies: addReplyToComments(comment.replies, parentId, reply),
+      };
+    });
+  };
+
+  // // 提交回复内容
+  // const handleSubmitReply = () => {
+  //   if (replyingTo && newReply) {
+  //     handleReply(replyingTo.commentId, replyingTo.replyId);
+  //   }
+  // };
+
+  // 提交编辑后的回复
+  const handleEditReply = async (replyId: string, newContent: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/${replyId}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({ content: newContent }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to edit reply");
+      }
+
+      const updatedReply = await response.json();
+      setComments((prevComments) =>
+        prevComments.map((comment) =>
+          updateReply(comment, replyId, updatedReply.content)
+        )
+      );
+    } catch (error) {
+      console.error("Error editing reply:", error);
+    }
+  };
+
+  // 递归更新回复内容
+  const updateReply = (
+    comment: CommentType,
+    replyId: string,
+    newContent: string
+  ): CommentType => {
+    // 如果当前评论是目标回复，则更新其内容
+    if (comment.id === replyId) {
+      return { ...comment, content: newContent };
+    }
+
+    // 否则，递归更新其回复
+    return {
+      ...comment,
+      replies: comment.replies.map((reply) =>
+        updateReply(reply, replyId, newContent)  // 对每个子回复递归更新
+      ),
+    };
+  };
+
+  // 提交删除回复
+  const handleDeleteReply = async (replyId: string) => {
+    setReplyToDelete(replyId); // 设置要删除的回复ID
+    setShowDeleteReplyDialog(true); // 显示删除确认对话框
+  };
+  // 确认删除回复
+  const confirmDeleteReply = async () => {
+    if (replyToDelete) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/${replyToDelete}/`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete reply");
+        }
+
+        // 更新评论列表，移除被删除的回复
+        setComments((prevComments) =>
+          prevComments.map((comment) =>
+            deleteReplyFromComment(comment, replyToDelete)
+          )
+        );
+      } catch (error) {
+        console.error("Error deleting reply:", error);
+      }
+    }
+    setShowDeleteReplyDialog(false); // 关闭删除对话框
+  };
+
+  // 递归删除回复
+  const deleteReplyFromComment = (comment: CommentType, replyId: string): CommentType => {
+    return {
+      ...comment,
+      replies: comment.replies
+        .filter((reply) => reply.id !== replyId)
+        .map((reply) => deleteReplyFromComment(reply, replyId)),
+    };
+  };
+
+  // 取消删除操作
+  const cancelDeleteReply = () => {
+    setShowDeleteReplyDialog(false); // 关闭删除对话框
   };
 
   /**
@@ -159,7 +809,9 @@ export default function CommunityForum() {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+      router.push(
+        `/language-versions?project=${encodeURIComponent(projectName)}`
+      );
     } else {
       console.error("Project name is missing");
     }
@@ -200,157 +852,94 @@ export default function CommunityForum() {
       <h1 className="text-2xl font-bold mb-4">Community Forum</h1> {/* 页面标题 */}
 
       {/* 创建新讨论的卡片 */}
-      <Card className="mb-6">
+      <Card className="mb-6 shadow-md">
         <CardHeader>
-          <CardTitle>Start a new discussion</CardTitle> {/* 卡片标题 */}
+          {/* 卡片标题 */}
+          <CardTitle className="text-xl font-semibold">
+            Start a new discussion
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             placeholder="What's on your mind?" // 输入框占位符
             value={newComment} // 绑定输入框的值
             onChange={(e) => setNewComment(e.target.value)} // 监听输入变化，更新状态
-            className="mb-2"
+            className="mb-4 resize-none"
+            rows={4}
           />
-          <Button onClick={handlePostComment}>Post</Button> {/* 提交按钮 */}
+          {/* 提交按钮 */}
+          <Button onClick={handlePostComment} className="bg-blue-500 text-white hover:bg-blue-600">
+            Post
+          </Button> 
         </CardContent>
       </Card>
 
       {/* 评论列表区域 */}
-      <div className="space-y-4">
-        {comments.map((comment) => (
-          <Card key={comment.id}>
-            {/* 评论头部，显示用户信息 */}
-            <CardHeader>
-              <div className="flex items-center space-x-4">
-                {/* 用户头像及详情对话框 */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Avatar className="cursor-pointer">
-                      <AvatarImage src={comment.user.avatar} alt={comment.user.name} /> {/* 用户头像图片 */}
-                      <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback> {/* 用户名首字母作为备用显示 */}
-                    </Avatar>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{comment.user.name}</DialogTitle> {/* 对话框标题，显示用户姓名 */}
-                      <DialogDescription>
-                        Email: {comment.user.email}
-                        <br />
-                        Contributions: {comment.user.contributionCount}
-                        <br />
-                        Badge: <Badge>{getBadge(comment.user.contributionCount)}</Badge> {/* 显示用户徽章 */}
-                      </DialogDescription>
-                    </DialogHeader>
-                  </DialogContent>
-                </Dialog>
-                <div>
-                  <h3 className="font-semibold">{comment.user.name}</h3> {/* 显示用户姓名 */}
-                  <p className="text-sm text-gray-500">{new Date(comment.createdAt).toLocaleString()}</p> {/* 显示评论时间 */}
-                </div>
-              </div>
-            </CardHeader>
-
-            {/* 评论内容 */}
-            <CardContent>
-              <p>{comment.content}</p> {/* 显示评论文本 */}
-            </CardContent>
-
-            {/* 评论操作区，包括点赞和回复按钮，以及查看回复 */}
-            <CardFooter className="flex justify-between">
-              <div className="flex items-center space-x-2">
-                {/* 点赞按钮 */}
-                <Button variant="ghost" size="sm">
-                  <ThumbsUp className="w-4 h-4 mr-1" /> {/* 点赞图标 */}
-                  {comment.likes} {/* 显示点赞数 */}
-                </Button>
-                {/* 回复按钮 */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setReplyingTo({ commentId: comment.id, replyId: null })} // 设置当前回复的评论ID，无特定回复ID
-                >
-                  <MessageCircle className="w-4 h-4 mr-1" /> {/* 回复图标 */}
-                  Reply {/* 按钮文字 */}
-                </Button>
-              </div>
-              {/* 查看或隐藏回复按钮 */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleCommentExpansion(comment.id)} // 切换评论的展开状态
-              >
-                <Eye className="w-4 h-4 mr-1" /> {/* 查看图标 */}
-                {expandedComments.has(comment.id) ? 'Hide' : 'View'} Replies ({comment.replies.length}) {/* 按钮文字根据状态变化 */}
-              </Button>
-            </CardFooter>
-
-            {/* 显示回复列表，如果评论被展开则显示所有回复，否则只显示前两条 */}
-            {(expandedComments.has(comment.id) ? comment.replies : comment.replies.slice(0, 2)).map((reply) => (
-              <Card key={reply.id} className="ml-8 mt-2">
-                {/* 回复头部，显示回复用户信息 */}
-                <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={reply.user.avatar} alt={reply.user.name} /> {/* 回复者头像图片 */}
-                      <AvatarFallback>{reply.user.name.charAt(0)}</AvatarFallback> {/* 回复者姓名首字母 */}
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold">{reply.user.name}</h4> {/* 回复者姓名 */}
-                      <p className="text-sm text-gray-500">{new Date(reply.createdAt).toLocaleString()}</p> {/* 回复时间 */}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {/* 回复内容 */}
-                <CardContent>
-                  <p className="text-sm">{reply.content}</p> {/* 显示回复文本 */}
-                </CardContent>
-
-                {/* 回复操作区，包括点赞和回复按钮 */}
-                <CardFooter>
-                  <Button variant="ghost" size="sm">
-                    <ThumbsUp className="w-3 h-3 mr-1" /> {/* 点赞图标 */}
-                    {reply.likes} {/* 显示点赞数 */}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReplyingTo({ commentId: comment.id, replyId: reply.id })} // 设置当前回复的评论ID和回复ID
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" /> {/* 回复图标 */}
-                    Reply {/* 按钮文字 */}
-                  </Button>
-                </CardFooter>
-
-                {/* 如果当前正在回复该回复，则显示回复输入框和提交按钮 */}
-                {replyingTo && replyingTo.commentId === comment.id && replyingTo.replyId === reply.id && (
-                  <CardContent>
-                    <Textarea
-                      placeholder="Write a reply..." // 输入框占位符
-                      value={newReply} // 绑定输入框的值
-                      onChange={(e) => setNewReply(e.target.value)} // 监听输入变化，更新状态
-                      className="mb-2"
-                    />
-                    <Button onClick={() => handlePostReply(comment.id, reply.id)}>Post Reply</Button> {/* 提交回复按钮 */}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-
-            {/* 如果评论未展开且有超过两条回复，则显示查看更多回复的按钮 */}
-            {!expandedComments.has(comment.id) && comment.replies.length > 2 && (
-              <Button
-                variant="link"
-                size="sm"
-                className="ml-8 mt-2"
-                onClick={() => toggleCommentExpansion(comment.id)} // 切换评论的展开状态
-              >
-                View {comment.replies.length - 2} more replies {/* 按钮文字，显示剩余的回复数量 */}
-              </Button>
-            )}
-          </Card>
-        ))}
+      <div className="space-y-6">
+        {comments.length === 0 ? (
+          <p className="text-center text-gray-500">No comments yet. Be the first to comment!</p>
+        ) : (
+          comments.map((comment) => (
+            <Comment
+              key={comment.id}
+              comment={comment}
+              onReply={handleReply}
+              onEditComment={handleEditComment}
+              onEditReply={handleEditReply}
+              onDeleteComment={handleDeleteComment}
+              onDeleteReply={handleDeleteReply}
+              onLike={handleLike}
+              expandedComments={expandedComments}
+              toggleExpand={toggleCommentExpansion}
+              isReply={false}  // 传递 isReply = true 表示是回复
+            />
+          ))
+        )}
       </div>
+
+      {/* 删除确认评论对话框 */}
+      {showDeleteDialog && (
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogTitle>
+              Delete Comment
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this comment?
+            </DialogDescription>
+            <div className="flex space-x-2">
+              <Button onClick={confirmDeleteComment} className="bg-red-500 text-white">
+                Confirm
+              </Button>
+              <Button onClick={cancelDelete} className="bg-gray-300">
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 删除确认回复对话框 */}
+      {showDeleteReplyDialog && (
+        <Dialog open={showDeleteReplyDialog} onOpenChange={setShowDeleteReplyDialog}>
+          <DialogContent>
+            <DialogTitle>
+              Delete Reply
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this reply?
+            </DialogDescription>
+            <div className="flex space-x-2">
+              <Button onClick={confirmDeleteReply} className="bg-red-500 text-white">
+                Confirm
+              </Button>
+              <Button onClick={cancelDeleteReply} className="bg-gray-300">
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
