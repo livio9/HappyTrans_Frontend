@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react'
-=======
-import React from 'react'
->>>>>>> 7c12a8a (refactor: 更改组件位置)
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-<<<<<<< HEAD
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CollaboratorList } from "./collaborator-list"
@@ -30,30 +25,11 @@ interface EditProjectDialogProps {
   projectDescription: string
   projectLanguageCodes: string[]
   originalLanguageCodes: string[]
-=======
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { CollaboratorList } from "./collaborator-list"
-import { on } from 'events'
-
-interface EditProjectDialogProps {
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
-  projectName: string
-  projectDescription: string
-  projectLanguageCode: string
->>>>>>> 7c12a8a (refactor: 更改组件位置)
   ispublic: boolean
   onIsPublicChange: (value: boolean) => void
   languages: string[]
   onProjectNameChange: (value: string) => void
   onProjectDescriptionChange: (value: string) => void
-<<<<<<< HEAD
   onProjectLanguageCodesChange: (value: string[]) => void
   onSave: (selectedLanguages: string[], poFile: File | null) => void
 }
@@ -68,24 +44,11 @@ export function EditProjectDialog({
   projectDescription,
   projectLanguageCodes,
   originalLanguageCodes,
-=======
-  onProjectLanguageCodeChange: (value: string) => void
-  onSave: () => void
-}
-
-export function EditProjectDialog({
-  isOpen,
-  onOpenChange,
-  projectName,
-  projectDescription,
-  projectLanguageCode,
->>>>>>> 7c12a8a (refactor: 更改组件位置)
   ispublic,
   onIsPublicChange,
   languages,
   onProjectNameChange,
   onProjectDescriptionChange,
-<<<<<<< HEAD
   onProjectLanguageCodesChange,
   onSave,
 }: EditProjectDialogProps) {
@@ -128,13 +91,6 @@ export function EditProjectDialog({
   }
 
   return (
-=======
-  onProjectLanguageCodeChange,
-  onSave,
-}: EditProjectDialogProps) {
-  return (
-    
->>>>>>> 7c12a8a (refactor: 更改组件位置)
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="w-[80%] h-[100%] sm:max-w-[700px] sm:max-h-[80%] overflow-y-auto">
         <DialogHeader>
@@ -143,14 +99,9 @@ export function EditProjectDialog({
             Modify the project details below.
           </DialogDescription>
         </DialogHeader>
-<<<<<<< HEAD
         <form onSubmit={handleSubmit}>
           <div className="grid gap-6 py-4">
             {/* 项目名称 */}
-=======
-        <form onSubmit={(e) => { e.preventDefault(); onSave(); }}>
-          <div className="grid gap-6 py-4">
->>>>>>> 7c12a8a (refactor: 更改组件位置)
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="project-name" className="text-right">
                 Name
@@ -165,10 +116,7 @@ export function EditProjectDialog({
               />
             </div>
 
-<<<<<<< HEAD
             {/* 项目描述 */}
-=======
->>>>>>> 7c12a8a (refactor: 更改组件位置)
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="project-description" className="text-right">
                 Description
@@ -183,7 +131,6 @@ export function EditProjectDialog({
               />
             </div>
 
-<<<<<<< HEAD
             {/* 目标语言 */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label className="text-right">Target Languages</Label>
@@ -234,36 +181,6 @@ export function EditProjectDialog({
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="is_public" className="text-right">
                 Visibility
-=======
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="language-code" className="text-right">
-                Target Language
-              </Label>
-              <Select
-                value={projectLanguageCode}
-                onValueChange={onProjectLanguageCodeChange}
-                required
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Target Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang: string) => {
-                    const [name, code] = lang.split(" (");
-                    return (
-                      <SelectItem key={code} value={code.replace(")", "")}>
-                        {name}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="is_public" className="text-right">
-                visibility
->>>>>>> 7c12a8a (refactor: 更改组件位置)
               </Label>
               <Select
                 value={ispublic.toString()}
@@ -271,24 +188,15 @@ export function EditProjectDialog({
                 required
               >
                 <SelectTrigger className="w-full">
-<<<<<<< HEAD
                   <SelectValue placeholder="Select Visibility" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="true">Public</SelectItem>
                   <SelectItem value="false">Private</SelectItem>
-=======
-                  <SelectValue placeholder="Select Target Language" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">True</SelectItem>
-                  <SelectItem value="false">False</SelectItem>
->>>>>>> 7c12a8a (refactor: 更改组件位置)
                 </SelectContent>
               </Select>
             </div>
 
-<<<<<<< HEAD
             {/* 合作者列表 */}
             <div className="space-y-6">
               <CollaboratorList
@@ -303,17 +211,6 @@ export function EditProjectDialog({
                 ismanager={ismanager}
                 type="translators"
                 projectName={originalProjectName}
-=======
-            <div className="space-y-6">
-              <CollaboratorList
-                type="managers"
-                projectName={projectName}
-              />
-
-              <CollaboratorList
-                type="translators"
-                projectName={projectName}
->>>>>>> 7c12a8a (refactor: 更改组件位置)
               />
             </div>
           </div>
@@ -322,20 +219,12 @@ export function EditProjectDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-<<<<<<< HEAD
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
-=======
-            <Button type="submit">Save</Button>
->>>>>>> 7c12a8a (refactor: 更改组件位置)
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 7c12a8a (refactor: 更改组件位置)
