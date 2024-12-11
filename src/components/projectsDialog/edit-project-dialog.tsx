@@ -1,5 +1,4 @@
 import React from 'react'
-import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -51,8 +50,6 @@ export function EditProjectDialog({
   onProjectLanguageCodeChange,
   onSave,
 }: EditProjectDialogProps) {
-  const [newProjectName, setNewProjectName] = useState(""); // 新项目名称
-  const [newProjectDescription, setNewProjectDescription] = useState(""); // 新项目描述
   return (
     
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

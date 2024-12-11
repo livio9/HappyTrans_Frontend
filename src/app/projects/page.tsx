@@ -45,7 +45,7 @@ import { Input } from "@/components/ui/input"; // 导入输入框组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 导入标签页组件
 import { Label } from "@/components/ui/label"; // 导入标签组件
 import { Textarea } from "@/components/ui/textarea"; // 导入多行文本输入框组件
-import { EditProjectDialog } from "@/components/edit-project-dialog";
+import { EditProjectDialog } from "@/components/projectsDialog/edit-project-dialog";
 import { CreateProjectDialog } from "@/components/projectsDialog/create-project-dialog";
 
 // 定义项目类型
