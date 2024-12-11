@@ -536,14 +536,15 @@ export default function Projects() {
    */
   const ProjectCard = ({ project }: { project: Project }) => {
     const { user } = useAuth(); // 使用认证上下文
-    const isAdmin = user?.role === "admin" || project.is_managed; // 判断用户是否为管理员
+    
+    const isManager = project.is_managed;
 
     return (
       <Card>
         {/* 项目卡片头部，显示项目名称和操作菜单 */}
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>{project.name}</CardTitle> {/* 项目名称 */}
-          {isAdmin && ( // 如果用户是管理员，显示下拉菜单
+          {isManager&& ( // 如果用户是管理员，显示下拉菜单
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-8 w-8 p-0">
@@ -555,9 +556,11 @@ export default function Projects() {
                 <DropdownMenuItem onSelect={() => handleManageClick(project)}>
                   Manage Project {/* 管理项目 */}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
+                {isAdmin && 
+                (<DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
                   Delete Project {/* 删除项目 */}
                 </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -654,6 +657,7 @@ export default function Projects() {
       />
       {/* 编辑项目的对话框 */}
       <EditProjectDialog
+        isadmin={isAdmin}
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         projectName={newProjectName}

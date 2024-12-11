@@ -22,6 +22,7 @@ import { CollaboratorList } from "./collaborator-list"
 import { on } from 'events'
 
 interface EditProjectDialogProps {
+  isadmin: boolean
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   projectName: string
@@ -38,6 +39,7 @@ interface EditProjectDialogProps {
 }
 
 export function EditProjectDialog({
+  isadmin,
   isOpen,
   onOpenChange,
   projectName,
@@ -138,11 +140,13 @@ export function EditProjectDialog({
 
             <div className="space-y-6">
               <CollaboratorList
+                isadmin={isadmin}
                 type="managers"
                 projectName={originalProjectName}
               />
 
               <CollaboratorList
+                isadmin={isadmin}
                 type="translators"
                 projectName={originalProjectName}
               />
