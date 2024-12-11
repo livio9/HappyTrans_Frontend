@@ -15,21 +15,15 @@ interface User {
 }
 
 interface CollaboratorListProps {
-<<<<<<< HEAD
   isadmin: boolean;
   ismanager: boolean;
-=======
->>>>>>> 7c12a8a (refactor: 更改组件位置)
   type: "managers" | "translators"
   projectName: string
 }
 
 export function CollaboratorList({
-<<<<<<< HEAD
   isadmin,
   ismanager,
-=======
->>>>>>> 7c12a8a (refactor: 更改组件位置)
   type,
   projectName,
 }: CollaboratorListProps) {
@@ -63,11 +57,7 @@ export function CollaboratorList({
     fetchCollaborators();
     setShouldFetch(false);  // 重置标记
     console.log("shouldFetch2", shouldFetch)
-<<<<<<< HEAD
   }, [  shouldFetch])
-=======
-  }, [projectName, type, shouldFetch])
->>>>>>> 7c12a8a (refactor: 更改组件位置)
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -139,7 +129,6 @@ export function CollaboratorList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">{type === "managers" ? "Project Managers" : "Translators"}</h4>
-<<<<<<< HEAD
         {(isadmin || (ismanager && type === "translators")) && (
           <div className="flex items-center gap-2">
             <Button
@@ -154,20 +143,6 @@ export function CollaboratorList({
             </Button>
           </div>
         )}
-=======
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => setIsAddPeopleOpen(true)}
-          >
-            <UserPlus className="h-4 w-4" />
-            Add people
-          </Button>
-        </div>
->>>>>>> 7c12a8a (refactor: 更改组件位置)
       </div>
       
       <div className="relative">
@@ -180,12 +155,9 @@ export function CollaboratorList({
         />
       </div>
 
-<<<<<<< HEAD
       {filteredCollaborators.length === 0 ? (
         <div className="p-4 text-center text-sm text-muted-foreground">No available {type === "managers" ? "Managers" : "Translators"}</div>
         ) : (
-=======
->>>>>>> 7c12a8a (refactor: 更改组件位置)
       <div className="rounded-md border">
         <div className="border-b p-4">
           <div className="flex justify-between items-center">
@@ -194,7 +166,6 @@ export function CollaboratorList({
               onCheckedChange={handleSelectAll}
               aria-label="Select all"
             />
-<<<<<<< HEAD
             {(isadmin || (ismanager && type === "translators")) && (
               <Button
                 type="button"
@@ -207,17 +178,6 @@ export function CollaboratorList({
               </Button>
             )}
             
-=======
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleRemoveSelectedCollaborator()}
-              className="ml-auto text-muted-foreground hover:text-foreground"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
->>>>>>> 7c12a8a (refactor: 更改组件位置)
           </div>
         </div>
         <div className="max-h-30 overflow-y-auto">
@@ -240,7 +200,6 @@ export function CollaboratorList({
                   </div>
                 </div>
               </div>
-<<<<<<< HEAD
               {(isadmin || (ismanager && type === "translators")) && (
                 <Button
                   type="button"
@@ -256,21 +215,6 @@ export function CollaboratorList({
           ))}
         </div>
       </div>)}
-=======
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemoveCollaborator(collaborator.id)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
->>>>>>> 7c12a8a (refactor: 更改组件位置)
 
       <AddPeopleDialog
         projectName={projectName}
