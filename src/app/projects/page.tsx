@@ -46,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label"; // 导入标签组件
 import { Textarea } from "@/components/ui/textarea"; // 导入多行文本输入框组件
 import { EditProjectDialog } from "@/components/edit-project-dialog";
+import { CreateProjectDialog } from "@/components/projectsDialog/create-project-dialog";
 
 // 定义项目类型
 interface Project {
@@ -134,10 +135,8 @@ export default function Projects() {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null); // 要删除的项目名称
   const [projects, setProjects] = useState<Project[]>([]); // 项目列表
   const [loading, setLoading] = useState(true); // 加载状态
-  const [newProjectSourceLanguage, setNewProjectSourceLanguage] = useState("en"); // 新项目源语言代码
   const [newIsPublic, setNewIsPublic] = useState(false); // 新项目源语言代码
   const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
-  const [newProjectFile, setNewProjectFile] = useState<File | null>(null); // 新项目的 PO 文件
   const [projectNameManaged, setProjectNameManaged] = useState<string[]>([]); // 要编辑的项目
   const [projectNameTranslating, setProjectNameTranslating] = useState<string[]>([]); // 翻译中的项目
   const [projectInProcess, setProjectInProcess] = useState<Project[]>([]); // 翻译中的项目
@@ -281,25 +280,30 @@ export default function Projects() {
    * @param {string} name - 新项目名称
    * @param {string} description - 新项目描述
    */
-  const createProject = async (name: string, description: string) => {
-    if (!newProjectFile) {
-      alert("Please select a file before submitting."); // 提示用户选择文件
+  const createProject = async (projectData: {
+    name: string;
+    description: string;
+    language_code: string;
+    targetLanguage: string;
+    is_public: boolean;
+    po_file: File | null;
+  }) => {
+    if (!projectData.po_file) {
+      alert("Please select a file before submitting.");
       return;
     }
     try {
-      console.log("start to create.")
+      console.log("Start creating project:", projectData) // 添加此行以调试
       const formData = new FormData();
-      formData.append("name", name);
-      formData.append("description", description);
-      formData.append("language_code", newProjectLanguageCode);
-      formData.append("source_language", newProjectSourceLanguage);
-      formData.append("is_public", newIsPublic.toString());
-      formData.append("po_file", newProjectFile);
-
+      formData.append("name", projectData.name);
+      formData.append("description", projectData.description);
+      formData.append("language_code", projectData.targetLanguage);
+      formData.append("source_language", projectData.language_code);
+      formData.append("is_public", projectData.is_public.toString());
+      formData.append("po_file", projectData.po_file);
+  
       const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-
-      console.log("before use create")
-
+  
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project`, {
         method: "POST",
         headers: {
@@ -310,17 +314,12 @@ export default function Projects() {
         body: formData, // 发送表单数据
         mode: "cors", // 跨域请求模式
       });
-      console.log("after use create")
+  
       if (response.ok) {
         const newProject = await response.json(); // 解析响应数据
         setProjects((prevProjects) => [...prevProjects, newProject]); // 将新项目添加到项目列表
         setIsCreateDialogOpen(false); // 关闭创建项目对话框
-        // 重置表单
-        setNewProjectName("");
-        setNewProjectDescription("");
-        setNewProjectSourceLanguage("en");
-        setNewProjectLanguageCode("");
-        setNewProjectFile(null);
+        // 无需重置状态，因为子组件已处理
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || errorData.message || "Failed to create project"; // 获取错误信息
@@ -406,17 +405,24 @@ export default function Projects() {
   /**
    * 确认创建项目的函数
    */
-  const handleCreateProject = async () => {
-    if (!newProjectName) {
-      alert("Project name is required"); // 提示用户项目名称是必填项
+  const handleCreateProject = async (projectData: {
+    name: string;
+    description: string;
+    language_code: string;
+    targetLanguage: string;
+    is_public: boolean;
+    po_file: File | null;
+  }) => {
+    if (!projectData.name) {
+      alert("Project name is required");
       return;
     }
     try {
-      await createProject(newProjectName, newProjectDescription); // 调用创建项目函数
-      // 重新获取项目列表以确保数据一致性
-      await fetchProjects();
+      await createProject(projectData); // 传递整个项目数据对象
+      await fetchProjects(); // 重新获取项目列表以确保数据一致性
     } catch (error) {
-      console.error("Error creating project:", error); // 打印错误日志
+      console.error("Error creating project:", error);
+      alert("Failed to create project. Please try again.");
     }
   };
 
@@ -578,135 +584,12 @@ export default function Projects() {
         </Tabs>
       )}
       {/* 创建项目对话框 */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle> {/* 对话框标题 */}
-            <DialogDescription>
-              Fill in the details below to create a new translation project.
-            </DialogDescription>
-          </DialogHeader>
-          {/* 创建项目表单 */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault(); // 防止表单默认提交行为
-              handleCreateProject(); // 调用创建项目函数
-            }}
-          >
-            <div className="grid gap-4 py-4">
-              {/* 项目名称输入 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project-name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Enter project name"
-                  required // 设置为必填项
-                />
-              </div>
-              {/* 项目描述输入 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="project-description" className="text-right">
-                  Description
-                </Label>
-                <Textarea
-                  value={newProjectDescription}
-                  onChange={(e) => setNewProjectDescription(e.target.value)}
-                  className="col-span-3"
-                  placeholder="Enter project description"
-                  required // 设置为必填项
-                />
-              </div>
-              {/* 源语言输入 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="source-language" className="text-right">
-                  Source Language
-                </Label>
-                <Select
-                  value={newProjectSourceLanguage}
-                  onValueChange={(value) => setNewProjectSourceLanguage(value)}
-                  required // 设置为必填项
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Source Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang: string) => {
-                      const [name, code] = lang.split(" (");
-                      return <SelectItem key={code} value={code.replace(")", "")}>{name}</SelectItem>;
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* 目标语言输入 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="language-code" className="text-right">
-                  Target Language
-                </Label>
-                <Select
-                  value={newProjectLanguageCode}
-                  onValueChange={(value) => setNewProjectLanguageCode(value)}
-                  required // 设置为必填项
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Target Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang: string) => {
-                      const [name, code] = lang.split(" (");
-                      return <SelectItem key={code} value={code.replace(")", "")}>{name}</SelectItem>;
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* 设置是否公开 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="source-language" className="text-right">
-                  Is Public
-                </Label>
-                <Select
-                  value={newIsPublic.toString()}
-                  onValueChange={(value) => setNewIsPublic(value === "true")}
-                  required // 设置为必填项
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Is Public" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="false">False</SelectItem>
-                    <SelectItem value="true">True</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* PO 文件上传 */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="po-file" className="text-right">
-                  PO 文件
-                </Label>
-                <Input
-                  type="file"
-                  accept=".po"
-                  onChange={(e) => setNewProjectFile(e.target.files?.[0] || null)}
-                  className="col-span-3"
-                  required // 设置为必填项
-                />
-              </div>
-            </div>
-            {/* 对话框底部按钮 */}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel {/* 取消按钮 */}
-              </Button>
-              <Button type="submit">
-                Create {/* 创建按钮 */}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateProjectDialog
+        isOpen={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onCreateProject={handleCreateProject}
+        languages={languages}
+      />
       {/* 编辑项目的对话框 */}
       <EditProjectDialog
         isOpen={isEditDialogOpen}
