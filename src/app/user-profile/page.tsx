@@ -1,7 +1,9 @@
+// src/app/user-profile/page.tsx
+
 "use client";
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserAvatar from "@/components/shared/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,53 +75,6 @@ export default function UserProfile() {
   // 定义有效的语言代码列表
   const validLanguageCodes = languageOptions.map((lang) => lang.code.toLowerCase());
 
-  // 颜色列表，用于头像背景（选择柔和的颜色）
-  const avatarColors = [
-    "#F44336", // 红色
-    "#E91E63", // 粉色
-    "#9C27B0", // 紫色
-    "#673AB7", // 深紫
-    "#3F51B5", // 印度蓝
-    "#2196F3", // 蓝色
-    "#03A9F4", // 浅蓝
-    "#00BCD4", // 青色
-    "#009688", // 青绿色
-    "#4CAF50", // 绿色
-    "#8BC34A", // 浅绿色
-    "#CDDC39", // 黄绿色
-    "#FFEB3B", // 黄色
-    "#FFC107", // 琥珀色
-    "#FF9800", // 橙色
-    "#FF5722", // 深橙
-    "#795548", // 棕色
-    "#9E9E9E", // 灰色
-    "#607D8B", // 蓝灰色
-  ];
-
-  // 根据用户名生成颜色
-  const getAvatarColor = (username: string): string => {
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
-      hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % avatarColors.length;
-    return avatarColors[index];
-  };
-
-  // 获取显示的首字母
-  const getInitials = (username: string): string => {
-    if (!username) return "";
-    const names = username.trim().split(" ");
-    if (names.length === 1) {
-      return names[0].charAt(0).toUpperCase();
-    } else {
-      return (
-        names[0].charAt(0).toUpperCase() +
-        names[names.length - 1].charAt(0).toUpperCase()
-      );
-    }
-  };
-
   useEffect(() => {
     const authToken = localStorage.getItem("authToken") || "";
     if (!authToken) {
@@ -182,9 +137,7 @@ export default function UserProfile() {
     if (!profileData) return;
 
     // 前端验证
-    const nativeLangValid = validLanguageCodes.includes(
-      editNativeLanguage.toLowerCase()
-    );
+    const nativeLangValid = validLanguageCodes.includes(editNativeLanguage.toLowerCase());
     const preferredLangsValid = editPreferredLanguages.every((lang) =>
       validLanguageCodes.includes(lang.toLowerCase())
     );
@@ -198,9 +151,7 @@ export default function UserProfile() {
     const updatedData = {
       bio: editBio,
       native_language: editNativeLanguage.toLowerCase(),
-      preferred_languages: editPreferredLanguages.map((lang) =>
-        lang.toLowerCase()
-      ),
+      preferred_languages: editPreferredLanguages.map((lang) => lang.toLowerCase()),
     };
 
     const authToken = localStorage.getItem("authToken") || "";
@@ -249,9 +200,6 @@ export default function UserProfile() {
     return <div className="container mx-auto p-4">加载中...</div>;
   }
 
-  // 处理头像背景颜色和显示的首字母
-  const avatarColor = getAvatarColor(profileData.username);
-
   // 处理进度条
   function getAcceptedEntriesLevel(entries: number) {
     if (entries < 50) {
@@ -268,13 +216,13 @@ export default function UserProfile() {
   // 根据 accepted_entries 显示不同的徽章
   function getAcceptedEntriesBadge(entries: number) {
     if (entries < 50) {
-      return <Badge className="bg-yellow-600 text-white">Bronze</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">Bronze</Badge>;
     } else if (entries < 200) {
-      return <Badge className="bg-gray-400 text-white">Silver</Badge>;
+      return <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">Silver</Badge>;
     } else if (entries < 500) {
-      return <Badge className="bg-yellow-500 text-white">Gold</Badge>;
+      return <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">Gold</Badge>;
     } else {
-      return <Badge className="bg-blue-600 text-white">Diamond</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">Diamond</Badge>;
     }
   }
 
@@ -282,39 +230,22 @@ export default function UserProfile() {
     <div className="container mx-auto p-4">
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center gap-4">
-          <Avatar className="w-24 h-24 flex-shrink-0">
-            {/* 头像图片（如果有用户上传头像，可以替换路径） */}
-            <AvatarImage
-              src={
-                profileData.username
-                  ? `/avatars/${profileData.username}.png`
-                  : "/placeholder.svg"
-              }
-              alt={profileData.username}
-            />
-            {/* 背景颜色和首字母显示 */}
-            <AvatarFallback
-              className="flex items-center justify-center bg-gray-500 text-white font-bold"
-              style={{
-                backgroundColor: avatarColor,
-              }}
-            >
-              <span className="text-4xl">{getInitials(profileData.username)}</span>
-            </AvatarFallback>
-          </Avatar>
+          {/* 使用共享的 UserAvatar 组件 */}
+          <UserAvatar username={profileData.username} size="lg" />
           <div className="flex-1">
             <div className="flex flex-col">
-              {/* 显示用户名 */}
-              <CardTitle className="text-2xl font-bold">
-                {profileData.username}
-              </CardTitle>
+              {/* 显示用户名和徽章 */}
+              <div className="flex items-center">
+                <CardTitle className="text-2xl font-bold">
+                  {profileData.username}
+                </CardTitle>
+                <span className="ml-2">
+                  {getAcceptedEntriesBadge(profileData.accepted_entries)}
+                </span>
+              </div>
               {/* 显示用户ID和邮箱 */}
               <CardDescription>User ID: {profileData.id}</CardDescription>
               <CardDescription>Email: {profileData.email}</CardDescription>
-              {/* 显示徽章 */}
-              <div className="flex items-center mt-2 text-sm text-muted-foreground space-x-2">
-                <span>{getAcceptedEntriesBadge(profileData.accepted_entries)}</span>
-              </div>
             </div>
           </div>
         </CardHeader>
