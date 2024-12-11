@@ -335,9 +335,8 @@ export default function ProjectDetails() {
     }
   };
 
-
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="h-100vh mx-auto p-6 space-y-8">
       {/* 项目导航面包屑 */}
       <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
         {/* Projects按钮 */}
@@ -487,7 +486,7 @@ export default function ProjectDetails() {
                     }
                   >
                     {/* 第一列：索引 */}
-                    <div className="font-medium pl-4 text-gray-700">
+                    <div className="font-medium pl-4 text-gray-500">
                       {entry.idx_in_language}
                     </div>
 
@@ -498,12 +497,12 @@ export default function ProjectDetails() {
 
                     {/* 第三列：msgid 和 标签 */}
                     <div className="flex items-center justify-start space-x-2">
-                      <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
+                      <div className="flex-1 pr-2 text-gray-700">{entry.msgid}</div>
                       <div className="flex flex-wrap mt-1">
                         {entry.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className={`px-2 py-0.5 text-[10px] text-gray-800 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
+                            className={`px-2 py-0.5 text-[10px] text-gray-900 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
                             style={{
                               minWidth: '15px', // 最小宽度
                               height: '20px', // 高度

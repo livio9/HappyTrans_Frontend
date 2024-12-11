@@ -748,7 +748,7 @@ export default function TranslationInterface() {
   };
 
   return (
-    <div className="flex flex-col bg-gray-100 dark:bg-gray-900">
+    <div className="h-90vh flex flex-col bg-background dark:bg-gray-900">
       {/* 项目导航面包屑 */}
       <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
         {/* Projects按钮 */}
@@ -789,7 +789,7 @@ export default function TranslationInterface() {
           entries
         </Button>
       </div>
-      <header className="bg-white dark:bg-gray-800 shadow p-4"> {/* 页头，包括项目名称，语言项和跳转按钮等等 */}
+      <header className="bg-white dark:bg-gray-900 shadow p-4"> {/* 页头，包括项目名称，语言项和跳转按钮等等 */}
         <div className="text-sm text-gray-600 dark:text-gray-400">{projectName}  / {languageCode} / Translate</div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
@@ -816,7 +816,7 @@ export default function TranslationInterface() {
         </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
-        <main className="flex-1 overflow-auto p-4">
+        <main className="flex-1 overflow-auto p-4 border-l border-gray-200">
           <div className="space-y-4">
             <Card>
               <CardContent className="p-4">
@@ -888,7 +888,7 @@ export default function TranslationInterface() {
           </div>
         </main>
         {/* 侧边栏, 包括FeedBack和String info */}
-        <aside className="w-80 bg-white dark:bg-gray-800 overflow-auto p-4 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+        <aside className="w-80 h-1/1 bg-white dark:bg-gray-900 overflow-auto p-4 border-l border-gray-200 dark:border-gray-700 flex flex-col">
           <Tabs defaultValue="feedback" className="flex-1 flex flex-col">
             <div className="top-0 bg-white dark:bg-gray-800 z-10">
               <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 rounded-md">
@@ -919,20 +919,24 @@ export default function TranslationInterface() {
             </TabsContent>
             <TabsContent value="info">
               <div className="space-y-2">
-                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
-                  <strong>Reference:</strong> {strings[currentIndex]?.references}
-                </div>
-                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
-                  <strong>Last updated:</strong> {(strings[currentIndex]?.updated_at)}
-                </div>
-                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
-                  <strong>Source string added:</strong> 3 years ago
-                </div>
-                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
-                  <strong>String Location:</strong> The {strings[currentIndex]?.idx_in_language}th in the translation file
-                </div>
+              <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
+                <strong className="text-secondary-foreground">Reference:</strong> 
+                <span className="text-secondary-foreground">{strings[currentIndex]?.references}</span>
+              </div>
+              <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
+                <strong className="text-secondary-foreground">Last updated:</strong>
+                <span className="text-secondary-foreground">{strings[currentIndex]?.updated_at}</span>
+              </div>
+              <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
+                <strong className="text-secondary-foreground">Source string added:</strong>
+                <span className="text-secondary-foreground">3 years ago</span>
+              </div>
+              <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
+                <strong className="text-secondary-foreground">String Location:</strong>
+                <span className="text-secondary-foreground">The {strings[currentIndex]?.idx_in_language}th in the translation file</span>
+              </div>
                 {/* tag是否可编辑需要看用户权限 */}
-                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                <div className="flex flex-wrap gap-3 mb-4 bg-secondary  shadow-sm p-4">
                   <strong>Tags:</strong>
                   {/* 渲染 Tags */}
                   {/* 渲染 Tags */}
@@ -1069,9 +1073,10 @@ export default function TranslationInterface() {
             </TabsContent>
           </Tabs>
         </aside>
+        
       </div>
       {/* 页脚，包括附近字符串、相似键、其他语言、历史和评论等内容 */}
-      <footer className="bg-white dark:bg-gray-800 p-2 border-t border-gray-200 dark:border-gray-700">
+      <footer className="bg-white dark:bg-gray-900 p-2 border-t border-gray-200 dark:border-gray-700">
         <Tabs defaultValue="nearby">
           <TabsList>
             <TabsTrigger value="nearby">Nearby Strings</TabsTrigger>
