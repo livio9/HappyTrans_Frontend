@@ -53,7 +53,7 @@ export function CollaboratorList({
     fetchCollaborators();
     setShouldFetch(false);  // 重置标记
     console.log("shouldFetch2", shouldFetch)
-  }, [projectName, type, shouldFetch])
+  }, [  shouldFetch])
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

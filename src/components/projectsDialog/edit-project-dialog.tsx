@@ -25,6 +25,7 @@ interface EditProjectDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   projectName: string
+  originalProjectName: string; // 新增原始项目名称
   projectDescription: string
   projectLanguageCode: string
   ispublic: boolean
@@ -40,6 +41,7 @@ export function EditProjectDialog({
   isOpen,
   onOpenChange,
   projectName,
+  originalProjectName, // 接收原始项目名称
   projectDescription,
   projectLanguageCode,
   ispublic,
@@ -137,12 +139,12 @@ export function EditProjectDialog({
             <div className="space-y-6">
               <CollaboratorList
                 type="managers"
-                projectName={projectName}
+                projectName={originalProjectName}
               />
 
               <CollaboratorList
                 type="translators"
-                projectName={projectName}
+                projectName={originalProjectName}
               />
             </div>
           </div>
