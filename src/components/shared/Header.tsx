@@ -1,12 +1,13 @@
+// src/app/header/Header.tsx
+
 'use client';
 
 import React, { useState, useEffect, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserAvatar from "@/components/shared/UserAvatar"; // 引入共享的 UserAvatar 组件
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from 'next/navigation'; // 导入 useRouter
-
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
@@ -55,13 +56,19 @@ const Header: React.FC = () => {
             <div className="flex items-center justify-between px-8 py-4">
                 <h2 className="text-2xl font-semibold text-gray-800">TranslateOS</h2>
                 <div className="flex items-center relative">
-                    <Avatar className="ml-4" onClick={handleAvatarClick}> {/* 添加头像点击事件 */}
-                        <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                        <AvatarFallback>{user?.username?.charAt(0) || "U"}</AvatarFallback>
-                    </Avatar>
-                    <Button variant="ghost" className="ml-2" onClick={toggleDropdown}>
-                        {user?.username || "J"}
-                        <ChevronDown className="ml-2 h-4 w-4 z-20" />
+                    {/* 使用共享的 UserAvatar 组件 */}
+                    <UserAvatar 
+                        username={user?.username || "U"} 
+                        size="md"  // 使用小尺寸
+                        onClick={handleAvatarClick} 
+                    />
+                    <Button 
+                        variant="ghost" 
+                        className="ml-0 flex items-center text-sm" // 减少间距，并设置文字大小
+                        onClick={toggleDropdown}
+                    >
+                        {user?.username || "U"}
+                        <ChevronDown className="ml-1 h-4 w-4 z-20" />
                     </Button>
                     {dropdownOpen && (
                         <div
@@ -71,24 +78,24 @@ const Header: React.FC = () => {
                         >
                             <ul className="space-y-2 p-4">
                                 <li className="hover:bg-gray-200 rounded-md p-2">
-                                    <Button variant="ghost" className="w-full text-left">
+                                    <Button variant="ghost" className="w-full text-left text-sm">
                                         Profile Settings
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 rounded-md p-2">
-                                    <Button variant="ghost" className="w-full text-left">
+                                    <Button variant="ghost" className="w-full text-left text-sm">
                                         Account Settings
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 rounded-md p-2">
-                                    <Button variant="ghost" className="w-full text-left">
+                                    <Button variant="ghost" className="w-full text-left text-sm">
                                         Privacy
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 rounded-md p-2">
                                     <Button
                                         variant="ghost"
-                                        className="w-full text-left text-red-600"
+                                        className="w-full text-left text-red-600 text-sm"
                                         onClick={handleLogout}
                                     >
                                         Logout
