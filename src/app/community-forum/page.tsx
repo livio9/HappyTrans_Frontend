@@ -100,6 +100,7 @@ const Comment = ({
   const [replyContent, setReplyContent] = useState(""); // 回复内容
   const [isReplying, setIsReplying] = useState(false); // 是否显示回复框
   const [user, setUser] = useState<User | null>(null); // 使用 state 存储 user
+  const { token } = useAuth(); 
 
   // 请求用户数据并更新评论中的 user 信息
   useEffect(() => {
@@ -108,7 +109,7 @@ const Comment = ({
         method: 'GET',
         headers: {
           'accept': 'application/json',
-          'Authorization': 'Token 11062b541ec273fdaffc6289c13862c698fdb59f'
+          Authorization: `Token ${token}`,
         }
       });
       const data = await response.json();
@@ -168,6 +169,25 @@ const Comment = ({
   const handleLike = () => {
     onLike(comment.id);
     comment.likes += 1; // 本地更新点赞数
+  };
+
+  const renderReplies = (replies: CommentType[]) => {
+    return replies.map((reply) => (
+      <div key={reply.id} className="ml-6"> {/* 增加缩进 */}
+        <Comment
+          comment={reply}
+          onReply={onReply}
+          onEditComment={onEditComment}
+          onEditReply={onEditReply}
+          onDeleteComment={onDeleteComment}
+          onDeleteReply={onDeleteReply}
+          onLike={onLike}
+          expandedComments={expandedComments}
+          toggleExpand={toggleExpand}
+          isReply={true}  // 递归时，传递 isReply 为 true
+        />
+      </div>
+    ));
   };
 
   return (
@@ -330,29 +350,13 @@ const Comment = ({
       )}
 
       {/* 回复列表 */}
-      {expandedComments.has(comment.id) && (
-        <div className="ml-12 mt-2 space-y-2">
-          {comment.replies.length === 0 ? (
-            <p className="text-gray-500 text-sm">No replies yet. Be the first to comment!</p>
-          ) : (
-            comment.replies.map((reply) => (
-              <Comment
-                key={reply.id}
-                comment={reply}
-                onReply={onReply}
-                onEditComment={onEditComment}
-                onEditReply={onEditReply}
-                onDeleteComment={onDeleteComment}
-                onDeleteReply={onDeleteReply}
-                onLike={onLike}
-                expandedComments={expandedComments}
-                toggleExpand={toggleExpand}
-                isReply={true} 
-              />
-            ))
-          )}
-        </div>
-      )}
+      <div className="ml-12 mt-2 space-y-2">
+        {comment.replies.length === 0 ? (
+          <p className="text-gray-500 text-sm">No replies yet. Be the first to comment!</p>
+        ) : (
+          renderReplies(comment.replies) // 渲染回复
+        )}
+      </div>
     </Card>
   );
 };
@@ -384,6 +388,15 @@ export default function CommunityForum() {
     }
   }, [projectName]);
 
+  useEffect(() => {
+    // 页面加载时获取所有评论的回复
+    comments.forEach((comment) => {
+      if (comment.replies?.length === 0) {
+        fetchReplies(comment.id); // 如果回复为空，则加载回复
+      }
+    });
+  }, [comments]); // 确保在评论更新时执行
+
   // 获取讨论区的评论
   const fetchComments = async (projectName: string) => {
     try {
@@ -406,7 +419,7 @@ export default function CommunityForum() {
       // 确保每个评论都有 replies 字段，即使是空数组
       const commentsWithReplies = data.map((comment: CommentType) => ({
         ...comment,
-        replies: comment.replies || [], // 如果没有 replies 字段，则初始化为空数组
+        replies: Array.isArray(comment.replies) ? comment.replies : [], // 如果没有 replies 字段，则初始化为空数组
       }));
       setComments(commentsWithReplies); // 设置评论列表
     } catch (error) {
@@ -665,9 +678,35 @@ export default function CommunityForum() {
       const data = await response.json(); // 获取新回复的数据
 
       // 更新评论列表，添加新的回复
-      setComments((prevComments) =>
-        addReplyToComments(prevComments, commentId, data)
-      );
+      const updatedComments = comments.map((comment) => {
+        if (comment.id === commentId) {
+          // 确保 replies 是一个数组，即使 comment.replies 为 undefined 或 null
+          const replies = Array.isArray(comment.replies) ? comment.replies : [];
+
+          // 创建新回复
+          const newReply = {
+            id: Date.now().toString(),
+            content: replyContent,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            likes: 0,
+            created_by: 'user123',
+            replies: [],
+          };
+
+          // 添加新回复到 replies 数组
+          return {
+            ...comment,
+            replies: [...replies, newReply],
+          };
+        }
+        return comment;
+      });
+
+      setComments(updatedComments);
+      // 添加该评论ID到expandedComments中，自动展开该评论的回复
+      setExpandedComments((prev) => new Set(prev.add(commentId)));
+      
     } catch (error) {
       console.error("Error posting reply:", error);
     }
@@ -675,26 +714,23 @@ export default function CommunityForum() {
 
   // 递归函数：在评论列表中添加回复
   const addReplyToComments = (commentsList: CommentType[], parentId: string, reply: CommentType): CommentType[] => {
-    return commentsList.map(comment => {
+    return commentsList.map((comment) => {
       if (comment.id === parentId) {
         return {
           ...comment,
-          replies: [...comment.replies, reply],
+          replies: Array.isArray(comment.replies) ? [...comment.replies, reply] : [reply],
         };
       }
       return {
         ...comment,
-        replies: addReplyToComments(comment.replies, parentId, reply),
+        replies: addReplyToComments(
+          Array.isArray(comment.replies) ? comment.replies : [],
+          parentId,
+          reply
+        ),
       };
     });
   };
-
-  // // 提交回复内容
-  // const handleSubmitReply = () => {
-  //   if (replyingTo && newReply) {
-  //     handleReply(replyingTo.commentId, replyingTo.replyId);
-  //   }
-  // };
 
   // 提交编辑后的回复
   const handleEditReply = async (replyId: string, newContent: string) => {
@@ -732,17 +768,15 @@ export default function CommunityForum() {
     replyId: string,
     newContent: string
   ): CommentType => {
-    // 如果当前评论是目标回复，则更新其内容
     if (comment.id === replyId) {
       return { ...comment, content: newContent };
     }
 
-    // 否则，递归更新其回复
     return {
       ...comment,
-      replies: comment.replies.map((reply) =>
-        updateReply(reply, replyId, newContent)  // 对每个子回复递归更新
-      ),
+      replies: Array.isArray(comment.replies)
+        ? comment.replies.map((reply) => updateReply(reply, replyId, newContent))
+        : [],
     };
   };
 
@@ -786,9 +820,11 @@ export default function CommunityForum() {
   const deleteReplyFromComment = (comment: CommentType, replyId: string): CommentType => {
     return {
       ...comment,
-      replies: comment.replies
-        .filter((reply) => reply.id !== replyId)
-        .map((reply) => deleteReplyFromComment(reply, replyId)),
+      replies: Array.isArray(comment.replies)
+        ? comment.replies
+          .filter((reply) => reply.id !== replyId)
+          .map((reply) => deleteReplyFromComment(reply, replyId))
+        : [],
     };
   };
 
