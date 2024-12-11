@@ -15,11 +15,13 @@ interface User {
 }
 
 interface CollaboratorListProps {
+  isadmin: boolean;
   type: "managers" | "translators"
   projectName: string
 }
 
 export function CollaboratorList({
+  isadmin,
   type,
   projectName,
 }: CollaboratorListProps) {
@@ -125,18 +127,20 @@ export function CollaboratorList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">{type === "managers" ? "Project Managers" : "Translators"}</h4>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => setIsAddPeopleOpen(true)}
-          >
-            <UserPlus className="h-4 w-4" />
-            Add people
-          </Button>
-        </div>
+        {isadmin && type === "managers" && (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => setIsAddPeopleOpen(true)}
+            >
+              <UserPlus className="h-4 w-4" />
+              Add people
+            </Button>
+          </div>
+        )}
       </div>
       
       <div className="relative">
@@ -157,15 +161,18 @@ export function CollaboratorList({
               onCheckedChange={handleSelectAll}
               aria-label="Select all"
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleRemoveSelectedCollaborator()}
-              className="ml-auto text-muted-foreground hover:text-foreground"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {isadmin && type === "managers" && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => handleRemoveSelectedCollaborator()}
+                className="ml-auto text-muted-foreground hover:text-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+            
           </div>
         </div>
         <div className="max-h-30 overflow-y-auto">
@@ -188,15 +195,17 @@ export function CollaboratorList({
                   </div>
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemoveCollaborator(collaborator.id)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {isadmin && type === "managers" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemoveCollaborator(collaborator.id)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ))}
         </div>
