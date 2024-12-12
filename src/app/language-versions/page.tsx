@@ -124,18 +124,22 @@ export default function LanguageVersions() {
             </div>
 
 
-            {/* 项目标题 */}
-            <h1 className="text-2xl font-bold mb-6">Language Versions - {projectName}</h1>
+            {/* 项目标题和按钮容器 */}
+            <div className="flex items-center justify-between mb-6">
+                {/* 项目标题 */}
+                <h1 className="text-3xl font-semibold text-gray-900">
+                    Language Versions - {projectName}
+                </h1>
 
-            {/* Community按钮（放在项目标题下方） */}
-            <div className="mb-6">
+                {/* Community按钮（放在标题右侧） */}
                 <Button
                     onClick={handleCommunityNavigation}
-                    className="text-white bg-blue-500 hover:bg-blue-700"
+                    className="text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 rounded-md py-2 px-6 shadow-sm transition-all duration-200"
                 >
                     Go to Community
                 </Button>
             </div>
+
 
             {/* 加载状态显示 */}
             {loading ? (
