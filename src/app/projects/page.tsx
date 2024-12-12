@@ -692,6 +692,7 @@ export default function Projects() {
       {/* 编辑项目的对话框 */}
       <EditProjectDialog
         isadmin={isAdmin}
+        ismanager={editingProject?.is_managed ?? false}
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         projectName={newProjectName}
