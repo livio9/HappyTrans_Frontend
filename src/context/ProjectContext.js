@@ -52,6 +52,11 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  // 获取项目名称
+  const getProjectName = () => {
+    return project?.name || null; // 假设项目对象中的 `name` 字段存储了项目名称
+  };
+
   // 清空项目信息（可用于切换项目时）
   const clearProject = () => {
     setProject(null);
@@ -60,7 +65,7 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ project, loading, error, setCurrentProject, fetchProjectInfo, clearProject }}>
+    <ProjectContext.Provider value={{ project, loading, error, setCurrentProject, fetchProjectInfo, clearProject, getProjectName  }}>
       {children}
     </ProjectContext.Provider>
   );

@@ -95,6 +95,11 @@ export default function LanguageVersions() {
         router.push("/projects");
     };
 
+    // 跳转到社区页面
+    const handleCommunityNavigation = () => {
+        router.push("/community-forum"); 
+    };
+
     return (
         <div className="container mx-auto p-4">
             {/* 项目导航面包屑 */}
@@ -121,6 +126,16 @@ export default function LanguageVersions() {
 
             {/* 项目标题 */}
             <h1 className="text-2xl font-bold mb-6">Language Versions - {projectName}</h1>
+
+            {/* Community按钮（放在项目标题下方） */}
+            <div className="mb-6">
+                <Button
+                    onClick={handleCommunityNavigation}
+                    className="text-white bg-blue-500 hover:bg-blue-700"
+                >
+                    Go to Community
+                </Button>
+            </div>
 
             {/* 加载状态显示 */}
             {loading ? (

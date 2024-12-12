@@ -431,6 +431,29 @@ export default function TranslationInterface() {
     router.push(`/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
   };
 
+  // 假设有一个字符串数组，代表每个词条的评论
+  const hardcodedComments = [
+    {
+      id: "1",
+      username: "Alice",
+      content: "This is a great project! I learned a lot from it.",
+      createdAt: "2024-12-01T12:34:56Z",
+    },
+    {
+      id: "2",
+      username: "Bob",
+      content: "I agree with Alice. It's really insightful.",
+      createdAt: "2024-12-02T09:30:00Z",
+    },
+    {
+      id: "3",
+      username: "Charlie",
+      content: "Looking forward to seeing more updates on this topic!",
+      createdAt: "2024-12-03T14:00:00Z",
+    },
+  ];
+
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       {/* 项目导航面包屑 */}
@@ -769,7 +792,18 @@ export default function TranslationInterface() {
 
           <TabsContent value="comment">
             <div className="p-2">
-              <p>{strings[currentIndex]?.comments || "No comments available."}</p> {/* 评论 */}
+              <h3 className="text-lg font-semibold mb-4">Comments</h3>
+              {hardcodedComments.length === 0 ? (
+                <p>No comments available.</p>
+              ) : (
+                hardcodedComments.map((comment) => (
+                  <div key={comment.id} className="mb-4 p-4 border-b border-gray-300">
+                    <div className="font-semibold">{comment.username}</div>
+                    <div className="text-sm text-gray-500">{new Date(comment.createdAt).toLocaleString()}</div>
+                    <p className="mt-2 text-gray-700">{comment.content}</p>
+                  </div>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>

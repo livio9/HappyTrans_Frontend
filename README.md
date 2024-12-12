@@ -1,3 +1,9 @@
+Please install react-textarea-autosize
+```bash
+npm install react-textarea-autosize
+npm install @radix-ui/react-checkbox
+
+```
 
 First, run the development server:
 
