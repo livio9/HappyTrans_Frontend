@@ -403,7 +403,7 @@ export default function Projects() {
     // Determine languages to add and remove
     const languagesToAdd = updatedLanguages.filter(lang => !originalLanguages.includes(lang))
     const languagesToRemove = originalLanguages.filter(lang => !updatedLanguages.includes(lang))
-
+    
     // 如果有新增语言且未上传 .po 文件，提示用户
     if (languagesToAdd.length > 0 && !poFile) {
       alert("请上传 .po 文件以添加新的语言。")
