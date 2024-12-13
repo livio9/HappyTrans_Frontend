@@ -155,6 +155,9 @@ export function CollaboratorList({
         />
       </div>
 
+      {filteredCollaborators.length === 0 ? (
+        <div className="p-4 text-center text-sm text-muted-foreground">No available {type === "managers" ? "Managers" : "Translators"}</div>
+        ) : (
       <div className="rounded-md border">
         <div className="border-b p-4">
           <div className="flex justify-between items-center">
@@ -211,7 +214,7 @@ export function CollaboratorList({
             </div>
           ))}
         </div>
-      </div>
+      </div>)}
 
       <AddPeopleDialog
         projectName={projectName}
