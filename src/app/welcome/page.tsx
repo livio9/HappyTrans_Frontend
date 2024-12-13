@@ -59,93 +59,88 @@ export default function Welcome() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-400 overflow-hidden">
-      {/* 欢迎部分，固定位置 */}
-      <h1 className="text-5xl font-bold mb-8 text-white flex items-center">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-400 overflow-auto">
+      {/* 欢迎部分 */}
+      <h1 className="text-5xl font-bold mb-8 text-white flex items-center text-center">
         <span>—— ——</span>
         <span className="mx-8">Welcome to TranslateOS</span>
         <span>—— ——</span>
       </h1>
       
-      {/* 浅色背景部分横跨整个屏幕，设置高度为70%，并加宽到70% */}
-      <div className="bg-gray-100 text-gray-800 py-16 px-8 w-screen h-[70vh] relative">
-        {/* 步骤引导部分，设置宽度为70% */}
+      {/* 使用min-h代替固定高度，使内容可随屏幕大小自动扩展 */}
+      <div className="bg-gray-100 text-gray-800 py-16 px-8 w-screen relative">
         <div className="text-center w-full max-w-screen-xl mx-auto">
           <h2 className="text-3xl font-semibold mt-0">{steps[currentStep].title}</h2>
-          
-          {/* 图片滑动展示部分 */}
-          <div className="relative mt-6 overflow-hidden w-full">
-            <div className="flex items-center justify-center space-x-8 w-full">
-              {/* 前一步的缩小虚化图片 */}
-              {currentStep > 0 && (
-                <img
-                  src={steps[currentStep - 1].image}
-                  alt={`Step ${currentStep}`}
-                  className="w-[380px] h-auto transform scale-90 opacity-50 transition-all duration-500 border-4 border-gray-300 rounded-lg"
-                />
-              )}
-              
-              {/* 当前步骤图片，始终居中 */}
-              <img
-                src={steps[currentStep].image}
-                alt={`Step ${currentStep + 1}`}
-                className="w-[650px] h-auto transform scale-100 opacity-100 transition-all duration-500 border-4 border-gray-300 rounded-lg"
-              />
-              
-              {/* 下一步的缩小虚化图片 */}
-              {currentStep < steps.length - 1 && (
-                <img
-                  src={steps[currentStep + 1].image}
-                  alt={`Step ${currentStep + 2}`}
-                  className="w-[380px] h-auto transform scale-90 opacity-50 transition-all duration-500 border-4 border-gray-300 rounded-lg"
-                />
-              )}
-            </div>
-          </div>
-          
-          {/* 说明文本稍微上移，字体增大 */}
-          <p className="mt-8 text-xl">{steps[currentStep].description}</p>
-        </div>
 
-        {/* 步骤控制按钮放在教程部分右下角 */}
-        <div className="absolute bottom-6 right-6 flex space-x-8">
-          {currentStep > 0 && (
-            <Button
-              asChild
-              variant="outline"
-              className="w-36 text-gray-800 text-lg py-3" // 调整按钮高度
-              onClick={goToPreviousStep}
-            >
-              <span>← Previous</span>
-            </Button>
-          )}
-          {currentStep < steps.length - 1 && (
-            <Button
-              asChild
-              variant="outline"
-              className="w-36 text-gray-800 text-lg py-3" // 调整按钮高度
-              onClick={goToNextStep}
-            >
-              <span>Next →</span>
-            </Button>
-          )}
+          {/* 图片与说明部分，使用响应式布局 */}
+          <div className="mt-8 flex flex-col items-center md:flex-row md:justify-center md:space-x-8">
+            
+            {/* 前一步的缩略图，只有在中等以上屏幕显示 */}
+            {currentStep > 0 && (
+              <img
+                src={steps[currentStep - 1].image}
+                alt={`Step ${currentStep}`}
+                className="hidden md:block md:w-[300px] md:h-auto transform scale-90 opacity-50 transition-all duration-500 border-4 border-gray-300 rounded-lg"
+              />
+            )}
+            
+            {/* 当前步骤图片，响应式缩放 */}
+            <img
+              src={steps[currentStep].image}
+              alt={`Step ${currentStep + 1}`}
+              className="w-full max-w-[650px] h-auto transform scale-100 opacity-100 transition-all duration-500 border-4 border-gray-300 rounded-lg"
+            />
+
+            {/* 下一步的缩略图，只有在中等以上屏幕显示 */}
+            {currentStep < steps.length - 1 && (
+              <img
+                src={steps[currentStep + 1].image}
+                alt={`Step ${currentStep + 2}`}
+                className="hidden md:block md:w-[300px] md:h-auto transform scale-90 opacity-50 transition-all duration-500 border-4 border-gray-300 rounded-lg"
+              />
+            )}
+          </div>
+
+          {/* 说明文本，增加padding防止与图片重叠 */}
+          <p className="mt-8 text-xl px-4 max-w-3xl mx-auto">
+            {steps[currentStep].description}
+          </p>
+
+          {/* 步骤控制按钮，放在正常文档流中，避免重叠 */}
+          <div className="flex justify-center space-x-8 mt-8">
+            {currentStep > 0 && (
+              <Button
+                variant="outline"
+                className="w-36 text-gray-800 text-lg py-3"
+                onClick={goToPreviousStep}
+              >
+                ← Previous
+              </Button>
+            )}
+            {currentStep < steps.length - 1 && (
+              <Button
+                variant="outline"
+                className="w-36 text-gray-800 text-lg py-3"
+                onClick={goToNextStep}
+              >
+                Next →
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 登录和注册按钮平齐排列 */}
-      <div className="flex space-x-8 mt-14">
-        {/* 登录按钮 */}
-        <Button asChild className="w-72 text-xl py-4">
+      {/* 登录和注册按钮平齐排列，使用flex布局并居中 */}
+      <div className="flex flex-col md:flex-row space-y-8 md:space-y-0 md:space-x-8 mt-14 justify-center">
+        <Button className="w-72 text-xl py-4">
           <Link href="/signin">Sign In</Link>
         </Button>
-        {/* 注册按钮 */}
-        <Button asChild variant="outline" className="w-72 text-xl py-4">
+        <Button variant="outline" className="w-72 text-xl py-4">
           <Link href="/signup">Sign Up</Link>
         </Button>
       </div>
 
-      {/* 无需登录直接进入按钮 */}
-      <Button asChild variant="secondary" className="w-72 mt-8 text-xl py-4">
+      <Button variant="secondary" className="w-72 mt-8 text-xl py-4">
         <Link href="/dashboard">Continue Without Login</Link>
       </Button>
     </div>
