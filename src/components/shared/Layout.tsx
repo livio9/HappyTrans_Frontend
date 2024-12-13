@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React from "react";
 import Sidebar from "./Sidebar";
@@ -16,12 +16,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const isPublicPath = publicPaths.includes(pathname);
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex min-h-screen bg-gray-100 overflow-hidden"> {/* 使用 min-h-screen 并添加 overflow-hidden */}
             {/* 侧边栏 */}
             {!isPublicPath && <Sidebar />}
 
             {/* 主页面内容 */}
-            <main className={`flex-1 overflow-y-auto ${!isPublicPath ? '' : 'flex items-center justify-center'}`}>
+            <main className={`flex-1 overflow-y-auto ${!isPublicPath ? 'flex flex-col' : 'flex items-center justify-center'}`}>
                 {!isPublicPath && <Header />}
                 {!isPublicPath ? (
                     <div className="p-8">
