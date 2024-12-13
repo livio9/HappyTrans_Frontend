@@ -403,7 +403,7 @@ export default function Projects() {
     // Determine languages to add and remove
     const languagesToAdd = updatedLanguages.filter(lang => !originalLanguages.includes(lang))
     const languagesToRemove = originalLanguages.filter(lang => !updatedLanguages.includes(lang))
-    
+
     // 如果有新增语言且未上传 .po 文件，提示用户
     if (languagesToAdd.length > 0 && !poFile) {
       alert("请上传 .po 文件以添加新的语言。")
@@ -442,7 +442,7 @@ export default function Projects() {
           formData.append('po_file', poFile)
           const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
 
-          const addResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-language?project_name=${editingProject.name}`, {
+          const addResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-language?project_name=${newProjectName}`, {
             method: "POST",
             headers: {
               Authorization: `Token ${token}`,
@@ -462,7 +462,7 @@ export default function Projects() {
 
       // 移除旧语言
       for (const lang of languagesToRemove) {
-        const removeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-language?project_name=${editingProject.name}&language_id=${lang}`, {
+        const removeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-language?project_name=${newProjectName}&language_id=${lang}`, {
           method: "DELETE", // 根据后端 API 确认是否使用 POST 或 DELETE
           headers: {
             "Content-Type": "application/json",
@@ -472,7 +472,7 @@ export default function Projects() {
 
         if (!removeResponse.ok) {
           if (removeResponse.status === 404) {
-            console.warn(`Language ${lang} does not exist in project ${editingProject.name}.`)
+            console.warn(`Language ${lang} does not exist in project ${newProjectName}.`)
           } else {
             const errorData = await removeResponse.json()
             alert(`Failed to remove language ${lang}: ${errorData.message || "Unknown error"}`)
