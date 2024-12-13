@@ -143,6 +143,7 @@ export default function Projects() {
   const [shouldFetchProjects, setShouldFetchProjects] = useState(false); // 是否应该获取项目列表
   const [shouldAddAdmin, setShouldAddAdmin] = useState(false); // 是否应该添加管理员
   const [createdProjectName, setCreatedProjectName] = useState(""); // 创建的项目名称
+  const [projectFilterTerm, setProjectFilterTerm] = useState(""); // 项目过滤条件
 
   // 在组件内部定义编辑项目的状态
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -194,7 +195,7 @@ export default function Projects() {
   const fetchProjects = useCallback(async () => {
     setLoading(true); // 设置加载状态为加载中
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/projects?project_name=${projectFilterTerm}&page_size=${100}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -203,9 +204,9 @@ export default function Projects() {
       });
 
       if (response.ok) {
-        const data: Project[] = await response.json(); // 解析响应数据
+        const data = await response.json(); // 解析响应数据
         console.log("data", data);
-        const validatedData = data.filter((project) => typeof project.name === "string");
+        const validatedData: Project[] = data.results.filter((project: Project) => typeof project.name === "string");
         setProjects(validatedData);
         // 筛选名字在 projectNameManaged 中的项目
         console.log("projectNameManaged", projectNameManaged);
@@ -239,7 +240,7 @@ export default function Projects() {
       setLoading(false); // 结束加载状态
       setShouldFetchProjects(false);
     }
-  }, [token, projectNameManaged, projectNameTranslating]);
+  }, [token, projectNameManaged, projectNameTranslating, projectFilterTerm]);
 
   // 组件挂载时获取项目列表
   useEffect(() => {
@@ -659,16 +660,35 @@ export default function Projects() {
     );
   };
 
+  function handleSearch() {
+    fetchProjects();
+  }
   return (
     <div className="container mx-auto p-4 flex flex-col min-h-screen overflow-x-hidden"> {/* 添加 overflow-x-hidden */}
       {/* 页面标题 */}
       <h1 className="text-2xl font-bold mb-6">Project Management</h1>
       {/* 搜索和创建项目部分 */}
       <div className="mb-6 flex items-center justify-between">
-        {/* 搜索框 */}
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" /> {/* 搜索图标 */}
-          <Input type="text" placeholder="Search Project..." className="pl-8 pr-4 w-64" />
+        <div className="flex items-center space-x-2">
+          {/* 搜索框 */}
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" /> {/* 搜索图标 */}
+            <Input type="text" 
+            placeholder="Search Project..."
+            value={projectFilterTerm}
+            onChange={(e) => {
+              console.log("输入的值：", e.target.value);
+              setProjectFilterTerm(e.target.value);
+            }} 
+            className="pl-8 pr-4 w-64" />
+          </div>
+          <Button
+            variant="outline"
+            className="ml-0 opacity-75" // 添加 margin-left 和透明度样式
+            onClick={handleSearch}
+          >
+            Search
+          </Button>
         </div>
         {isAdmin && ( // 如果用户是管理员，显示创建项目按钮
           <Button onClick={() => setIsCreateDialogOpen(true)}>
