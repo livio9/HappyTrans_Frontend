@@ -135,8 +135,8 @@ export default function Projects() {
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null); // 要删除的项目名称
   const [projects, setProjects] = useState<Project[]>([]); // 项目列表
   const [loading, setLoading] = useState(true); // 加载状态
-  const [newIsPublic, setNewIsPublic] = useState(false); // 新项目是否公开
-  const [newProjectLanguageCode, setNewProjectLanguageCode] = useState(""); // 新项目目标语言代码
+  const [newIsPublic, setNewIsPublic] = useState(false); // 新项目源语言代码
+  const [newProjectLanguageCodes, setNewProjectLanguageCodes] = useState<string[]>([]); // 新项目目标语言代码
   const [projectNameManaged, setProjectNameManaged] = useState<string[]>([]); // 要编辑的项目
   const [projectNameTranslating, setProjectNameTranslating] = useState<string[]>([]); // 翻译中的项目
   const [projectInProcess, setProjectInProcess] = useState<Project[]>([]); // 翻译中的项目
@@ -385,48 +385,110 @@ export default function Projects() {
     setEditingProject(project);
     setNewProjectName(project.name);
     setNewProjectDescription(project.description);
-    setNewProjectLanguageCode(project.languages[0]?.language_code || ""); // 默认选择第一个语言
+    const newlanguageCodes = project.languages.map((lang) => lang.language_code);
+    setNewProjectLanguageCodes(newlanguageCodes || []); // 默认选择第一个语言
     setNewIsPublic(project.is_public);
     setIsEditDialogOpen(true);
   };
 
   /**
-   * 更新项目的处理函数
-   */
-  const handleSaveProject = async () => {
+  * 更新项目的处理函数
+  */
+  const handleSaveProject = async (selectedLanguages: string[], poFile: File | null) => {
     if (!editingProject) return;
+  
+    const originalLanguages = editingProject.languages.map((lang) => lang.language_code) // Assuming this prop contains the original languages
+    const updatedLanguages = selectedLanguages // This should be an array of selected language codes
+  
+    // Determine languages to add and remove
+    const languagesToAdd = updatedLanguages.filter(lang => !originalLanguages.includes(lang))
+    const languagesToRemove = originalLanguages.filter(lang => !updatedLanguages.includes(lang))
 
+    // 如果有新增语言且未上传 .po 文件，提示用户
+    if (languagesToAdd.length > 0 && !poFile) {
+      alert("请上传 .po 文件以添加新的语言。")
+      return
+    }
+  
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${editingProject.name}`,
-        {
-          method: "POST",
+      // Update project details
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${editingProject.name}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          name: newProjectName,
+          description: newProjectDescription,
+          is_public: newIsPublic,
+        }),
+      })
+  
+      if (!response.ok) {
+        const errorData = await response.json()
+        alert(errorData.message || "Failed to update project details")
+        return
+      }
+      
+      // 添加新语言
+      if (languagesToAdd.length > 0 && poFile) {
+        
+        for (const lang of languagesToAdd) {
+          
+          const formData = new FormData()
+          // formData.append('project_name', editingProject.name)
+          formData.append('language_code', lang)
+          formData.append('po_file', poFile)
+          const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
+
+          const addResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-language?project_name=${newProjectName}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Token ${token}`,
+              "X-CSRFToken": csrfToken || "", // 添加 CSRF token
+            },
+            credentials: "include", // 包含凭证
+            body: formData, // 发送表单数据
+            mode: "cors", // 跨域请求模式
+          });
+
+          if (!addResponse.ok) {
+            const errorData = await addResponse.json()
+            alert(`Failed to add language ${lang}: ${errorData.message || "Unknown error"}`)
+          }
+        }
+      }
+
+      // 移除旧语言
+      for (const lang of languagesToRemove) {
+        const removeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-language?project_name=${newProjectName}&language_id=${lang}`, {
+          method: "DELETE", // 根据后端 API 确认是否使用 POST 或 DELETE
           headers: {
             "Content-Type": "application/json",
             Authorization: `Token ${token}`,
           },
-          body: JSON.stringify({
-            name: newProjectName,
-            description: newProjectDescription,
-            language_code: newProjectLanguageCode,
-            is_public: newIsPublic,
-          }),
-        }
-      );
+        })
 
-      if (response.ok) {
-        // 更新成功，关闭弹窗并更新项目列表
-        setIsEditDialogOpen(false);
-        fetchProjects(); // 重新获取项目列表
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || "Failed to update project");
+        if (!removeResponse.ok) {
+          if (removeResponse.status === 404) {
+            console.warn(`Language ${lang} does not exist in project ${newProjectName}.`)
+          } else {
+            const errorData = await removeResponse.json()
+            alert(`Failed to remove language ${lang}: ${errorData.message || "Unknown error"}`)
+          }
+        }
       }
+  
+      // After all operations, close the dialog and refresh the project list
+      setIsEditDialogOpen(false)
+      fetchProjects()
     } catch (error) {
-      console.error("Error updating project:", error);
-      alert("An error occurred while updating the project.");
+      console.error("Error updating project:", error)
+      alert("An error occurred while updating the project.")
     }
-  };
+  }
+  
 
   /**
    * 处理删除按钮点击事件，打开删除确认对话框
@@ -692,18 +754,20 @@ export default function Projects() {
       {/* 编辑项目的对话框 */}
       <EditProjectDialog
         isadmin={isAdmin}
+        ismanager={editingProject?.is_managed ?? false}
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         projectName={newProjectName}
         originalProjectName={editingProject?.name || ""}
         projectDescription={newProjectDescription}
-        projectLanguageCode={newProjectLanguageCode}
+        projectLanguageCodes={newProjectLanguageCodes}
+        originalLanguageCodes={editingProject?.languages.map((lang) => lang.language_code) || []}
         languages={languages}
         ispublic={newIsPublic}
         onIsPublicChange={setNewIsPublic}
         onProjectNameChange={setNewProjectName}
         onProjectDescriptionChange={setNewProjectDescription}
-        onProjectLanguageCodeChange={setNewProjectLanguageCode}
+        onProjectLanguageCodesChange={setNewProjectLanguageCodes}
         onSave={handleSaveProject}
       />
 
