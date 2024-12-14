@@ -67,7 +67,7 @@ interface Project {
     total_entries: number; // 总字符串数
     total_selected_entries: number; // 已选择的字符串数
     overall_selected_ratio: number; // 已选择的字符串比例
-  };;
+  }; // 修正为单个分号
   translators: {
     id: number;
     username: string;
@@ -203,7 +203,6 @@ export default function Projects() {
         },
       });
 
-
       if (response.ok) {
         const data = await response.json(); // 解析响应数据
         console.log("data", data);
@@ -217,24 +216,7 @@ export default function Projects() {
           .filter((project) => projectNameManaged.includes(project.name))
           .map((project) => ({
             ...project,
-            is_managed: projectNameManaged.includes(project.name),
-          }));
-        const TranslatingProjects = validatedData
-          .filter(
-            (project) =>
-              projectNameTranslating.includes(project.name) && !projectNameManaged.includes(project.name)
-          )
-          .map((project) => ({
-            ...project,
-            is_managed: false,
-          }));
-
-
-        const ManagedProjects = validatedData
-          .filter((project) => projectNameManaged.includes(project.name))
-          .map((project) => ({
-            ...project,
-            is_managed: projectNameManaged.includes(project.name),
+            is_managed: true, // 明确设置为管理员管理
           }));
         const TranslatingProjects = validatedData
           .filter(
@@ -265,13 +247,11 @@ export default function Projects() {
     fetchProjectsInProcess();
   }, [fetchProjectsInProcess]);
 
-
   useEffect(() => {
     if (shouldFetchProjects) {
       fetchProjects();
     }
-  }, [fetchProjects, projectNameManaged, projectNameTranslating]);
-
+  }, [fetchProjects, shouldFetchProjects]);
 
   /**
    * 点击外部区域关闭下拉菜单的事件处理
@@ -295,17 +275,14 @@ export default function Projects() {
   const deleteProject = async (projectName: string) => {
     try {
       const response = await fetch(
-        
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/delete-project?project_name=${projectName}`,
-       
         {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
-            },
-          }
-      
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+          },
+        }
       );
       if (response.ok) {
         setProjects((prevProjects) => prevProjects.filter((project) => project.name !== projectName)); // 从项目列表中移除已删除项目
@@ -321,7 +298,6 @@ export default function Projects() {
   /**
    * 创建项目的函数
    * @param {object} projectData - 新项目的数据
-   * @param {object} projectData - 新项目的数据
    */
   const createProject = async (projectData: {
     name: string;
@@ -336,7 +312,7 @@ export default function Projects() {
       return;
     }
     try {
-      console.log("Start creating project:", projectData);; // 添加此行以调试
+      console.log("Start creating project:", projectData); // 添加此行以调试
       const formData = new FormData();
       formData.append("name", projectData.name);
       formData.append("description", projectData.description);
@@ -345,9 +321,7 @@ export default function Projects() {
       formData.append("is_public", projectData.is_public.toString());
       formData.append("po_file", projectData.po_file);
 
-
       const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/create-project`, {
         method: "POST",
@@ -359,7 +333,6 @@ export default function Projects() {
         body: formData, // 发送表单数据
         mode: "cors", // 跨域请求模式
       });
-
 
       if (response.ok) {
         const newProject = await response.json(); // 解析响应数据
@@ -386,17 +359,14 @@ export default function Projects() {
   const addAdminToProject = async (projectName: string) => {
     try {
       const response = await fetch(
-        
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=managers&project_name=${projectName}&user_id=${2}`,
-       
         {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
-            },
-          }
-      
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`, // 使用认证令牌
+          },
+        }
       );
       if (response.ok) {
         console.log("Admin added to project successfully");
@@ -410,8 +380,8 @@ export default function Projects() {
   };
 
   /**
-    * 管理项目的函数
-    */
+   * 管理项目的函数
+   */
   const handleManageClick = (project: Project) => {
     setEditingProject(project);
     setNewProjectName(project.name);
@@ -423,24 +393,24 @@ export default function Projects() {
   };
 
   /**
-  * 更新项目的处理函数
-  */
+   * 更新项目的处理函数
+   */
   const handleSaveProject = async (selectedLanguages: string[], poFile: File | null) => {
     if (!editingProject) return;
-  
-    const originalLanguages = editingProject.languages.map((lang) => lang.language_code) // Assuming this prop contains the original languages
-    const updatedLanguages = selectedLanguages // This should be an array of selected language codes
-  
+
+    const originalLanguages = editingProject.languages.map((lang) => lang.language_code); // Assuming this prop contains the original languages
+    const updatedLanguages = selectedLanguages; // This should be an array of selected language codes
+
     // Determine languages to add and remove
-    const languagesToAdd = updatedLanguages.filter(lang => !originalLanguages.includes(lang))
-    const languagesToRemove = originalLanguages.filter(lang => !updatedLanguages.includes(lang))
+    const languagesToAdd = updatedLanguages.filter((lang) => !originalLanguages.includes(lang));
+    const languagesToRemove = originalLanguages.filter((lang) => !updatedLanguages.includes(lang));
 
     // 如果有新增语言且未上传 .po 文件，提示用户
     if (languagesToAdd.length > 0 && !poFile) {
-      alert("请上传 .po 文件以添加新的语言。")
-      return
+      alert("请上传 .po 文件以添加新的语言。");
+      return;
     }
-  
+
     try {
       // Update project details
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${editingProject.name}`, {
@@ -454,23 +424,20 @@ export default function Projects() {
           description: newProjectDescription,
           is_public: newIsPublic,
         }),
-      })
-  
+      });
+
       if (!response.ok) {
-        const errorData = await response.json()
-        alert(errorData.message || "Failed to update project details")
-        return
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to update project details");
+        return;
       }
-      
+
       // 添加新语言
       if (languagesToAdd.length > 0 && poFile) {
-        
         for (const lang of languagesToAdd) {
-          
-          const formData = new FormData()
-          // formData.append('project_name', editingProject.name)
-          formData.append('language_code', lang)
-          formData.append('po_file', poFile)
+          const formData = new FormData();
+          formData.append("language_code", lang);
+          formData.append("po_file", poFile);
           const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
 
           const addResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/add-language?project_name=${newProjectName}`, {
@@ -485,41 +452,40 @@ export default function Projects() {
           });
 
           if (!addResponse.ok) {
-            const errorData = await addResponse.json()
-            alert(`Failed to add language ${lang}: ${errorData.message || "Unknown error"}`)
+            const errorData = await addResponse.json();
+            alert(`Failed to add language ${lang}: ${errorData.message || "Unknown error"}`);
           }
         }
       }
 
       // 移除旧语言
       for (const lang of languagesToRemove) {
-        const removeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-language?project_name=${newProjectName}&language_id=${lang}`, {
+        const removeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-language?project_name=${newProjectName}&language_code=${lang}`, {
           method: "DELETE", // 根据后端 API 确认是否使用 POST 或 DELETE
           headers: {
             "Content-Type": "application/json",
             Authorization: `Token ${token}`,
           },
-        })
+        });
 
         if (!removeResponse.ok) {
           if (removeResponse.status === 404) {
-            console.warn(`Language ${lang} does not exist in project ${newProjectName}.`)
+            console.warn(`Language ${lang} does not exist in project ${newProjectName}.`);
           } else {
-            const errorData = await removeResponse.json()
-            alert(`Failed to remove language ${lang}: ${errorData.message || "Unknown error"}`)
+            const errorData = await removeResponse.json();
+            alert(`Failed to remove language ${lang}: ${errorData.message || "Unknown error"}`);
           }
         }
       }
-  
+
       // After all operations, close the dialog and refresh the project list
-      setIsEditDialogOpen(false)
-      fetchProjects()
+      setIsEditDialogOpen(false);
+      fetchProjects();
     } catch (error) {
-      console.error("Error updating project:", error)
-      alert("An error occurred while updating the project.")
+      console.error("Error updating project:", error);
+      alert("An error occurred while updating the project.");
     }
-  }
-  
+  };
 
   /**
    * 处理删除按钮点击事件，打开删除确认对话框
@@ -562,7 +528,6 @@ export default function Projects() {
     }
     try {
       await createProject(projectData); // 传递整个项目数据对象
-      // await addAdminToProject(projectData.name); // 添加管理员
       await fetchProjects(); // 重新获取项目列表以确保数据一致性
       await fetchProjectsInProcess();
     } catch (error) {
@@ -596,7 +561,6 @@ export default function Projects() {
       await fetchProjectInfo(projectName); // 获取项目详细信息
       setCurrentProject({ name: projectName }); // 设置当前项目
       router.push(`/language-versions?project=${encodeURIComponent(projectName)}`); // 跳转到语言版本页面
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`); // 跳转到语言版本页面
     } catch (error) {
       console.error("Failed to start translating:", error); // 打印错误日志
       alert("无法启动翻译工作，请稍后再试。"); // 提示用户错误信息
@@ -615,6 +579,7 @@ export default function Projects() {
       return nameA.localeCompare(nameB);
     });
   }, [projects]);
+
   const sortedProjectsInProcess = React.useMemo(() => {
     return [...projectInProcess].sort((a, b) => {
       const nameA = a.name || ""; // 如果 a.name 为 undefined，使用空字符串兜底
@@ -642,7 +607,7 @@ export default function Projects() {
   };
   const goToPageInProcess = (page: number) => {
     setCurrentPageInProcess(page);
-  };;
+  };
 
   /**
    * 项目卡片组件
@@ -651,15 +616,12 @@ export default function Projects() {
   const ProjectCard = ({ project }: { project: Project }) => {
     const { user } = useAuth(); // 使用认证上下文
 
-
     const isManager = project.is_managed;
+    const isAdminLocal = user?.role === "admin"; // 定义 isAdmin
 
     return (
-      <Card className="h-48 flex flex-col justify-between" className="h-48 flex flex-col justify-between">
+      <Card className="h-48 flex flex-col justify-between">
         {/* 项目卡片头部，显示项目名称和操作菜单 */}
-        <CardHeader className="flex flex-row items-center justify-between pb-1">
-          <CardTitle className="text-lg">{project.name}</CardTitle> {/* 项目名称 */}
-          {isManager && ( // 如果用户是管理员，显示下拉菜单
         <CardHeader className="flex flex-row items-center justify-between pb-1">
           <CardTitle className="text-lg">{project.name}</CardTitle> {/* 项目名称 */}
           {isManager && ( // 如果用户是管理员，显示下拉菜单
@@ -674,11 +636,7 @@ export default function Projects() {
                 <DropdownMenuItem onSelect={() => handleManageClick(project)}>
                   Manage Project {/* 管理项目 */}
                 </DropdownMenuItem>
-                {isAdmin && (
-                  <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
-                    Delete Project {/* 删除项目 */}
-                  </DropdownMenuItem>
-                {isAdmin && (
+                {isAdminLocal && (
                   <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
                     Delete Project {/* 删除项目 */}
                   </DropdownMenuItem>
@@ -691,9 +649,6 @@ export default function Projects() {
         <CardContent className="flex flex-col flex-grow">
           <CardDescription className="text-sm mt-1">{project.description}</CardDescription> {/* 项目描述 */}
           <Button className="mt-auto self-start" onClick={() => handleGoToTranslate(project.name)}>
-        <CardContent className="flex flex-col flex-grow">
-          <CardDescription className="text-sm mt-1">{project.description}</CardDescription> {/* 项目描述 */}
-          <Button className="mt-auto self-start" onClick={() => handleGoToTranslate(project.name)}>
             <Globe className="mr-2 h-4 w-4" /> {/* 地球图标 */}
             Go to Translation {/* 启动翻译 */}
           </Button>
@@ -701,12 +656,13 @@ export default function Projects() {
       </Card>
     );
   };
+
   function handleSearch() {
     fetchProjects();
   }
+
   return (
-    <div className="container mx-auto p-4 flex flex-col min-h-screen overflow-x-hidden"> {/* 添加 overflow-x-hidden */}
-    <div className="container mx-auto p-4 flex flex-col min-h-screen overflow-x-hidden"> {/* 添加 overflow-x-hidden */}
+    <div className="container mx-auto p-4 flex flex-col min-h-screen overflow-x-hidden">
       {/* 页面标题 */}
       <h1 className="text-2xl font-bold mb-6">Project Management</h1>
       {/* 搜索和创建项目部分 */}
@@ -715,14 +671,16 @@ export default function Projects() {
           {/* 搜索框 */}
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" /> {/* 搜索图标 */}
-            <Input type="text" 
-            placeholder="Search Project..."
-            value={projectFilterTerm}
-            onChange={(e) => {
-              console.log("输入的值：", e.target.value);
-              setProjectFilterTerm(e.target.value);
-            }} 
-            className="pl-8 pr-4 w-64" />
+            <Input
+              type="text"
+              placeholder="Search Project..."
+              value={projectFilterTerm}
+              onChange={(e) => {
+                console.log("输入的值：", e.target.value);
+                setProjectFilterTerm(e.target.value);
+              }}
+              className="pl-8 pr-4 w-64"
+            />
           </div>
           <Button
             variant="outline"
@@ -751,7 +709,7 @@ export default function Projects() {
             </TabsList>
             <TabsContent value="to-translate">
               {/* 待翻译项目网格 */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> {/* 移除 min-h-[240px] */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {paginatedProjects.map((project) => (
                   <ProjectCard key={project.name} project={project} />
                 ))}
@@ -778,75 +736,7 @@ export default function Projects() {
             </TabsContent>
             <TabsContent value="in-progress">
               {/* 翻译中项目网格 */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> {/* 移除 min-h-[240px] */}
-                {paginatedProjectsInProcess.map((project) => (
-                  <ProjectCard key={project.name} project={project} />
-                ))}
-                {/* 添加占位元素，保持网格高度一致 */}
-                {Array.from({ length: Math.max(0, itemsPerPage - paginatedProjectsInProcess.length) }, (_, index) => (
-                  <div key={index} className="invisible h-48"> {/* 固定高度，与 ProjectCard 一致 */}
-                    <Card className="h-48"></Card>
-                  </div>
-                ))}
-              </div>
-              {/* 分页导航 */}
-              <div className="flex justify-center mt-6 space-x-2">
-                {/* 页码按钮 */}
-                {Array.from({ length: totalPagesInProcess }, (_, index2) => index2 + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={page === currentPageInProcess ? "outline" : "ghost"} // 当前页码为主按钮
-                    onClick={() => goToPageInProcess(page)}
-                  >
-                    {page} {/* 显示页码 */}
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </div>
-      {/* 主内容区域 */}
-      <div className="flex-grow">
-        {/* 加载状态显示 */}
-        {loading ? (
-          <p>Loading projects...</p>
-        ) : (
-          <Tabs defaultValue="to-translate">
-            <TabsList>
-              <TabsTrigger value="to-translate">To Translate</TabsTrigger> {/* 待翻译标签页 */}
-              <TabsTrigger value="in-progress">In Progress</TabsTrigger> {/* 翻译中标签页 */}
-            </TabsList>
-            <TabsContent value="to-translate">
-              {/* 待翻译项目网格 */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> {/* 移除 min-h-[240px] */}
-                {paginatedProjects.map((project) => (
-                  <ProjectCard key={project.name} project={project} />
-                ))}
-                {/* 添加占位元素，保持网格高度一致 */}
-                {Array.from({ length: Math.max(0, itemsPerPage - paginatedProjects.length) }, (_, index) => (
-                  <div key={index} className="invisible h-48"> {/* 固定高度，与 ProjectCard 一致 */}
-                    <Card className="h-48"></Card>
-                  </div>
-                ))}
-              </div>
-              {/* 分页导航 */}
-              <div className="flex justify-center mt-6 space-x-2">
-                {/* 页码按钮 */}
-                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={page === currentPage ? "outline" : "ghost"} // 当前页码为主按钮
-                    onClick={() => goToPage(page)}
-                  >
-                    {page} {/* 显示页码 */}
-                  </Button>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="in-progress">
-              {/* 翻译中项目网格 */}
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"> {/* 移除 min-h-[240px] */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {paginatedProjectsInProcess.map((project) => (
                   <ProjectCard key={project.name} project={project} />
                 ))}
