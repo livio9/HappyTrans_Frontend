@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // 导入路由钩子
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SignUp() {
+  const router = useRouter();
   // 设置状态来保存表单数据、错误信息和成功状态
   const [formData, setFormData] = useState({
     name: "",
@@ -55,6 +57,7 @@ export default function SignUp() {
       if (response.ok) {
         setSuccess(true);  // 注册成功
         setError("");      // 清空错误信息
+        router.push(`/signin?username=${encodeURIComponent(formData.name)}`);
         console.log("Token:", result.token); // 你可以保存 token 或跳转到其他页面
       } else {
         setError(result.error || "Registration failed"); // 显示错误信息

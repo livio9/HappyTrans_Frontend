@@ -10,8 +10,6 @@ import {
   Plus,
   Search,
 } from "lucide-react"; // 导入图标组件
-import Link from "next/link"; // 导入 Link 组件，用于页面跳转
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // 导入头像组件
 import { Button } from "@/components/ui/button"; // 导入按钮组件
 import {
   Card,
@@ -20,13 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"; // 导入卡片组件
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"; // 导入选择框组件
 import {
   Dialog,
   DialogContent,
@@ -43,8 +34,6 @@ import {
 } from "@/components/ui/dropdown-menu"; // 导入下拉菜单组件
 import { Input } from "@/components/ui/input"; // 导入输入框组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 导入标签页组件
-import { Label } from "@/components/ui/label"; // 导入标签组件
-import { Textarea } from "@/components/ui/textarea"; // 导入多行文本输入框组件
 import { EditProjectDialog } from "@/components/projectsDialog/edit-project-dialog";
 import { CreateProjectDialog } from "@/components/projectsDialog/create-project-dialog";
 
@@ -160,7 +149,7 @@ export default function Projects() {
     setLoading(true); // 设置加载状态为加载中
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?username=${user?.username}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
         {
           method: "GET",
           headers: {

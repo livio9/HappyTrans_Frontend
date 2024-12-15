@@ -16,7 +16,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
@@ -169,7 +168,7 @@ export default function TranslationInterface() {
   const index1 = indexParam ? parseInt(indexParam) : 0; // 将索引参数转换为数字
   // const index1 = searchParams.get("idx_in_language");
 
-  const { user, token } = useAuth(); // 使用用户上下文获取当前用户
+  const { user, token, projectInProcess} = useAuth(); // 使用用户上下文获取当前用户
   
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -374,7 +373,13 @@ export default function TranslationInterface() {
       console.log("Project name or language code is missing");
     }
   }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
-  
+
+
+  //判断用户是否有权限翻译
+  console.log("user.managed_projects:", user?.managed_projects);
+  const canTranslate =   (user && projectName && (projectInProcess?.includes(projectName)));
+
+
   // 处理保存翻译结果
   // 发送翻译更新请求
   const updateTranslation = async (newTranslation: string) => {
@@ -645,20 +650,24 @@ export default function TranslationInterface() {
               <CardContent className="p-4">
                 {/* 翻译文本 */}
                 <h2 className="text-lg font-semibold mb-2">Translation</h2>
+                <p className="text-red-500">
+                  {!canTranslate && "(You don't have permission to modify this project)"}
+                </p>
                 <Textarea
                   value={currentTranslation || ""}
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
+                  disabled={!canTranslate} // 禁用翻译
                 />
               </CardContent>
             </Card>
             <div className="flex space-x-2">
             
-            <Button onClick={handleSaveAndContinue}> {/* 保存并继续 */}
+            <Button onClick={handleSaveAndContinue} disabled={!canTranslate}> {/* 保存并继续 */}
               Save and Continue
             </Button>
-            <Button variant="outline" onClick={handleSaveAndStay}> {/* 保存并停留 */}
+            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate}> {/* 保存并停留 */}
               Save and Stay
             </Button>
             
@@ -744,7 +753,7 @@ export default function TranslationInterface() {
         <Tabs defaultValue="nearby">
           <TabsList>
             <TabsTrigger value="nearby">Nearby Strings</TabsTrigger>
-            <TabsTrigger value="similar">Similar Keys</TabsTrigger>
+            {/* <TabsTrigger value="similar">Similar Keys</TabsTrigger> */}
             <TabsTrigger value="other">Other Languages</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="comment">Comment</TabsTrigger>
@@ -779,7 +788,7 @@ export default function TranslationInterface() {
             </table>
           </TabsContent>
 
-          <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
+          {/* <TabsContent value="similar">Similar keys content</TabsContent> 相似键内容 */}
 
           <TabsContent value="other">
             <table className="w-full text-sm">
