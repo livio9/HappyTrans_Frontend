@@ -2,7 +2,7 @@
 
 "use client";
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Globe } from "lucide-react";
+import { User, Globe, ChevronRight, PieChart } from "lucide-react"; // 确保导入 ChevronRight 和 PieChart 图标
+import Link from 'next/link'; // 导入 Link 组件
+import ProjectCard from "@/components/shared/ProjectCard"; // 导入 ProjectCard 组件
 
 // 定义语言选项
 const languageOptions = [
@@ -60,6 +62,15 @@ type ProfileData = {
   email: string;
 };
 
+interface ActivityLog {
+  id: number;
+  project: string; // 项目名称
+  user: string;
+  action: string;
+  timestamp: string;
+  details: string;
+}
+
 export default function UserProfile() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -74,6 +85,36 @@ export default function UserProfile() {
 
   // 定义有效的语言代码列表
   const validLanguageCodes = languageOptions.map((lang) => lang.code.toLowerCase());
+
+  // 项目活动日志状态
+  const [projectActivities, setProjectActivities] = useState<{ [projectName: string]: ActivityLog[] }>({});
+
+  // 获取活动日志的函数
+  const fetchActivityLogs = useCallback(async (projectName: string, authToken: string): Promise<ActivityLog[]> => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/activity_logs?project_name=${encodeURIComponent(projectName)}&page_length=3&ordering=desc`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${authToken}`, // 使用Token进行认证
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.results;
+      } else {
+        console.error(`Failed to fetch activities for project ${projectName}`);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     const authToken = localStorage.getItem("authToken") || "";
@@ -105,18 +146,37 @@ export default function UserProfile() {
         }
         return res.json();
       })
-      .then((data: ProfileData) => {
+      .then(async (data: ProfileData) => {
         setProfileData(data);
         setEditBio(data.bio || "");
         setEditNativeLanguage(data.native_language || "");
         setEditPreferredLanguages(data.preferred_languages || []);
         setErrorMessage(""); // 清除任何之前的错误消息
+
+        // 合并所有项目
+        const allProjects = [...data.managed_projects, ...data.translated_projects];
+
+        // 为每个项目获取活动日志
+        const activitiesPromises = allProjects.map(async (project) => {
+          const activities = await fetchActivityLogs(project.name, authToken);
+          return { projectName: project.name, activities };
+        });
+
+        const activitiesResults = await Promise.all(activitiesPromises);
+
+        // 构建 projectActivities 映射
+        const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+        activitiesResults.forEach(({ projectName, activities }) => {
+          activitiesMap[projectName] = activities;
+        });
+
+        setProjectActivities(activitiesMap);
       })
       .catch((err) => {
         console.error("Error fetching profile:", err);
         setErrorMessage(err.message || "获取用户资料时出错");
       });
-  }, []);
+  }, [fetchActivityLogs]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -184,10 +244,25 @@ export default function UserProfile() {
         }
         return res.json();
       })
-      .then((data: ProfileData) => {
+      .then(async (data: ProfileData) => {
         setProfileData(data);
         setIsEditing(false);
         setErrorMessage(""); // 清除任何错误消息
+
+        // 更新项目活动日志
+        const allProjects = [...data.managed_projects, ...data.translated_projects];
+        const activitiesPromises = allProjects.map(async (project) => {
+          const activities = await fetchActivityLogs(project.name, authToken);
+          return { projectName: project.name, activities };
+        });
+
+        const activitiesResults = await Promise.all(activitiesPromises);
+        const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+        activitiesResults.forEach(({ projectName, activities }) => {
+          activitiesMap[projectName] = activities;
+        });
+
+        setProjectActivities(activitiesMap);
       })
       .catch((err) => {
         console.error("Update failed:", err);
@@ -384,7 +459,7 @@ export default function UserProfile() {
                       profileData.accepted_entries
                     ).color}`}
                     style={{
-                      width: `${(profileData.accepted_entries / 5000) * 100}%`,
+                      width: `${Math.min((profileData.accepted_entries / 5000) * 100, 100)}%`,
                     }}
                   />
                 </div>
@@ -401,46 +476,13 @@ export default function UserProfile() {
 
             {/* Projects Tab */}
             <TabsContent value="projects" className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">To translate:</h3>
-                {profileData.managed_projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No projects are waiting for translation yet.
-                  </p>
-                ) : (
-                  profileData.managed_projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm">{project.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {project.description}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">In progress:</h3>
-                {profileData.translated_projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No projects are being translated yet.
-                  </p>
-                ) : (
-                  profileData.translated_projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm">{project.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {project.description}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+              {Object.keys(projectActivities).length === 0 ? (
+                <p className="text-sm text-gray-500">No project activities available.</p>
+              ) : (
+                Object.entries(projectActivities).map(([projectName, activities]) => (
+                  <ProjectCard key={projectName} projectName={projectName} activities={activities} />
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
