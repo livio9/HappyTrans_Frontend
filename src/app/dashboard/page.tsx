@@ -1,22 +1,26 @@
+// src/app/dashboard/page.tsx
 'use client';
 import * as React from "react";
-import { PieChart } from "lucide-react";
+import { PieChart, ChevronRight } from "lucide-react"; // 引入 ChevronRight 图标
+import Link from 'next/link'; // 导入 Link 组件
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import UserAvatar from "@/components/shared/UserAvatar"; // 引入 UserAvatar 组件
+import Medal from "@/components/shared/Medal"; // 引入 Medal 组件
 
-/**
- * 定义语言版本的接口
- */
+// 定义接口
 interface LanguageVersion {
   code: string;
   name: string;
   progress: number;
 }
 
-/**
- * 定义活动日志的接口
- */
+interface Project {
+  id: number;
+  name: string;
+  // 其他项目相关字段...
+}
+
 interface ActivityLog {
   id: number;
   project: string; // 项目名称
@@ -26,12 +30,44 @@ interface ActivityLog {
   details: string;
 }
 
+interface ProfileData {
+  id: number;
+  role: string;
+  bio: string;
+  native_language: string;
+  preferred_languages: string[] | null;
+  accepted_entries: number;
+  managed_projects: Project[];
+  translated_projects: Project[];
+  username: string;
+  email: string;
+}
+
+interface MedalInfo {
+  level: string;
+  color: string;
+}
+
+// 根据已接受条目数获取奖章级别和颜色
+function getAcceptedEntriesLevel(entries: number): MedalInfo {
+  if (entries < 50) {
+    return { level: "Bronze Medal", color: "bg-yellow-600" };
+  } else if (entries < 200) {
+    return { level: "Silver Medal", color: "bg-gray-400" };
+  } else if (entries < 500) {
+    return { level: "Gold Medal", color: "bg-yellow-500" };
+  } else {
+    return { level: "Diamond Medal", color: "bg-blue-600" };
+  }
+}
+
 const Dashboard: React.FC = () => {
   const [translationProgress, setTranslationProgress] = React.useState<number>(0);
   const [activeProjectsCount, setActiveProjectsCount] = React.useState<number>(0);
   const [languageVersions, setLanguageVersions] = React.useState<LanguageVersion[]>([]);
-  const [recentActivities, setRecentActivities] = React.useState<ActivityLog[]>([]); // 新增状态变量
-  const [projectActivities, setProjectActivities] = React.useState<{ [projectName: string]: ActivityLog[] }>({}); // 新增状态变量
+  const [recentActivities, setRecentActivities] = React.useState<ActivityLog[]>([]);
+  const [projectActivities, setProjectActivities] = React.useState<{ [projectName: string]: ActivityLog[] }>({});
+  const [acceptedEntries, setAcceptedEntries] = React.useState<number>(0);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -54,7 +90,7 @@ const Dashboard: React.FC = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: ProfileData = await response.json();
         return data;
       } else if (response.status === 401) {
         console.error("Unauthorized: Invalid or missing token.");
@@ -177,6 +213,9 @@ const Dashboard: React.FC = () => {
       const uniqueProjectCount = uniqueProjectIds.size;
       setActiveProjectsCount(uniqueProjectCount);
 
+      // 设置贡献点
+      setAcceptedEntries(profileData.accepted_entries);
+
       if (uniqueProjectCount === 0) {
         // 用户没有任何项目则翻译进度为0%
         setTranslationProgress(0);
@@ -287,15 +326,20 @@ const Dashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* 团队成员数卡片 */}
+        {/* Contribution Points 卡片 */}
         <Card>
           <CardHeader>
-            <CardTitle>Team Members</CardTitle>
-            <CardDescription>Total number of translators and reviewers</CardDescription>
+            <CardTitle>Contribution Points</CardTitle>
+            <CardDescription>Total number of your accepted entries</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">24</div>
-            <p className="text-sm text-gray-600">5 new this month</p>
+            <div className="flex items-center space-x-2">
+              {/* 显示已接受条目数 */}
+              <div className="text-3xl font-bold">{acceptedEntries}</div>
+              {/* 显示奖章 */}
+              <Medal level={getAcceptedEntriesLevel(acceptedEntries).level} color={getAcceptedEntriesLevel(acceptedEntries).color} />
+            </div>
+            <p className="text-sm text-gray-600">Your accepted contributions</p>
           </CardContent>
         </Card>
       </div>
@@ -331,7 +375,7 @@ const Dashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 保留并完善的 Project Activities 卡片 */}
+      {/* 修改后的 Project Activities 卡片 */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Project Activities</CardTitle>
@@ -342,8 +386,21 @@ const Dashboard: React.FC = () => {
             <p className="text-sm text-gray-500">No project activities available.</p>
           ) : (
             Object.entries(projectActivities).map(([projectName, activities]) => (
-              <div key={projectName} className="mb-4">
-                <h3 className="text-lg font-semibold mb-2">{projectName}</h3>
+              <div key={projectName} className="mb-6">
+                {/* 项目名称和箭头按钮的容器 */}
+                <div className="flex items-center space-x-2 mb-3">
+                  <span className="text-lg font-semibold">
+                    {projectName}
+                  </span>
+                  {/* 右箭头按钮 */}
+                  <Link
+                    href={`/language-versions?project=${encodeURIComponent(projectName)}`}
+                    className="flex items-center justify-center bg-black hover:bg-gray-800 rounded-full p-1 transition-colors duration-200"
+                    aria-label={`Go to ${projectName} details`}
+                  >
+                    <ChevronRight className="h-4 w-4 text-white" />
+                  </Link>
+                </div>
                 {activities.length === 0 ? (
                   <p className="text-sm text-gray-500">No recent activities.</p>
                 ) : (
