@@ -184,7 +184,7 @@ export default function UserProfile() {
         }
         return res.json();
       })
-      .then((data) => {
+      .then((data: ProfileData) => {
         setProfileData(data);
         setIsEditing(false);
         setErrorMessage(""); // 清除任何错误消息
@@ -216,13 +216,29 @@ export default function UserProfile() {
   // 根据 accepted_entries 显示不同的徽章
   function getAcceptedEntriesBadge(entries: number) {
     if (entries < 50) {
-      return <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">Bronze</Badge>;
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">
+          Bronze
+        </Badge>
+      );
     } else if (entries < 200) {
-      return <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">Silver</Badge>;
+      return (
+        <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">
+          Silver
+        </Badge>
+      );
     } else if (entries < 500) {
-      return <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">Gold</Badge>;
+      return (
+        <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">
+          Gold
+        </Badge>
+      );
     } else {
-      return <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">Diamond</Badge>;
+      return (
+        <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">
+          Diamond
+        </Badge>
+      );
     }
   }
 
@@ -258,16 +274,17 @@ export default function UserProfile() {
           )}
 
           <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="languages">Languages</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
+              {/* 原 Languages Tab 已被移除 */}
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="overview" className="space-y-4 mt-6">
               <div className="grid gap-4">
+                {/* Bio */}
                 <div className="flex items-center mb-2">
                   <User className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Bio:</span>
@@ -283,14 +300,9 @@ export default function UserProfile() {
                     {profileData.bio}
                   </p>
                 )}
-              </div>
-            </TabsContent>
 
-            {/* Languages Tab */}
-            <TabsContent value="languages" className="space-y-4">
-              <div className="grid gap-4">
                 {/* Native Language */}
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 mt-4">
                   <Globe className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Native Language:</span>
                 </div>
@@ -314,11 +326,9 @@ export default function UserProfile() {
                     )?.name || profileData.native_language}
                   </p>
                 )}
-              </div>
 
-              <div className="grid gap-4">
                 {/* Preferred Languages */}
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 mt-4">
                   <Globe className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Preferred Languages:</span>
                 </div>
