@@ -16,7 +16,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
@@ -651,6 +650,9 @@ export default function TranslationInterface() {
               <CardContent className="p-4">
                 {/* 翻译文本 */}
                 <h2 className="text-lg font-semibold mb-2">Translation</h2>
+                <p className="text-red-500">
+                  {!canTranslate && "(You don't have permission to modify this project)"}
+                </p>
                 <Textarea
                   value={currentTranslation || ""}
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
