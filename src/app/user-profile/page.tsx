@@ -323,29 +323,31 @@ export default function UserProfile() {
                   <span className="text-sm font-medium">Preferred Languages:</span>
                 </div>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    className="border border-gray-300 p-2 rounded text-sm w-full"
-                    placeholder="Use comma to separate multiple languages"
-                    value={editPreferredLanguages.join(", ")}
-                    onChange={(e) =>
-                      setEditPreferredLanguages(
-                        e.target.value
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter((s) => s)
-                      )
-                    }
-                  />
+                  <div className="flex flex-col gap-2">
+                    {languageOptions.map((lang) => (
+                      <label key={lang.code} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={editPreferredLanguages.includes(lang.code)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setEditPreferredLanguages((prev) =>
+                              isChecked
+                                ? [...prev, lang.code]
+                                : prev.filter((code) => code !== lang.code)
+                            );
+                          }}
+                        />
+                        <span>{`${lang.code} - ${lang.name}`}</span>
+                      </label>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {profileData.preferred_languages &&
-                    profileData.preferred_languages.length > 0
+                    {profileData.preferred_languages && profileData.preferred_languages.length > 0
                       ? profileData.preferred_languages
                           .map((code) => {
-                            const lang = languageOptions.find(
-                              (lang) => lang.code === code
-                            );
+                            const lang = languageOptions.find((lang) => lang.code === code);
                             return lang ? lang.name : code;
                           })
                           .join(", ")

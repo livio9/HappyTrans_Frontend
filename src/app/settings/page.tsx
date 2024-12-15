@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,18 @@ const SettingsPage: React.FC = () => {
   const [emailNotifications, setEmailNotifications] = useState<boolean>(false);
   const [pushNotifications, setPushNotifications] = useState<boolean>(false);
 
-  // 语言设置状态
+  // 语言设置状态（改为数组存储）
   const [primaryLanguage, setPrimaryLanguage] = useState<string>("");
-  const [secondaryLanguages, setSecondaryLanguages] = useState<string>("");
+  const [secondaryLanguages, setSecondaryLanguages] = useState<string[]>([]);
+
+  // 编辑时的临时语言状态
+  const [editPrimaryLanguage, setEditPrimaryLanguage] = useState<string>("");
+  const [editSecondaryLanguages, setEditSecondaryLanguages] = useState<string[]>([]);
+
+  // 控制语言编辑模式
+  const [isEditingLanguages, setIsEditingLanguages] = useState<boolean>(false);
+
+  // 状态消息
   const [languageError, setLanguageError] = useState<string>("");
   const [isLanguageSaving, setIsLanguageSaving] = useState<boolean>(false);
   const [languageSuccessMessage, setLanguageSuccessMessage] = useState<string>("");
@@ -82,7 +91,7 @@ const SettingsPage: React.FC = () => {
       })
       .then((data) => {
         // 设置用户资料
-        setUsername(localStorage.getItem("username") || ""); // 从 localStorage 获取用户名
+        setUsername(localStorage.getItem("username") || "");
         setEmail(data.email || "");
 
         // 设置通知设置
@@ -91,14 +100,11 @@ const SettingsPage: React.FC = () => {
 
         // 设置语言设置
         setPrimaryLanguage(data.native_language || "");
-        
-        // 检查并设置默认偏好语言
-        if (data.preferred_languages && data.preferred_languages.length > 0) {
-          setSecondaryLanguages(data.preferred_languages.join(", ") || "");
-        } else {
-          // 如果没有偏好语言，默认设置为 "en"
-          setSecondaryLanguages("en");
-        }
+        setSecondaryLanguages(data.preferred_languages || []);
+
+        // 初始化编辑状态数据
+        setEditPrimaryLanguage(data.native_language || "");
+        setEditSecondaryLanguages(data.preferred_languages || []);
 
         setErrorMessage("");
       })
@@ -108,7 +114,27 @@ const SettingsPage: React.FC = () => {
       });
   }, []);
 
-  // 处理语言设置保存
+  // 进入编辑语言模式
+  const handleEditLanguages = () => {
+    setIsEditingLanguages(true);
+    setLanguageError("");
+    setLanguageSuccessMessage("");
+    // 将当前设置同步到编辑状态
+    setEditPrimaryLanguage(primaryLanguage);
+    setEditSecondaryLanguages([...secondaryLanguages]);
+  };
+
+  // 取消编辑语言
+  const handleCancelLanguages = () => {
+    setIsEditingLanguages(false);
+    setLanguageError("");
+    setLanguageSuccessMessage("");
+    // 恢复到未编辑前状态
+    setEditPrimaryLanguage(primaryLanguage);
+    setEditSecondaryLanguages([...secondaryLanguages]);
+  };
+
+  // 保存语言设置
   const handleSaveLanguages = () => {
     if (isLanguageSaving) return; // 防止重复提交
 
@@ -126,25 +152,20 @@ const SettingsPage: React.FC = () => {
 
     // 前端验证
     const validLanguageCodes = languageOptions.map((lang) => lang.code.toLowerCase());
-    const primaryLangValid = validLanguageCodes.includes(primaryLanguage.toLowerCase());
-
-    // 验证偏好语言格式
-    const secondaryLangsArray = secondaryLanguages
-      .split(",")
-      .map((lang) => lang.trim().toLowerCase());
-    const secondaryLangsValid = secondaryLangsArray.every((lang) =>
-      validLanguageCodes.includes(lang)
+    const primaryLangValid = validLanguageCodes.includes(editPrimaryLanguage.toLowerCase());
+    const secondaryLangsValid = editSecondaryLanguages.every((lang) =>
+      validLanguageCodes.includes(lang.toLowerCase())
     );
 
     if (!primaryLangValid || !secondaryLangsValid) {
-      setLanguageError("请输入规范的偏好语言格式，例如：“en,zh-hans”。");
+      setLanguageError("请输入规范的语言选项。");
       setIsLanguageSaving(false);
       return;
     }
 
     const updatedData = {
-      native_language: primaryLanguage,
-      preferred_languages: secondaryLangsArray,
+      native_language: editPrimaryLanguage,
+      preferred_languages: editSecondaryLanguages.map((lang) => lang.toLowerCase()),
     };
 
     // 发送请求保存修改后的语言设置
@@ -171,8 +192,11 @@ const SettingsPage: React.FC = () => {
         return res.json();
       })
       .then(() => {
+        setPrimaryLanguage(editPrimaryLanguage);
+        setSecondaryLanguages([...editSecondaryLanguages]);
         setLanguageSuccessMessage("语言设置已保存");
         setIsLanguageSaving(false);
+        setIsEditingLanguages(false);
       })
       .catch((err) => {
         console.error("Error saving languages:", err);
@@ -183,6 +207,13 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {/* 显示全局错误消息 */}
+      {errorMessage && (
+        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+          {errorMessage}
+        </div>
+      )}
+
       {/* 个人资料设置部分 */}
       <Card className="mb-6">
         <CardHeader>
@@ -249,41 +280,89 @@ const SettingsPage: React.FC = () => {
           <CardDescription>Set your native and preferred languages</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 母语选择框 */}
-          <div className="space-y-2">
-            <Label htmlFor="native-language">Native Language</Label>
-            <select
-              id="native-language"
-              value={primaryLanguage}
-              onChange={(e) => setPrimaryLanguage(e.target.value)}
-              className="w-full p-2 border rounded"
-            >
-              {languageOptions.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isEditingLanguages ? (
+            <>
+              {/* 编辑状态 */}
+              <div className="space-y-2">
+                <Label htmlFor="native-language">Native Language</Label>
+                <select
+                  id="native-language"
+                  value={editPrimaryLanguage}
+                  onChange={(e) => setEditPrimaryLanguage(e.target.value)}
+                  className="w-full p-2 border rounded"
+                >
+                  {languageOptions.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* 偏好语言输入框 */}
-          <div className="space-y-2">
-            <Label htmlFor="preferred-languages">Preferred Languages</Label>
-            <Input
-              id="preferred-languages"
-              type="text"
-              value={secondaryLanguages}
-              onChange={(e) => setSecondaryLanguages(e.target.value)}
-              placeholder="Use comma to separate multiple languages"
-            />
-            {languageError && <p className="text-red-500 text-sm">{languageError}</p>}
-            {languageSuccessMessage && <p className="text-green-500 text-sm">{languageSuccessMessage}</p>}
-          </div>
+              <div className="space-y-2">
+                <Label>Preferred Languages</Label>
+                <div className="flex flex-col gap-2">
+                  {languageOptions.map((lang) => (
+                    <label key={lang.code} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={editSecondaryLanguages.includes(lang.code)}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          setEditSecondaryLanguages((prev) =>
+                            isChecked
+                              ? [...prev, lang.code]
+                              : prev.filter((code) => code !== lang.code)
+                          );
+                        }}
+                      />
+                      <span>{lang.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {languageError && <p className="text-red-500 text-sm">{languageError}</p>}
+                {languageSuccessMessage && <p className="text-green-500 text-sm">{languageSuccessMessage}</p>}
+              </div>
 
-          {/* 保存按钮 */}
-          <Button onClick={handleSaveLanguages} disabled={isLanguageSaving}>
-            {isLanguageSaving ? "Saving..." : "Save Languages"}
-          </Button>
+              <div className="flex gap-4">
+                <Button variant="secondary" onClick={handleCancelLanguages}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveLanguages} disabled={isLanguageSaving}>
+                  {isLanguageSaving ? "Saving..." : "Save Languages"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* 非编辑状态 */}
+              <div className="space-y-2">
+                <Label>Native Language</Label>
+                <p className="text-sm text-muted-foreground">
+                  {
+                    languageOptions.find((lang) => lang.code === primaryLanguage)?.name || 
+                    primaryLanguage
+                  }
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Preferred Languages</Label>
+                <p className="text-sm text-muted-foreground">
+                  {secondaryLanguages && secondaryLanguages.length > 0
+                    ? secondaryLanguages
+                        .map((code) => {
+                          const lang = languageOptions.find((l) => l.code === code);
+                          return lang ? lang.name : code;
+                        })
+                        .join(", ")
+                    : "None"}
+                </p>
+              </div>
+
+              <Button onClick={handleEditLanguages}>Edit Languages</Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
