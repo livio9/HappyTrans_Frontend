@@ -374,6 +374,10 @@ export default function TranslationInterface() {
       console.log("Project name or language code is missing");
     }
   }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
+
+
+  //判断用户是否有权限翻译
+  const canTranslate = user?.role === "TRANSLATOR" || user?.role === "ADMIN";
   
   // 处理保存翻译结果
   // 发送翻译更新请求
