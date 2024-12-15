@@ -339,7 +339,7 @@ const Dashboard: React.FC = () => {
               {/* 显示奖章 */}
               <Medal level={getAcceptedEntriesLevel(acceptedEntries).level} color={getAcceptedEntriesLevel(acceptedEntries).color} />
             </div>
-            <p className="text-sm text-gray-600">Your accepted contributions</p>
+            <p className="text-sm text-gray-600">Your accepted contributions and medal</p>
           </CardContent>
         </Card>
       </div>
