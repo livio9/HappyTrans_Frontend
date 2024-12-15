@@ -4,7 +4,8 @@ import { createContext, useState, useEffect, useContext } from "react";
 
 /**
  * @typedef {Object} AuthContextType
- * @property {{ username?: string, role?: string } | null} user - 用户信息
+ * @property {{ username?: string, role?: string, managed_projects?: string[], translated_projects?: string } | null} user - 用户信息
+ * @property {string[] | null} projectInProcess - 正在进行的项目
  * @property {string | null} token - 用户认证令牌
  * @property {(authToken: string) => void} login - 登录方法
  * @property {() => void} logout - 登出方法
@@ -71,6 +72,7 @@ export const AuthProvider = ({ children }) => {
           ...prevUser,        // 保留原有的 user 信息
           ...userData,        // 合并后端返回的用户数据
         }));
+        console.log("User data fetched:", userData); // 打印用户数据
         checkUserRole(userData.role); // 根据用户角色执行相应逻辑
         // 筛选出 projectManaged 和 projectTranslating 中重复的项目
       const managedProjectNames = userData.managed_projects.map((project) => project.name);

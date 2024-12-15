@@ -160,7 +160,7 @@ export default function Projects() {
     setLoading(true); // 设置加载状态为加载中
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?username=${user?.username}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
         {
           method: "GET",
           headers: {
