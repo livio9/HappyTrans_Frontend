@@ -4,7 +4,7 @@ import { createContext, useState, useEffect, useContext } from "react";
 
 /**
  * @typedef {Object} AuthContextType
- * @property {{ username?: string, role?: string } | null} user - 用户信息
+ * @property {{ username?: string, id? number, role?: string } | null} user - 用户信息
  * @property {string | null} token - 用户认证令牌
  * @property {(authToken: string) => void} login - 登录方法
  * @property {() => void} logout - 登出方法
