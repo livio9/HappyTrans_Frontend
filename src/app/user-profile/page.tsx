@@ -15,11 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Globe, ChevronRight, PieChart } from "lucide-react"; // 确保导入 ChevronRight 和 PieChart 图标
-import Link from 'next/link'; // 导入 Link 组件
-import ProjectCard from "@/components/shared/ProjectCard"; // 导入 ProjectCard 组件
+import { User, Globe, ChevronRight, PieChart } from "lucide-react"; // Ensure ChevronRight and PieChart icons are imported
+import Link from 'next/link'; // Import Link component
+import ProjectCard from "@/components/shared/ProjectCard"; // Import ProjectCard component
 
-// 定义语言选项
+// Define language options
 const languageOptions = [
   { code: "en", name: "English" },
   { code: "zh-hans", name: "简体中文" },
@@ -42,7 +42,7 @@ const languageOptions = [
   { code: "da", name: "Dansk" },
 ];
 
-// 定义项目和用户资料的数据类型
+// Define Project and ProfileData types
 type Project = {
   id: number;
   name: string;
@@ -64,7 +64,7 @@ type ProfileData = {
 
 interface ActivityLog {
   id: number;
-  project: string; // 项目名称
+  project: string; // Project name
   user: string;
   action: string;
   timestamp: string;
@@ -75,21 +75,24 @@ export default function UserProfile() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // 编辑时的临时状态
+  // New state to track the active tab
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  // Temporary states for editing
   const [editBio, setEditBio] = useState("");
   const [editNativeLanguage, setEditNativeLanguage] = useState("");
   const [editPreferredLanguages, setEditPreferredLanguages] = useState<string[]>([]);
 
-  // 错误消息状态
+  // Error message state
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 定义有效的语言代码列表
+  // Define valid language codes
   const validLanguageCodes = languageOptions.map((lang) => lang.code.toLowerCase());
 
-  // 项目活动日志状态
+  // Project activity logs state
   const [projectActivities, setProjectActivities] = useState<{ [projectName: string]: ActivityLog[] }>({});
 
-  // 获取活动日志的函数
+  // Function to fetch activity logs
   const fetchActivityLogs = useCallback(async (projectName: string, authToken: string): Promise<ActivityLog[]> => {
     try {
       const response = await fetch(
@@ -98,7 +101,7 @@ export default function UserProfile() {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Token ${authToken}`, // 使用Token进行认证
+            Authorization: `Token ${authToken}`, // Use Token for authentication
           },
         }
       );
@@ -124,13 +127,13 @@ export default function UserProfile() {
       return;
     }
 
-    // 获取用户资料
+    // Fetch user profile
     fetch("http://localhost:8000/profile", {
       method: "GET",
-      credentials: "include", // 包含Cookies
+      credentials: "include", // Include Cookies
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${authToken}`, // 使用Token进行认证
+        Authorization: `Token ${authToken}`, // Use Token for authentication
       },
     })
       .then(async (res) => {
@@ -151,12 +154,12 @@ export default function UserProfile() {
         setEditBio(data.bio || "");
         setEditNativeLanguage(data.native_language || "");
         setEditPreferredLanguages(data.preferred_languages || []);
-        setErrorMessage(""); // 清除任何之前的错误消息
+        setErrorMessage(""); // Clear any previous error messages
 
-        // 合并所有项目
+        // Combine all projects
         const allProjects = [...data.managed_projects, ...data.translated_projects];
 
-        // 为每个项目获取活动日志
+        // Fetch activity logs for each project
         const activitiesPromises = allProjects.map(async (project) => {
           const activities = await fetchActivityLogs(project.name, authToken);
           return { projectName: project.name, activities };
@@ -164,7 +167,7 @@ export default function UserProfile() {
 
         const activitiesResults = await Promise.all(activitiesPromises);
 
-        // 构建 projectActivities 映射
+        // Build the projectActivities map
         const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
         activitiesResults.forEach(({ projectName, activities }) => {
           activitiesMap[projectName] = activities;
@@ -180,7 +183,7 @@ export default function UserProfile() {
 
   const handleEdit = () => {
     setIsEditing(true);
-    setErrorMessage(""); // 清除错误消息
+    setErrorMessage(""); // Clear error message
   };
 
   const handleCancel = () => {
@@ -190,13 +193,13 @@ export default function UserProfile() {
       setEditPreferredLanguages(profileData.preferred_languages || []);
     }
     setIsEditing(false);
-    setErrorMessage(""); // 清除错误消息
+    setErrorMessage(""); // Clear error message
   };
 
   const handleSave = () => {
     if (!profileData) return;
 
-    // 前端验证
+    // Frontend validation
     const nativeLangValid = validLanguageCodes.includes(editNativeLanguage.toLowerCase());
     const preferredLangsValid = editPreferredLanguages.every((lang) =>
       validLanguageCodes.includes(lang.toLowerCase())
@@ -204,7 +207,7 @@ export default function UserProfile() {
 
     if (!nativeLangValid || !preferredLangsValid) {
       setErrorMessage("请输入规范的偏好语言格式，例如：“en,zh-hans”。");
-      // 不发送请求到后端
+      // Do not send request to backend
       return;
     }
 
@@ -221,7 +224,7 @@ export default function UserProfile() {
       return;
     }
 
-    // 发送PUT请求更新用户资料
+    // Send PUT request to update user profile
     fetch("http://localhost:8000/profile", {
       method: "PUT",
       credentials: "include",
@@ -247,9 +250,9 @@ export default function UserProfile() {
       .then(async (data: ProfileData) => {
         setProfileData(data);
         setIsEditing(false);
-        setErrorMessage(""); // 清除任何错误消息
+        setErrorMessage(""); // Clear any error messages
 
-        // 更新项目活动日志
+        // Update project activity logs
         const allProjects = [...data.managed_projects, ...data.translated_projects];
         const activitiesPromises = allProjects.map(async (project) => {
           const activities = await fetchActivityLogs(project.name, authToken);
@@ -267,7 +270,7 @@ export default function UserProfile() {
       .catch((err) => {
         console.error("Update failed:", err);
         setErrorMessage("保存失败: " + (err.message || "未知错误"));
-        // 不重置输入字段，允许用户继续编辑
+        // Do not reset input fields, allow user to continue editing
       });
   };
 
@@ -275,7 +278,7 @@ export default function UserProfile() {
     return <div className="container mx-auto p-4">加载中...</div>;
   }
 
-  // 处理进度条
+  // Handle progress bar
   function getAcceptedEntriesLevel(entries: number) {
     if (entries < 50) {
       return { level: "Bronze Medal", color: "bg-yellow-600" };
@@ -288,7 +291,7 @@ export default function UserProfile() {
     }
   }
 
-  // 根据 accepted_entries 显示不同的徽章
+  // Display different badges based on accepted_entries
   function getAcceptedEntriesBadge(entries: number) {
     if (entries < 50) {
       return (
@@ -321,11 +324,11 @@ export default function UserProfile() {
     <div className="container mx-auto p-4">
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center gap-4">
-          {/* 使用共享的 UserAvatar 组件 */}
+          {/* Use shared UserAvatar component */}
           <UserAvatar username={profileData.username} size="lg" />
           <div className="flex-1">
             <div className="flex flex-col">
-              {/* 显示用户名和徽章 */}
+              {/* Display username and badge */}
               <div className="flex items-center">
                 <CardTitle className="text-2xl font-bold">
                   {profileData.username}
@@ -334,26 +337,30 @@ export default function UserProfile() {
                   {getAcceptedEntriesBadge(profileData.accepted_entries)}
                 </span>
               </div>
-              {/* 显示用户ID和邮箱 */}
+              {/* Display User ID and Email */}
               <CardDescription>User ID: {profileData.id}</CardDescription>
               <CardDescription>Email: {profileData.email}</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* 显示错误消息 */}
+          {/* Display error message */}
           {errorMessage && (
             <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
               {errorMessage}
             </div>
           )}
 
-          <Tabs defaultValue="overview">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value)}
+            defaultValue="overview"
+          >
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
-              {/* 原 Languages Tab 已被移除 */}
+              {/* Languages Tab has been removed */}
             </TabsList>
 
             {/* Overview Tab */}
@@ -452,7 +459,7 @@ export default function UserProfile() {
                   </span>
                 </div>
 
-                {/* 进度条 */}
+                {/* Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
                   <div
                     className={`h-2.5 rounded-full ${getAcceptedEntriesLevel(
@@ -464,7 +471,7 @@ export default function UserProfile() {
                   />
                 </div>
 
-                {/* Level 和 Level 信息 */}
+                {/* Level and Level Info */}
                 <div className="flex justify-end items-center">
                   <span className="text-sm font-medium mr-2">Level:</span>
                   <span className="text-sm font-medium">
@@ -487,15 +494,17 @@ export default function UserProfile() {
           </Tabs>
         </CardContent>
         <CardFooter>
-          {isEditing ? (
-            <div className="flex gap-4">
-              <Button variant="secondary" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>Save</Button>
-            </div>
-          ) : (
-            <Button onClick={handleEdit}>Edit Profile</Button>
+          {activeTab === "overview" && (
+            isEditing ? (
+              <div className="flex gap-4">
+                <Button variant="secondary" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>Save</Button>
+              </div>
+            ) : (
+              <Button onClick={handleEdit}>Edit Profile</Button>
+            )
           )}
         </CardFooter>
       </Card>
