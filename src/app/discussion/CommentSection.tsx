@@ -40,27 +40,27 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
     const [newComment, setNewComment] = useState("");
 
     // 获取所有评论
-    useEffect(() => {
-        const fetchComments = async () => {
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=0&ordering=desc&page_length=10`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Token ${token}`,
-                    },
-                });
-                if (!response.ok) {
-                    throw new Error("Fail to fetch comments");
-                }
-                const result: CommentSection = await response.json();
-                const data: CommentType[] = Array.isArray(result.results) ? result.results : [];
-                setComments(data);
-            } catch (error) {
-                console.error("Fail to fetch comments:", error);
+    const fetchComments = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=0&ordering=desc&page_length=10`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Token ${token}`,
+                },
+            });
+            if (!response.ok) {
+                throw new Error("Fail to fetch comments");
             }
-        };
+            const result: CommentSection = await response.json();
+            const data: CommentType[] = Array.isArray(result.results) ? result.results : [];
+            setComments(data);
+        } catch (error) {
+            console.error("Fail to fetch comments:", error);
+        }
+    };
 
+    useEffect(() => {
         fetchComments();
     }, [discussionId, token]);
 
@@ -117,7 +117,7 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
             <div>
                 {comments.length > 0 ? (
                     comments.map(comment => (
-                        <Comment key={comment.id} comment={comment} />
+                        <Comment key={comment.id} comment={comment} fetchComments={fetchComments} />
                     ))
                 ) : (
                     <p>No comments yet, be the first to comment one!</p>
