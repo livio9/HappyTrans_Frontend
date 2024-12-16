@@ -16,12 +16,14 @@ interface User {
 
 interface CollaboratorListProps {
   isadmin: boolean;
+  ismanager: boolean;
   type: "managers" | "translators"
   projectName: string
 }
 
 export function CollaboratorList({
   isadmin,
+  ismanager,
   type,
   projectName,
 }: CollaboratorListProps) {
@@ -127,7 +129,7 @@ export function CollaboratorList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">{type === "managers" ? "Project Managers" : "Translators"}</h4>
-        {isadmin && type === "managers" && (
+        {(isadmin || (ismanager && type === "translators")) && (
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -153,6 +155,9 @@ export function CollaboratorList({
         />
       </div>
 
+      {filteredCollaborators.length === 0 ? (
+        <div className="p-4 text-center text-sm text-muted-foreground">No available {type === "managers" ? "Managers" : "Translators"}</div>
+        ) : (
       <div className="rounded-md border">
         <div className="border-b p-4">
           <div className="flex justify-between items-center">
@@ -161,7 +166,7 @@ export function CollaboratorList({
               onCheckedChange={handleSelectAll}
               aria-label="Select all"
             />
-            {isadmin && type === "managers" && (
+            {(isadmin || (ismanager && type === "translators")) && (
               <Button
                 type="button"
                 variant="ghost"
@@ -195,7 +200,7 @@ export function CollaboratorList({
                   </div>
                 </div>
               </div>
-              {isadmin && type === "managers" && (
+              {(isadmin || (ismanager && type === "translators")) && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -209,7 +214,7 @@ export function CollaboratorList({
             </div>
           ))}
         </div>
-      </div>
+      </div>)}
 
       <AddPeopleDialog
         projectName={projectName}

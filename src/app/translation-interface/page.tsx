@@ -7,7 +7,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button"; // 导入自定义按钮组件
 import { Textarea } from "@/components/ui/textarea"; // 导入自定义多行文本输入组件
 import { Progress } from "@/components/ui/progress"; // 导入自定义进度条组件
-import { Card, CardContent } from "@/components/ui/card"; // 导入自定义卡片组件
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // 导入自定义卡片组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 导入自定义标签页组件
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy } from "lucide-react"; // 导入图标组件
 import {
@@ -16,14 +16,21 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // 导入自定义头像组件
+import { Badge } from "@/components/ui/badge"; // 导入自定义徽章组件
+import { motion } from 'framer-motion';
+import { Separator } from "@/components/ui/separator"; // 导入自定义分隔符组件
+import { ScrollArea } from "@/components/ui/scroll-area"; // 导入自定义滚动区域组件
+import { formatDistanceToNow } from 'date-fns'
 import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
+
+// Remove the misplaced CSS rule
 
 // 辅助函数：从 Cookie 中获取 CSRF token
 function getCookie(name: string): string | null {
@@ -83,6 +90,73 @@ type TranslationSuggestion = {
   translation: string; // 建议的翻译文本
 };
 
+type Feedback = {
+  id: number;
+  title: string;
+  user_seen_translation: string;
+  user_expected_translation: string;
+  remarks: string;
+  created_at: string;
+  project_name: string;
+  language_code: string;
+  idx_in_language: number;
+}
+
+
+function FeedbackItem({ feedback }: { feedback: Feedback }) {
+  function formatTitle(title: string): string {
+    const trimmedTitle = title.trim();
+    const maxLength = 30;
+    return trimmedTitle.length > maxLength
+      ? `${trimmedTitle.slice(0, maxLength)}...`
+      : trimmedTitle.charAt(0).toUpperCase() + trimmedTitle.slice(1).toLowerCase();
+  }
+  return (
+    <motion.div
+      key={feedback.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Card className="mb-4 overflow-hidden border-l-4 border-l-primary">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback>{"t".toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <CardTitle className="text-base font-semibold text-primary flex items-center space-x-2">
+                <span>{formatTitle(feedback.title || "Untitled Feedback")}</span>
+              </CardTitle>
+            </div>
+            <Badge variant="outline" className="text-xs">
+              {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true })}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="space-y-2 text-sm">
+            <div>
+              <p className="text-muted-foreground mb-1">Seen translation:</p>
+              <p className="bg-muted p-2 rounded-md">{feedback.user_seen_translation}</p>
+            </div>
+            <Separator />
+            <div>
+              <p className="text-muted-foreground mb-1">Expected translation:</p>
+              <p className="bg-muted p-2 rounded-md">{feedback.user_expected_translation}</p>
+            </div>
+            <Separator />
+            <div>
+              <p className="text-muted-foreground mb-1">Remarks:</p>
+              <p className="italic">{feedback.remarks}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  )
+}
+
 export default function TranslationInterface() {
 
   const router = useRouter();//用于跳转
@@ -94,7 +168,7 @@ export default function TranslationInterface() {
   const index1 = indexParam ? parseInt(indexParam) : 0; // 将索引参数转换为数字
   // const index1 = searchParams.get("idx_in_language");
 
-  const { user, token } = useAuth(); // 使用用户上下文获取当前用户
+  const { user, token, projectInProcess} = useAuth(); // 使用用户上下文获取当前用户
   
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -117,6 +191,9 @@ export default function TranslationInterface() {
   const [selectedMsgstrID, setSelectedMsgstrID] = useState<string>(""); // 选定的 msgstr
   
   const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
+
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
+
 
   useEffect(() => {
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
@@ -260,6 +337,35 @@ export default function TranslationInterface() {
 
       
       fetchLanguageInfo(); // 获取语言信息，主要目的是获取翻译进度
+
+      // 获取反馈信息
+      const fetchFeedback = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/feedbacks/by_entry?project_name=${encodeURIComponent(
+              projectName
+            )}&language_code=${encodeURIComponent(languageCode)}&idx_in_language=${currentIndex}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error("Failed to fetch feedback");
+          }
+          const data = await response.json();
+          console.log("Fetched feedback:", data);
+          setFeedbacks(data.results); // 设置反馈信息
+        } catch (error) {
+          console.error("Error fetching feedback:", error);
+        }
+      };
+
+      fetchFeedback(); // 获取反馈信息
       
 
 
@@ -267,7 +373,13 @@ export default function TranslationInterface() {
       console.log("Project name or language code is missing");
     }
   }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
-  
+
+
+  //判断用户是否有权限翻译
+  console.log("user.managed_projects:", user?.managed_projects);
+  const canTranslate =   (user && projectName && (projectInProcess?.includes(projectName)));
+
+
   // 处理保存翻译结果
   // 发送翻译更新请求
   const updateTranslation = async (newTranslation: string) => {
@@ -538,20 +650,24 @@ export default function TranslationInterface() {
               <CardContent className="p-4">
                 {/* 翻译文本 */}
                 <h2 className="text-lg font-semibold mb-2">Translation</h2>
+                <p className="text-red-500">
+                  {!canTranslate && "(You don't have permission to modify this project)"}
+                </p>
                 <Textarea
                   value={currentTranslation || ""}
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
+                  disabled={!canTranslate} // 禁用翻译
                 />
               </CardContent>
             </Card>
             <div className="flex space-x-2">
             
-            <Button onClick={handleSaveAndContinue}> {/* 保存并继续 */}
+            <Button onClick={handleSaveAndContinue} disabled={!canTranslate}> {/* 保存并继续 */}
               Save and Continue
             </Button>
-            <Button variant="outline" onClick={handleSaveAndStay}> {/* 保存并停留 */}
+            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate}> {/* 保存并停留 */}
               Save and Stay
             </Button>
             
@@ -590,23 +706,43 @@ export default function TranslationInterface() {
             </div>
           </div>
         </main>
-        {/* 侧边栏, 包括术语表Glossary和String info */}
-        <aside className="w-80 bg-white dark:bg-gray-800 overflow-auto p-4 border-l border-gray-200 dark:border-gray-700">
-          <Tabs defaultValue="glossary">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="glossary">Glossary</TabsTrigger>
-              <TabsTrigger value="info">String Info</TabsTrigger>
-            </TabsList>
-            <TabsContent value="glossary">
-              <p className="text-sm text-gray-600 dark:text-gray-400">No relevant strings found in the glossary.</p>
+        {/* 侧边栏, 包括FeedBack和String info */}
+        <aside className="w-80 bg-white dark:bg-gray-800 overflow-auto p-4 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+          <Tabs defaultValue="feedback" className="flex-1 flex flex-col">
+            <div className="top-0 bg-white dark:bg-gray-800 z-10">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+                <TabsTrigger
+                  value="feedback"
+                  className="hover:bg-gray-200 dark:hover:bg-gray-600 data-[state=active]:bg-gray-300 dark:data-[state=active]:bg-gray-500"
+                >
+                  Feedbacks
+                </TabsTrigger>
+                <TabsTrigger
+                  value="info"
+                  className="hover:bg-gray-200 dark:hover:bg-gray-600 data-[state=active]:bg-gray-300 dark:data-[state=active]:bg-gray-500"
+                >
+                  String Info
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="feedback">
+              <ScrollArea className="max-h-[calc(100vh-200px)]">
+                {feedbacks.length > 0 ? (
+                  feedbacks.map((feedback) => (
+                    <FeedbackItem key={feedback.id} feedback={feedback} />
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No feedback for this entry yet.</p>
+                )}
+              </ScrollArea>
             </TabsContent>
             <TabsContent value="info">
               <div className="space-y-2">
-                <p><strong>Key:</strong> {strings[currentIndex]?.msgid}</p>
-                <p><strong>String added:</strong> 1 year ago</p>
-                <p><strong>Last updated:</strong> 1 year ago</p>
+                <p><strong>Tag:</strong> {strings[currentIndex]?.tag}</p>
+                <p><strong>Reference:</strong> {strings[currentIndex]?.references}</p>
+                <p><strong>Last updated:</strong> {(strings[currentIndex]?.updated_at)}</p>
                 <p><strong>Source string added:</strong> 3 years ago</p>
-                <p><strong>Translation file:</strong> apps/werkplek-reservering/i18n/en.json, string 1 of 1</p>
+                <p><strong>String Location:</strong> The {strings[currentIndex]?.idx_in_language}th in the translation file </p>
               </div>
             </TabsContent>
           </Tabs>
@@ -617,7 +753,7 @@ export default function TranslationInterface() {
         <Tabs defaultValue="nearby">
           <TabsList>
             <TabsTrigger value="nearby">Nearby Strings</TabsTrigger>
-            <TabsTrigger value="similar">Similar Keys</TabsTrigger>
+            {/* <TabsTrigger value="similar">Similar Keys</TabsTrigger> */}
             <TabsTrigger value="other">Other Languages</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="comment">Comment</TabsTrigger>
@@ -652,7 +788,7 @@ export default function TranslationInterface() {
             </table>
           </TabsContent>
 
-          <TabsContent value="similar">Similar keys content</TabsContent> {/* 相似键内容 */}
+          {/* <TabsContent value="similar">Similar keys content</TabsContent> 相似键内容 */}
 
           <TabsContent value="other">
             <table className="w-full text-sm">

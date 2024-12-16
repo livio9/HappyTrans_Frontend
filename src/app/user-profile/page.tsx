@@ -2,7 +2,7 @@
 
 "use client";
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import UserAvatar from "@/components/shared/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,9 +15,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Globe } from "lucide-react";
+import { User, Globe, ChevronRight, PieChart } from "lucide-react"; // Ensure ChevronRight and PieChart icons are imported
+import Link from 'next/link'; // Import Link component
+import ProjectCard from "@/components/shared/ProjectCard"; // Import ProjectCard component
 
-// 定义语言选项
+// Define language options
 const languageOptions = [
   { code: "en", name: "English" },
   { code: "zh-hans", name: "简体中文" },
@@ -40,7 +42,7 @@ const languageOptions = [
   { code: "da", name: "Dansk" },
 ];
 
-// 定义项目和用户资料的数据类型
+// Define Project and ProfileData types
 type Project = {
   id: number;
   name: string;
@@ -60,20 +62,62 @@ type ProfileData = {
   email: string;
 };
 
+interface ActivityLog {
+  id: number;
+  project: string; // Project name
+  user: string;
+  action: string;
+  timestamp: string;
+  details: string;
+}
+
 export default function UserProfile() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // 编辑时的临时状态
+  // New state to track the active tab
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  // Temporary states for editing
   const [editBio, setEditBio] = useState("");
   const [editNativeLanguage, setEditNativeLanguage] = useState("");
   const [editPreferredLanguages, setEditPreferredLanguages] = useState<string[]>([]);
 
-  // 错误消息状态
+  // Error message state
   const [errorMessage, setErrorMessage] = useState("");
 
-  // 定义有效的语言代码列表
+  // Define valid language codes
   const validLanguageCodes = languageOptions.map((lang) => lang.code.toLowerCase());
+
+  // Project activity logs state
+  const [projectActivities, setProjectActivities] = useState<{ [projectName: string]: ActivityLog[] }>({});
+
+  // Function to fetch activity logs
+  const fetchActivityLogs = useCallback(async (projectName: string, authToken: string): Promise<ActivityLog[]> => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/activity_logs?project_name=${encodeURIComponent(projectName)}&page_length=3&ordering=desc`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${authToken}`, // Use Token for authentication
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.results;
+      } else {
+        console.error(`Failed to fetch activities for project ${projectName}`);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     const authToken = localStorage.getItem("authToken") || "";
@@ -83,13 +127,13 @@ export default function UserProfile() {
       return;
     }
 
-    // 获取用户资料
+    // Fetch user profile
     fetch("http://localhost:8000/profile", {
       method: "GET",
-      credentials: "include", // 包含Cookies
+      credentials: "include", // Include Cookies
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Token ${authToken}`, // 使用Token进行认证
+        Authorization: `Token ${authToken}`, // Use Token for authentication
       },
     })
       .then(async (res) => {
@@ -105,22 +149,41 @@ export default function UserProfile() {
         }
         return res.json();
       })
-      .then((data: ProfileData) => {
+      .then(async (data: ProfileData) => {
         setProfileData(data);
         setEditBio(data.bio || "");
         setEditNativeLanguage(data.native_language || "");
         setEditPreferredLanguages(data.preferred_languages || []);
-        setErrorMessage(""); // 清除任何之前的错误消息
+        setErrorMessage(""); // Clear any previous error messages
+
+        // Combine all projects
+        const allProjects = [...data.managed_projects, ...data.translated_projects];
+
+        // Fetch activity logs for each project
+        const activitiesPromises = allProjects.map(async (project) => {
+          const activities = await fetchActivityLogs(project.name, authToken);
+          return { projectName: project.name, activities };
+        });
+
+        const activitiesResults = await Promise.all(activitiesPromises);
+
+        // Build the projectActivities map
+        const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+        activitiesResults.forEach(({ projectName, activities }) => {
+          activitiesMap[projectName] = activities;
+        });
+
+        setProjectActivities(activitiesMap);
       })
       .catch((err) => {
         console.error("Error fetching profile:", err);
         setErrorMessage(err.message || "获取用户资料时出错");
       });
-  }, []);
+  }, [fetchActivityLogs]);
 
   const handleEdit = () => {
     setIsEditing(true);
-    setErrorMessage(""); // 清除错误消息
+    setErrorMessage(""); // Clear error message
   };
 
   const handleCancel = () => {
@@ -130,13 +193,13 @@ export default function UserProfile() {
       setEditPreferredLanguages(profileData.preferred_languages || []);
     }
     setIsEditing(false);
-    setErrorMessage(""); // 清除错误消息
+    setErrorMessage(""); // Clear error message
   };
 
   const handleSave = () => {
     if (!profileData) return;
 
-    // 前端验证
+    // Frontend validation
     const nativeLangValid = validLanguageCodes.includes(editNativeLanguage.toLowerCase());
     const preferredLangsValid = editPreferredLanguages.every((lang) =>
       validLanguageCodes.includes(lang.toLowerCase())
@@ -144,7 +207,7 @@ export default function UserProfile() {
 
     if (!nativeLangValid || !preferredLangsValid) {
       setErrorMessage("请输入规范的偏好语言格式，例如：“en,zh-hans”。");
-      // 不发送请求到后端
+      // Do not send request to backend
       return;
     }
 
@@ -161,7 +224,7 @@ export default function UserProfile() {
       return;
     }
 
-    // 发送PUT请求更新用户资料
+    // Send PUT request to update user profile
     fetch("http://localhost:8000/profile", {
       method: "PUT",
       credentials: "include",
@@ -184,15 +247,30 @@ export default function UserProfile() {
         }
         return res.json();
       })
-      .then((data) => {
+      .then(async (data: ProfileData) => {
         setProfileData(data);
         setIsEditing(false);
-        setErrorMessage(""); // 清除任何错误消息
+        setErrorMessage(""); // Clear any error messages
+
+        // Update project activity logs
+        const allProjects = [...data.managed_projects, ...data.translated_projects];
+        const activitiesPromises = allProjects.map(async (project) => {
+          const activities = await fetchActivityLogs(project.name, authToken);
+          return { projectName: project.name, activities };
+        });
+
+        const activitiesResults = await Promise.all(activitiesPromises);
+        const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+        activitiesResults.forEach(({ projectName, activities }) => {
+          activitiesMap[projectName] = activities;
+        });
+
+        setProjectActivities(activitiesMap);
       })
       .catch((err) => {
         console.error("Update failed:", err);
         setErrorMessage("保存失败: " + (err.message || "未知错误"));
-        // 不重置输入字段，允许用户继续编辑
+        // Do not reset input fields, allow user to continue editing
       });
   };
 
@@ -200,7 +278,7 @@ export default function UserProfile() {
     return <div className="container mx-auto p-4">加载中...</div>;
   }
 
-  // 处理进度条
+  // Handle progress bar
   function getAcceptedEntriesLevel(entries: number) {
     if (entries < 50) {
       return { level: "Bronze Medal", color: "bg-yellow-600" };
@@ -213,16 +291,32 @@ export default function UserProfile() {
     }
   }
 
-  // 根据 accepted_entries 显示不同的徽章
+  // Display different badges based on accepted_entries
   function getAcceptedEntriesBadge(entries: number) {
     if (entries < 50) {
-      return <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">Bronze</Badge>;
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">
+          Bronze
+        </Badge>
+      );
     } else if (entries < 200) {
-      return <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">Silver</Badge>;
+      return (
+        <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">
+          Silver
+        </Badge>
+      );
     } else if (entries < 500) {
-      return <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">Gold</Badge>;
+      return (
+        <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">
+          Gold
+        </Badge>
+      );
     } else {
-      return <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">Diamond</Badge>;
+      return (
+        <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">
+          Diamond
+        </Badge>
+      );
     }
   }
 
@@ -230,11 +324,11 @@ export default function UserProfile() {
     <div className="container mx-auto p-4">
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center gap-4">
-          {/* 使用共享的 UserAvatar 组件 */}
+          {/* Use shared UserAvatar component */}
           <UserAvatar username={profileData.username} size="lg" />
           <div className="flex-1">
             <div className="flex flex-col">
-              {/* 显示用户名和徽章 */}
+              {/* Display username and badge */}
               <div className="flex items-center">
                 <CardTitle className="text-2xl font-bold">
                   {profileData.username}
@@ -243,31 +337,36 @@ export default function UserProfile() {
                   {getAcceptedEntriesBadge(profileData.accepted_entries)}
                 </span>
               </div>
-              {/* 显示用户ID和邮箱 */}
+              {/* Display User ID and Email */}
               <CardDescription>User ID: {profileData.id}</CardDescription>
               <CardDescription>Email: {profileData.email}</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* 显示错误消息 */}
+          {/* Display error message */}
           {errorMessage && (
             <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
               {errorMessage}
             </div>
           )}
 
-          <Tabs defaultValue="overview">
-            <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value)}
+            defaultValue="overview"
+          >
+            <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="languages">Languages</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
+              {/* Languages Tab has been removed */}
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="overview" className="space-y-4 mt-6">
               <div className="grid gap-4">
+                {/* Bio */}
                 <div className="flex items-center mb-2">
                   <User className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Bio:</span>
@@ -283,14 +382,9 @@ export default function UserProfile() {
                     {profileData.bio}
                   </p>
                 )}
-              </div>
-            </TabsContent>
 
-            {/* Languages Tab */}
-            <TabsContent value="languages" className="space-y-4">
-              <div className="grid gap-4">
                 {/* Native Language */}
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 mt-4">
                   <Globe className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Native Language:</span>
                 </div>
@@ -314,38 +408,38 @@ export default function UserProfile() {
                     )?.name || profileData.native_language}
                   </p>
                 )}
-              </div>
 
-              <div className="grid gap-4">
                 {/* Preferred Languages */}
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-2 mt-4">
                   <Globe className="w-4 h-4 mr-2" />
                   <span className="text-sm font-medium">Preferred Languages:</span>
                 </div>
                 {isEditing ? (
-                  <input
-                    type="text"
-                    className="border border-gray-300 p-2 rounded text-sm w-full"
-                    placeholder="Use comma to separate multiple languages"
-                    value={editPreferredLanguages.join(", ")}
-                    onChange={(e) =>
-                      setEditPreferredLanguages(
-                        e.target.value
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter((s) => s)
-                      )
-                    }
-                  />
+                  <div className="flex flex-col gap-2">
+                    {languageOptions.map((lang) => (
+                      <label key={lang.code} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={editPreferredLanguages.includes(lang.code)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setEditPreferredLanguages((prev) =>
+                              isChecked
+                                ? [...prev, lang.code]
+                                : prev.filter((code) => code !== lang.code)
+                            );
+                          }}
+                        />
+                        <span>{`${lang.code} - ${lang.name}`}</span>
+                      </label>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    {profileData.preferred_languages &&
-                    profileData.preferred_languages.length > 0
+                    {profileData.preferred_languages && profileData.preferred_languages.length > 0
                       ? profileData.preferred_languages
                           .map((code) => {
-                            const lang = languageOptions.find(
-                              (lang) => lang.code === code
-                            );
+                            const lang = languageOptions.find((lang) => lang.code === code);
                             return lang ? lang.name : code;
                           })
                           .join(", ")
@@ -365,19 +459,19 @@ export default function UserProfile() {
                   </span>
                 </div>
 
-                {/* 进度条 */}
+                {/* Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
                   <div
                     className={`h-2.5 rounded-full ${getAcceptedEntriesLevel(
                       profileData.accepted_entries
                     ).color}`}
                     style={{
-                      width: `${(profileData.accepted_entries / 5000) * 100}%`,
+                      width: `${Math.min((profileData.accepted_entries / 5000) * 100, 100)}%`,
                     }}
                   />
                 </div>
 
-                {/* Level 和 Level 信息 */}
+                {/* Level and Level Info */}
                 <div className="flex justify-end items-center">
                   <span className="text-sm font-medium mr-2">Level:</span>
                   <span className="text-sm font-medium">
@@ -389,59 +483,28 @@ export default function UserProfile() {
 
             {/* Projects Tab */}
             <TabsContent value="projects" className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">To translate:</h3>
-                {profileData.managed_projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No projects are waiting for translation yet.
-                  </p>
-                ) : (
-                  profileData.managed_projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm">{project.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {project.description}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">In progress:</h3>
-                {profileData.translated_projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No projects are being translated yet.
-                  </p>
-                ) : (
-                  profileData.translated_projects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-sm">{project.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {project.description}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+              {Object.keys(projectActivities).length === 0 ? (
+                <p className="text-sm text-gray-500">No project activities available.</p>
+              ) : (
+                Object.entries(projectActivities).map(([projectName, activities]) => (
+                  <ProjectCard key={projectName} projectName={projectName} activities={activities} />
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
         <CardFooter>
-          {isEditing ? (
-            <div className="flex gap-4">
-              <Button variant="secondary" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave}>Save</Button>
-            </div>
-          ) : (
-            <Button onClick={handleEdit}>Edit Profile</Button>
+          {activeTab === "overview" && (
+            isEditing ? (
+              <div className="flex gap-4">
+                <Button variant="secondary" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>Save</Button>
+              </div>
+            ) : (
+              <Button onClick={handleEdit}>Edit Profile</Button>
+            )
           )}
         </CardFooter>
       </Card>
