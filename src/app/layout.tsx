@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css"; // 引入全局样式
 import { AuthProvider } from "@/context/AuthContext"; // 用户上下文
 import { ProjectProvider } from "@/context/ProjectContext"; // 项目上下文
-
+import { DiscussionsProvider } from '@/context/DiscussionsContext';
 import Layout from "@/components/shared/Layout"; // 引入共享布局组件
 
 // 字体加载
@@ -37,9 +37,11 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ProjectProvider>
+            <DiscussionsProvider>
             <Layout>
               {children} {/* 子页面内容 */}
             </Layout>
+            </DiscussionsProvider>
             {/* 底部栏 */}
             <footer className="bg-white shadow-md text-center py-4">
               &copy; {new Date().getFullYear()} TranslateOS. All rights reserved.
