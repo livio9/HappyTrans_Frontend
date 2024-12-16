@@ -2,6 +2,7 @@
 "use strict";
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 
 type TranslationSuggestion = {
   source: string;
