@@ -97,7 +97,8 @@ export default function LanguageVersions() {
 
     // 跳转到社区页面
     const handleCommunityNavigation = () => {
-        router.push("/community-forum"); 
+        router.push(`/community-forum?project=${encodeURIComponent(projectName)}`);
+        // router.push("/community-forum?project_name=${encodeURIComponent(projectName)}"); 
     };
 
     return (
