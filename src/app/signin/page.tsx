@@ -1,7 +1,7 @@
 "use client"; // 将整个文件标记为客户端组件
-import { useState } from "react";
+import { useState, useEffect } from "react";
 // import { useRouter } from "next/router";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,18 @@ export default function SignIn() {
     });
     const [error, setError] = useState(""); //错误信息保存
     const router = useRouter(); //用于页面跳转
+    const searchParams = useSearchParams(); //获取URL参数
     const { login } = useAuth(); // 使用 AuthContext 的 login 方法
+    // 获取查询参数中的用户名
+  useEffect(() => {
+    const usernameFromQuery = searchParams.get("username") || "";
+    if (usernameFromQuery) {
+      setFormData((prevData) => ({
+        ...prevData,
+        username: usernameFromQuery,
+      }));
+    }
+  }, [searchParams]);
 
     //动态更新输入的值并保存至formData中
     const handleChange = (e: { target: { id: any; value: any; }; }) => {

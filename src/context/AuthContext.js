@@ -4,7 +4,8 @@ import { createContext, useState, useEffect, useContext } from "react";
 
 /**
  * @typedef {Object} AuthContextType
- * @property {{ username?: string, role?: string } | null} user - 用户信息
+ * @property {{ username?: string, role?: string, managed_projects?: string[], translated_projects?: string } | null} user - 用户信息
+ * @property {string[] | null} projectInProcess - 正在进行的项目
  * @property {string | null} token - 用户认证令牌
  * @property {(authToken: string) => void} login - 登录方法
  * @property {() => void} logout - 登出方法
@@ -21,7 +22,11 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   // 用户信息状态，包括用户角色
   const [user, setUser] = useState(null);
-  
+  // 项目状态，用于存储当前正在进行的项目
+  const [projectInProcess, setProjectInProcess] = useState([]);
+  const [projectManaged, setProjectManaged] = useState([]);
+  const [projectTranslating, setProjectTranslating] = useState([]);
+
    // 初次加载时从 localStorage 获取 token（如果存在）
   const [token, setToken] = useState(() => { 
     if (typeof window !== "undefined") {
@@ -67,7 +72,22 @@ export const AuthProvider = ({ children }) => {
           ...prevUser,        // 保留原有的 user 信息
           ...userData,        // 合并后端返回的用户数据
         }));
+        console.log("User data fetched:", userData); // 打印用户数据
         checkUserRole(userData.role); // 根据用户角色执行相应逻辑
+        // 筛选出 projectManaged 和 projectTranslating 中重复的项目
+      const managedProjectNames = userData.managed_projects.map((project) => project.name);
+      const translatingProjectNames = userData.translated_projects.map((project) => project.name);
+
+      // 筛选出两个数组中重复的项目名
+      const combinedProjects = [...new Set([...managedProjectNames, ...translatingProjectNames])];
+
+      // 将重复项目放入 projectInProcess
+      setProjectInProcess(combinedProjects);
+
+      // 设置其他项目数据
+      setProjectManaged(managedProjectNames);
+      setProjectTranslating(translatingProjectNames);
+
       } else if (response.status === 401) {
         logout(); // 如果认证失败，执行登出操作
         console.log("Unauthorized access. Logging out..."); // 打印日志
@@ -125,7 +145,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     // 提供 AuthContext，上下文值包括用户信息、认证令牌、登录和登出函数
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, projectInProcess, projectManaged, projectTranslating }}>
       {children} {/* 渲染子组件 */}
     </AuthContext.Provider>
   );
