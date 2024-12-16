@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 
 type TranslationSuggestion = {
   source: string;
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
   console.log('Received POST request to /api/translate');
   try {
     const { text, targetLanguage } = await request.json();
+    const { token } = useAuth(); // 从用户上下文中获取 token
 
     if (!text || !targetLanguage) {
       return NextResponse.json({ error: '缺少 text 或 targetLanguage 参数' }, { status: 400 });
@@ -163,6 +165,37 @@ export async function POST(request: Request) {
         console.error('调用有道翻译 API 时出错:', error);
       }
     }
+
+    // if(1){
+    //   try {
+    //     const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target-language=${targetLanguage}&text=${text}`, {
+    //       method: 'GET',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //         Authorization: `Token ${token}`,
+    //       },
+    //       }
+    //     );
+    //     if (LLMResponse.ok) {
+    //       const LLMData = await LLMResponse.json();
+    //       if (LLMData.error) {
+    //         console.error('LLM API Error:', LLMData.error);
+    //       } else {
+    //         LLMData.map((llm: {name: string, translation: string}) => {
+    //           suggestions.push({ source: llm.name, translation: llm.translation });
+    //         });
+
+            
+    //       }
+    //     } else {
+    //       const errorText = await LLMResponse.text();
+    //       console.error('LLM API 网络错误:', errorText);
+    //     }
+    //   }
+    //   catch (error) {
+    //     console.error('调用LLM API 时出错:', error);
+    //   }
+    // }
 
     if (suggestions.length === 0) {
       return NextResponse.json({ error: '未能获取任何翻译建议' }, { status: 500 });
