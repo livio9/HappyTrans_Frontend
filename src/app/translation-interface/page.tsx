@@ -574,7 +574,7 @@ export default function TranslationInterface() {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -584,7 +584,7 @@ export default function TranslationInterface() {
         <Button
           variant="link"
           onClick={handleProjectLanguage} 
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
@@ -594,7 +594,7 @@ export default function TranslationInterface() {
         <Button
           variant="link"
           onClick={handleProjectEntries}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {languageCode}
         </Button>
@@ -603,7 +603,7 @@ export default function TranslationInterface() {
         {/* 当前项目词条按钮 */}
         <Button
           variant="link"
-          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           entries
         </Button>

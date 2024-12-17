@@ -71,12 +71,13 @@ type Entries = {
 // 根据标签设置不同的颜色类
 const getTagColorClass = (tag: string) => {
   switch (tag) {
-    case "urgent":
+    case "To be translated":
       return "bg-red-500 text-white";
-    case "important":
+    case "To be reviewed":
       return "bg-yellow-500 text-black";
-    case "review":
+    case "Need to check again":
       return "bg-blue-500 text-white";
+    // 自定义
     default:
       return "bg-gray-300 text-black";
   }
@@ -397,7 +398,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -407,7 +408,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectLanguage}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
@@ -416,7 +417,7 @@ export default function ProjectDetails() {
         {/* 当前项目语言按钮 */}
         <Button
           variant="link"
-          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           {languageCode}
         </Button>
