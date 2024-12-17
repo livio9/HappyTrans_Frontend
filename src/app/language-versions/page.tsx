@@ -146,7 +146,7 @@ export default function LanguageVersions() {
                 <Button
                     variant="link"
                     onClick={handleProjectNavigation}
-                    className="text-gray-800 font-semibold"
+                    className="text-gray-500 font-semibold"
                 >
                     Projects
                 </Button>
@@ -155,7 +155,11 @@ export default function LanguageVersions() {
                 {/* 当前项目按钮 */}
                 <Button
                     variant="link"
+<<<<<<< HEAD
+                    className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
+=======
                     className="text-gray-500 hover:text-gray-700 focus:outline-none"
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
                 >
                     {projectName}
                 </Button>

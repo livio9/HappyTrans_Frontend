@@ -40,7 +40,7 @@ type Entry = {
   updated_at: string; // 最近一次更新时间
   selected_msgstr_index: number; // 选中的翻译内容索引
   references: string; // 字符串位置
-  tag: [string]; // 新增：标签
+  tags: [string]; // 新增：标签
 };
 
 type LanguageData = {
@@ -71,17 +71,17 @@ type Entries = {
 // 根据标签设置不同的颜色类
 const getTagColorClass = (tag: string) => {
   switch (tag) {
-    case "urgent":
+    case "To be translated":
       return "bg-red-500 text-white";
-    case "important":
+    case "To be reviewed":
       return "bg-yellow-500 text-black";
-    case "review":
+    case "Need to check again":
       return "bg-blue-500 text-white";
+    // 自定义
     default:
       return "bg-gray-300 text-black";
   }
 };
-
 
 export default function ProjectDetails() {
   const router = useRouter(); // 使用路由钩子跳转页面
@@ -93,31 +93,6 @@ export default function ProjectDetails() {
 
   const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
 
-  // 获取标签的异步函数
-  const fetchTags = async (projectName: string, languageCode: string, index: number) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/modify-entry-tag?index=${index}&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify({
-            action: "add",
-            tag: "urgent",
-          }),
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch tags");
-      const data = await response.json();
-      return data.tags || [];
-    } catch (error) {
-      console.error("Error fetching tags:", error);
-      return [];
-    }
-  };
 
   // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
@@ -138,8 +113,6 @@ export default function ProjectDetails() {
 
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const [tags, setTags] = useState<Map<number, string[]>>(new Map()); // 用 Map 存储索引和对应的 tags
 
   // 添加新的状态用于排序
 
@@ -257,8 +230,6 @@ export default function ProjectDetails() {
 
     if (!languageData) return [];
 
-    
-
     // 排序
     const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
       if (sortColumn === "idx_in_language") { // 根据索引排序
@@ -304,33 +275,9 @@ export default function ProjectDetails() {
     }
   };
 
-  // 使用 useCallback 缓存 fetchTags 函数
-  const fetchTagsMemo = useCallback(
-    (projectName: string, languageCode: string, index: number) => {
-      return fetchTags(projectName, languageCode, index);
-    },
-    []
-  );
   
-  // 使用 useEffect 获取标签数据
-  useEffect(() => {
-    const loadTags = async () => {
-      if (!projectName || !languageCode || !paginatedEntries) return;
-      const fetchedTags = await Promise.all(
-        paginatedEntries.map((entry) =>
-          fetchTagsMemo(projectName, languageCode, entry.idx_in_language).then((tags) => ({
-            index: entry.idx_in_language,
-            tags,
-          }))
-        )
-      );
-
-      const tagsMap = new Map(fetchedTags.map(({ index, tags }) => [index, tags]));
-      setTags(tagsMap); // 设置 tags 状态
-    };
-
-    loadTags();
-  }, [projectName, languageCode, paginatedEntries, fetchTagsMemo]);
+  
+  
 
   //处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
   const handleSearch = () => {
@@ -388,7 +335,6 @@ export default function ProjectDetails() {
     }
   };
 
-
   return (
     <div className="container mx-auto p-6 space-y-8">
       {/* 项目导航面包屑 */}
@@ -397,7 +343,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -407,7 +353,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectLanguage}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
@@ -416,7 +362,11 @@ export default function ProjectDetails() {
         {/* 当前项目语言按钮 */}
         <Button
           variant="link"
+<<<<<<< HEAD
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
+=======
           className="text-gray-500 hover:text-gray-700 focus:outline-none"
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
         >
           {languageCode}
         </Button>
@@ -520,11 +470,10 @@ export default function ProjectDetails() {
               itemCount={paginatedEntries.length} // 当前页条目数
               itemSize={50} // 每个条目的固定高度
               width="100%" // 列表宽度
+              className="font-sans text-sm" // 设置全局字体和字号
             >
               {({ index, style }) => {
                 const entry = paginatedEntries[index];
-                const entryTags = tags.get(entry.idx_in_language) || [];
-
                 return (
                   <div
                     style={style}
@@ -538,37 +487,54 @@ export default function ProjectDetails() {
                       )
                     }
                   >
-                    <div className="w-[100px] font-medium pl-4">{entry.idx_in_language}</div>
-                    <div className="w-[270px] font-mono text-sm">{entry.references}</div>
-                    <div className="w-[400px] flex items-center justify-between">
-                      <div className="flex-1 min-w-0 pr-2">{entry.msgid}</div>
-                      <div className="flex flex-wrap gap-1 min-w-[20px] min-h-[10px] bg-green-500 text-white"> 
-                        {entryTags.map((tag, idx) => (
+                    {/* 第一列：索引 */}
+                    <div className="w-24 font-medium pl-4 text-gray-700">
+                      {entry.idx_in_language}
+                    </div>
+
+                    {/* 第二列：参考信息 */}
+                    <div className="w-68 font-mono text-xs text-gray-600">
+                      {entry.references}
+                    </div>
+
+                    {/* 第三列：msgid 和 标签 */}
+                    <div className="w-96 flex items-center justify-start space-x-2">
+                      {/* 词条 */}
+                      <div className="flex items-center">
+                        <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
+                      </div>
+                      <div className="flex flex-wrap mt-1">
+                        {entry.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className={`inline-block px-2 py-1 text-xs rounded-full ${getTagColorClass(tag)}`}
+                            className={`px-2 py-0.5 text-[10px] text-gray-800 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
                             style={{
-                              minWidth: '70px',
-                              height: '24px',
-                              lineHeight: '18px', // 调整行高使文字垂直居中
-                              textAlign: 'center',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap',
-                              textOverflow: 'ellipsis'
+                              minWidth: '15px', // 最小宽度
+                              height: '20px', // 高度
+                              lineHeight: '18px', // 行高，使字体垂直居中
+                              textAlign: 'center', // 水平居中
+                              overflow: 'hidden', // 防止溢出
+                              whiteSpace: 'nowrap', // 防止换行
+                              textOverflow: 'ellipsis', // 文字超出时显示省略号
                             }}
+                            title={tag} // 悬浮显示完整标签
                           >
                             {tag}
                           </span>
                         ))}
-                        pass
+
                       </div>
                     </div>
-                    <div className="w-[400px]">
+
+                    {/* 第四列：翻译内容 */}
+                    <div className="w-96 text-gray-700">
                       {entry.selected_msgstr_index === -1
                         ? ""
                         : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
-                    <div className="text-muted-foreground">
+
+                    {/* 第五列：更新时间 */}
+                    <div className="w-40 text-xs text-gray-500">
                       {new Date(entry.updated_at).toLocaleString()}
                     </div>
                   </div>

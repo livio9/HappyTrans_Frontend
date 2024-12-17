@@ -307,7 +307,7 @@ const CommunityForumPage = () => {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -317,16 +317,16 @@ const CommunityForumPage = () => {
         <Button
           variant="link"
           onClick={handleProjectLanguage}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
         {/* 分隔符 */}
         <span className="text-gray-400">/</span>
-        {/* 当前项目语言按钮 */}
+        {/* 当前项目社区按钮 */}
         <Button
           variant="link"
-          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           Community
         </Button>
@@ -421,7 +421,11 @@ const CommunityForumPage = () => {
                     </>
                   ) : (
                     <>
+<<<<<<< HEAD
+                        <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+=======
                       <Link href={`/discussion?id=${discussion.id}`}>
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
                         <Button
                           variant="ghost"
                           size="sm"
