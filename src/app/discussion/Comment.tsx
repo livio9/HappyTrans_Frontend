@@ -436,27 +436,11 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
                         <p className="text-gray-800">{reply.content}</p>
                         {/* 对回复的回复输入框 */}
                         {isReplyingToReply && (
-<<<<<<< HEAD
                             <div className="absolute left-0 mt-2 pl-4 w-full bg-white border-none rounded shadow-lg z-10">
                                 <textarea
                                     value={replyToReplyContent}
                                     onChange={(e) => setReplyToReplyContent(e.target.value)}
                                     className="w-full p-2 border-2 rounded focus:outline-none focus:border-gray-500"
-=======
-<<<<<<< HEAD
-                            <div className="absolute left-0 mt-2 pl-4 w-full bg-white border-none rounded shadow-lg z-10">
-                                <textarea
-                                    value={replyToReplyContent}
-                                    onChange={(e) => setReplyToReplyContent(e.target.value)}
-                                    className="w-full p-2 border-2 rounded focus:outline-none focus:border-gray-500"
-=======
-                            <div className="absolute left-0 mt-2 pl-4 w-full bg-white border rounded shadow-lg z-10">
-                                <textarea
-                                    value={replyToReplyContent}
-                                    onChange={(e) => setReplyToReplyContent(e.target.value)}
-                                    className="w-full p-2 border rounded"
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                                     rows={2}
                                     placeholder="Write your reply..."
                                 />
