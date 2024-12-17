@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useState, useContext } from "react";
+import { useAuth } from "./AuthContext";
 
 // 创建 ProjectContext
 const ProjectContext = createContext();
@@ -13,6 +14,7 @@ export const ProjectProvider = ({ children }) => {
   const [project, setProject] = useState(null); // 当前项目的信息
   const [loading, setLoading] = useState(false); // 加载状态
   const [error, setError] = useState(null); // 错误信息
+  const { token } = useAuth();
 
   // 直接设置当前项目的信息
   const setCurrentProject = (projectData) => {
@@ -30,11 +32,14 @@ export const ProjectProvider = ({ children }) => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
         },
       });
 
       if (response.ok) {
+        
         const projectData = await response.json();
+        console.log("Project info fetched in ProjectContext:", projectData);
         setProject(projectData); // 设置项目信息
         return projectData; // 返回项目信息
       } else if (response.status === 404) {
@@ -65,7 +70,7 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ project, loading, error, setCurrentProject, fetchProjectInfo, clearProject, getProjectName  }}>
+    <ProjectContext.Provider value={{ project, loading, error, setProject, setCurrentProject, fetchProjectInfo, clearProject, getProjectName  }}>
       {children}
     </ProjectContext.Provider>
   );
