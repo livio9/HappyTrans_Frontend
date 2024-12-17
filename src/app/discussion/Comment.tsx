@@ -436,11 +436,11 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
                         <p className="text-gray-800">{reply.content}</p>
                         {/* 对回复的回复输入框 */}
                         {isReplyingToReply && (
-                            <div className="absolute left-0 mt-2 pl-4 w-full bg-white border rounded shadow-lg z-10">
+                            <div className="absolute left-0 mt-2 pl-4 w-full bg-white border-none rounded shadow-lg z-10">
                                 <textarea
                                     value={replyToReplyContent}
                                     onChange={(e) => setReplyToReplyContent(e.target.value)}
-                                    className="w-full p-2 border rounded"
+                                    className="w-full p-2 border-2 rounded focus:outline-none focus:border-gray-500"
                                     rows={2}
                                     placeholder="Write your reply..."
                                 />
