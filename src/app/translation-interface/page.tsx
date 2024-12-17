@@ -792,6 +792,7 @@ export default function TranslationInterface() {
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="comment">Comment</TabsTrigger>
           </TabsList>
+          <div className="h-72 overflow-y-auto"> {/* 设置固定高度和滚动 */}
           {/* 附近字符串内容 */}
           <TabsContent value="nearby">
             <table className="w-full text-sm">
@@ -877,11 +878,11 @@ export default function TranslationInterface() {
                         key={item.timestamp} 
                         className="flex items-center border-b hover:bg-muted/50"
                       >
-                        <div className="w-[100px] font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
-                        <div className="w-[400px] font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
-                        <div className="w-[400px]">{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
+                        <div className="w-1/5 font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
+                        <div className="w-1/3 font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
+                        <div className="w-1/4">{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
                         <div>
-                        <Button variant="default" className="md:w-4/4" onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
+                        <Button variant="default"  onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
                           Select it
                         </Button>
                         </div>
@@ -976,6 +977,7 @@ export default function TranslationInterface() {
               )}
             </div>
           </TabsContent>
+          </div>
         </Tabs>
       </footer>
        
