@@ -698,10 +698,10 @@ export default function TranslationInterface() {
             </Card>
             <div className="flex space-x-2">
             
-            <Button onClick={handleSaveAndContinue} disabled={!canTranslate}> {/* 保存并继续 */}
+            <Button onClick={handleSaveAndContinue} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并继续 */}
               Save and Continue
             </Button>
-            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate}> {/* 保存并停留 */}
+            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并停留 */}
               Save and Stay
             </Button>
             
