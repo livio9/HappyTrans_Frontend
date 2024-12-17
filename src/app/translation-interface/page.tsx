@@ -861,7 +861,7 @@ export default function TranslationInterface() {
                 </tr>
               </thead>
             </table>
-                {/* 历史记录列表, 同样适用虚拟列表分页展示 */}
+                {/* 历史记录列表, 同样使用虚拟列表分页展示 */}
               <div className="flex justify-end space-x-2">
                 <List
                   height={200} // 设置列表高度
@@ -878,10 +878,10 @@ export default function TranslationInterface() {
                         className="flex items-center border-b hover:bg-muted/50"
                       >
                         <div className="w-[100px] font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
-                        <div className="w-[270px] font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
+                        <div className="w-[400px] font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
                         <div className="w-[400px]">{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
                         <div>
-                        <Button variant="default" className="md:w-1/4" onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
+                        <Button variant="default" className="md:w-4/4" onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
                           Select it
                         </Button>
                         </div>
