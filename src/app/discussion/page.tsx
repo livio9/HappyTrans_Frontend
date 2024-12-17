@@ -7,18 +7,37 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useDiscussions } from '@/context/DiscussionsContext';
 import CommentSection from './CommentSection'; // 评论区组件
 import { useAuth } from '@/context/AuthContext';
+<<<<<<< HEAD
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+=======
+<<<<<<< HEAD
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+=======
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
 
 const PostDetails = () => {
     const { singleDiscussion, fetchDiscussion, loading } = useDiscussions(); // 使用上下文提供的单个帖子数据
     const searchParams = useSearchParams();
     const { user } = useAuth(); // 获取当前登录用户信息
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
     const projectName = searchParams.get("project_name") || "";
     const id = searchParams.get('id'); // 获取帖子 ID
     const [isOwner, setIsOwner] = useState(false); // 用于标识当前用户是否为帖子创建者
     const router = useRouter();
   
+<<<<<<< HEAD
+=======
+=======
+    const id = searchParams.get('id'); // 获取帖子 ID
+    const [isOwner, setIsOwner] = useState(false); // 用于标识当前用户是否为帖子创建者
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
 
     // 解析标题并返回带有链接的标题和字段
     const parseTitle = (title: string) => {
@@ -148,6 +167,10 @@ const PostDetails = () => {
         return date.toLocaleString(); // 格式化时间
     };
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
     /**
    * 跳转到项目页面
    */
@@ -213,6 +236,13 @@ const PostDetails = () => {
                     Discussion
                 </Button>
             </div>
+<<<<<<< HEAD
+=======
+=======
+    return (
+        <div className="post-details">
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
             {/* 帖子标题和内容 */}
             <Card className="mb-4 shadow-md rounded-lg border border-gray-200">
                 <CardHeader className="bg-white p-8">
