@@ -421,7 +421,15 @@ const CommunityForumPage = () => {
                     </>
                   ) : (
                     <>
+<<<<<<< HEAD
                         <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+=======
+<<<<<<< HEAD
+                        <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+=======
+                      <Link href={`/discussion?id=${discussion.id}`}>
+>>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
+>>>>>>> 673b8e4 (feat: 实现词条tag功能)
                         <Button
                           variant="ghost"
                           size="sm"
