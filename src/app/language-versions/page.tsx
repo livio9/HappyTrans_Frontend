@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 interface LanguageVersion {
     code: string;
@@ -21,11 +22,47 @@ export default function LanguageVersions() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const projectName = searchParams.get("project") || "";
+    const isAdmin = user?.role === "admin" || false;
 
 
     // （等后端API接口包含语言之后再用下面的函数）
     const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>([]);
     const [loading, setLoading] = useState(true);
+    // 导出项目
+    const handleExportProject = async (languageCode: string) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/export-project?project_name=${projectName}&language_id=${languageCode}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Token ${token}`, // 确保传递认证令牌
+                },
+            });
+            if (response.ok) {
+                // 获取响应中的文件内容
+                const blob = await response.blob(); // 获取文件的 Blob 对象
+
+                // 创建一个 URL 对象来引用该 Blob 对象
+                const fileURL = URL.createObjectURL(blob);
+
+                // 创建一个隐藏的下载链接并点击它来下载文件
+                const link = document.createElement("a");
+                link.href = fileURL;
+                const filename = `${projectName}.${languageCode}.po`;
+                link.download = filename; // 设置下载的文件名
+                document.body.appendChild(link); // 必须将链接添加到 DOM 中
+                link.click(); // 模拟点击下载
+                document.body.removeChild(link); // 点击后移除链接
+                URL.revokeObjectURL(fileURL); // 清理 URL 对象
+                console.log("Project exported successfully");
+            } else {
+                console.error("Failed to export project");
+            }
+        } catch (error) {
+            console.error("Error exporting project:", error);
+        }
+    };
+
     // 获取语言版本信息
     const fetchLanguageVersions = useCallback(async () => {
         if (!projectName) return;
@@ -118,7 +155,7 @@ export default function LanguageVersions() {
                 {/* 当前项目按钮 */}
                 <Button
                     variant="link"
-                    className="text-blue-500 hover:text-blue-700 focus:outline-none"
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
                 >
                     {projectName}
                 </Button>
@@ -148,12 +185,31 @@ export default function LanguageVersions() {
             ) : (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {languageVersions.map((version) => (
-                        <Card key={version.code}>
+                        <Card key={version.code} >
                             <CardHeader>
+                                <div className="flex flex-row items-center justify-between pb-1">
                                 <CardTitle>
                                     {version.name} ({version.code})
                                 </CardTitle>
+                                {isAdmin && ( // 如果用户是管理员，显示下拉菜单
+                                    <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                        <span className="sr-only">Open menu</span> {/* 无障碍标签 */}
+                                        <MoreVertical className="h-4 w-4" /> {/* 更多操作图标 */}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onSelect={() => handleExportProject(version.code)}> {/* 导出项目 */}
+                                            Export Project {/* 导出项目 */}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                                </div>
+
                                 <CardDescription>Progress in translation</CardDescription>
+                                
                             </CardHeader>
                             <CardContent>
                                 {/* 翻译进度条 */}
