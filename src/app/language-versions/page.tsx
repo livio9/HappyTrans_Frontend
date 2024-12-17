@@ -165,7 +165,7 @@ export default function LanguageVersions() {
             {/* 项目标题和按钮容器 */}
             <div className="flex items-center justify-between mb-6">
                 {/* 项目标题 */}
-                <h1 className="text-3xl font-semibold text-gray-900">
+                <h1 className="text-3xl font-bold mb-6">
                     Language Versions - {projectName}
                 </h1>
 
@@ -178,16 +178,6 @@ export default function LanguageVersions() {
                 </Button>
             </div>
 
-
-            {/* Community按钮（放在项目标题下方） */}
-            <div className="mb-6">
-                <Button
-                    onClick={handleCommunityNavigation}
-                    className="text-white bg-blue-500 hover:bg-blue-700"
-                >
-                    Go to Community
-                </Button>
-            </div>
 
             {/* 加载状态显示 */}
             {loading ? (

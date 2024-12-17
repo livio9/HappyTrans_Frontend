@@ -73,9 +73,9 @@ const CommunityForumPage = () => {
 
     // 获取标题、projectName、languageCode 和 idxInLanguage
     const mainTitle = parts[0]; // 标题部分是 # 之前的内容
-    const projectName = (parts[1] || null)?.trim(); // 第一个 # 后面的部分，并去除空格
-    const languageCode = (parts[2] || null)?.trim(); // 第二个 # 后面的部分，并去除空格
-    const idxInLanguage = (parts[3] || null)?.trim(); // 第三个 # 后面的部分，并去除空格
+    const projectName = parts[1] || null; // 第一个 # 后面的部分
+    const languageCode = parts[2] || null; // 第二个 # 后面的部分
+    const idxInLanguage = parts[3] || null; // 第三个 # 后面的部分
 
     console.log('mainTitle:', mainTitle);
     console.log('projectName:', projectName);
@@ -132,7 +132,7 @@ const CommunityForumPage = () => {
           )}
 
           {/* languageCode */}
-          {projectName && languageCode && (
+          {languageCode && (
             <a
               href={`Entries?project_name=${projectName}&language_code=${languageCode}`}
               style={{
@@ -149,9 +149,9 @@ const CommunityForumPage = () => {
           )}
 
           {/* idxInLanguage */}
-          {projectName && languageCode && idxInLanguage && (
+          {idxInLanguage && (
             <a
-              href={`translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${idxInLanguage}`}
+              href={`translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${encodeURIComponent(idxInLanguage)}`}
               style={{
                 fontSize: '1.2rem',
                 color: '#6b7280',
@@ -293,9 +293,7 @@ const CommunityForumPage = () => {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(
-        `/language-versions?project=${encodeURIComponent(projectName)}`
-      );
+      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
     } else {
       console.error("Project name is missing");
     }
