@@ -362,15 +362,7 @@ export default function ProjectDetails() {
         {/* 当前项目语言按钮 */}
         <Button
           variant="link"
-<<<<<<< HEAD
           className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
-=======
-<<<<<<< HEAD
-          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
-=======
-          className="text-gray-500 hover:text-gray-700 focus:outline-none"
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
         >
           {languageCode}
         </Button>
@@ -476,11 +468,7 @@ export default function ProjectDetails() {
               itemCount={paginatedEntries.length} // 当前页条目数
               itemSize={50} // 每个条目的固定高度
               width="100%" // 列表宽度
-<<<<<<< HEAD
               className="font-sans text-sm"
-=======
-              className="font-sans text-sm" // 设置全局字体和字号
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
             >
               {({ index, style }) => {
                 const entry = paginatedEntries[index];
@@ -498,43 +486,23 @@ export default function ProjectDetails() {
                     }
                   >
                     {/* 第一列：索引 */}
-<<<<<<< HEAD
                     <div className="font-medium pl-4 text-gray-500">
-=======
-                    <div className="w-24 font-medium pl-4 text-gray-700">
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       {entry.idx_in_language}
                     </div>
 
                     {/* 第二列：参考信息 */}
-<<<<<<< HEAD
                     <div className="font-mono text-xs text-gray-600">
-=======
-                    <div className="w-68 font-mono text-xs text-gray-600">
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       {entry.references}
                     </div>
 
                     {/* 第三列：msgid 和 标签 */}
-<<<<<<< HEAD
                     <div className="flex items-center justify-start space-x-2">
                       <div className="flex-1 pr-2 text-gray-700">{entry.msgid}</div>
-=======
-                    <div className="w-96 flex items-center justify-start space-x-2">
-                      {/* 词条 */}
-                      <div className="flex items-center">
-                        <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
-                      </div>
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       <div className="flex flex-wrap mt-1">
                         {entry.tags.map((tag, idx) => (
                           <span
                             key={idx}
-<<<<<<< HEAD
                             className={`px-2 py-0.5 text-[10px] text-gray-900 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
-=======
-                            className={`px-2 py-0.5 text-[10px] text-gray-800 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                             style={{
                               minWidth: '15px', // 最小宽度
                               height: '20px', // 高度
@@ -549,30 +517,18 @@ export default function ProjectDetails() {
                             {tag}
                           </span>
                         ))}
-<<<<<<< HEAD
-=======
-
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       </div>
                     </div>
 
                     {/* 第四列：翻译内容 */}
-<<<<<<< HEAD
                     <div className="text-gray-700">
-=======
-                    <div className="w-96 text-gray-700">
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       {entry.selected_msgstr_index === -1
                         ? ""
                         : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
 
                     {/* 第五列：更新时间 */}
-<<<<<<< HEAD
                     <div className="text-xs text-gray-500">
-=======
-                    <div className="w-40 text-xs text-gray-500">
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
                       {new Date(entry.updated_at).toLocaleString()}
                     </div>
                   </div>

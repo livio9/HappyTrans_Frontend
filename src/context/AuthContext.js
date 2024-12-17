@@ -4,18 +4,9 @@ import { createContext, useState, useEffect, useContext } from "react";
 
 /**
  * @typedef {Object} AuthContextType
-<<<<<<< HEAD
  * @property {{ username?: string, role?: string, managed_projects?: string[], translated_projects?: string, id?: string } | null} user - 用户信息
  * @property {string[] | null} projectInProcess - 正在进行的项目
  * @property {string[] | null} projectManaged - 管理的项目
-=======
-<<<<<<< HEAD
- * @property {{ username?: string, id? number, role?: string } | null} user - 用户信息
-=======
- * @property {{ username?: string, role?: string, managed_projects?: string[], translated_projects?: string } | null} user - 用户信息
- * @property {string[] | null} projectInProcess - 正在进行的项目
->>>>>>> e595153bf5f64379398b683b27d8f68e8e917078
->>>>>>> 673b8e4 (feat: 实现词条tag功能)
  * @property {string | null} token - 用户认证令牌
  * @property {(authToken: string, username: string) => void} login - 登录方法
  * @property {() => void} logout - 登出方法
