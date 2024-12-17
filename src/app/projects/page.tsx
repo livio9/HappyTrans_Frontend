@@ -606,7 +606,6 @@ export default function Projects() {
     const { user } = useAuth(); // 使用认证上下文
 
     const isManager = project.is_managed;
-    const isAdminLocal = user?.role === "admin"; // 定义 isAdmin
 
     return (
       <Card className="h-48 flex flex-col justify-between">
@@ -625,7 +624,7 @@ export default function Projects() {
                 <DropdownMenuItem onSelect={() => handleManageClick(project)}>
                   Manage Project {/* 管理项目 */}
                 </DropdownMenuItem>
-                {isAdminLocal && (
+                {isAdmin && (
                   <DropdownMenuItem onSelect={() => handleDeleteClick(project.name)} className="text-red-600">
                     Delete Project {/* 删除项目 */}
                   </DropdownMenuItem>
