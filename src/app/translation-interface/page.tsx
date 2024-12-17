@@ -178,7 +178,7 @@ export default function TranslationInterface() {
   const index1 = indexParam ? parseInt(indexParam) : 0; // 将索引参数转换为数字
   // const index1 = searchParams.get("idx_in_language");
 
-  const { user, token, projectInProcess} = useAuth(); // 使用用户上下文获取当前用户
+  const { user, token, projectInProcess, projectManaged } = useAuth(); // 使用用户上下文获取当前用户
   const isAdmin = user?.role === "admin"; // 判断是否为管理员
   const { project } = useProject(); // 使用项目上下文获取当前项目
   console.log("fetching project from useProject", project);
@@ -469,6 +469,7 @@ export default function TranslationInterface() {
   //判断用户是否有权限翻译
   console.log("user.managed_projects:", user?.managed_projects);
   const canTranslate =   user?.role==="admin"||(user && projectName && (projectInProcess?.includes(projectName)));
+  const canSelect = user?.role==="admin" || (user && projectName && (projectManaged?.includes(projectName)));
   const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
   // 处理保存翻译结果
   // 发送翻译更新请求
@@ -1121,46 +1122,47 @@ export default function TranslationInterface() {
 
           {/* 历史翻译结果 */}
           <TabsContent value="history" className="overflow-y-auto max-h-[400px]">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left">User ID</th>
-                  <th className="text-left">Translation</th>
-                  <th className="text-left">Update At</th>
-                  {(<th className="text-left">Actions</th>)}
-                </tr>
-              </thead>
-            </table>
-                {/* 历史记录列表, 同样使用虚拟列表分页展示 */}
-              <div className="flex justify-end space-x-2">
-                <List
-                  height={200} // 设置列表高度
-                  itemCount={paginatedHistory.length} // 设置列表项数
-                  itemSize={40} // 设置列表项高度
-                  width={"100%"} // 设置列表宽度
-                >
-                  {({ index, style }) => {
-                    const item = paginatedHistory[index];
-                    return (
-                      <div
-                        style={style} 
-                        key={item.timestamp} 
-                        className="flex items-center border-b hover:bg-muted/50"
-                      >
-                        <div className="w-1/5 font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
-                        <div className="w-1/3 font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
-                        <div className="w-1/4">{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
-                        <div>
-                        <Button variant="default"  onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
-                          Select it
-                        </Button>
-                        </div>
-                        
-                      </div>
-                    );
-                  }}
-                </List>
-              </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="grid grid-cols-[1fr_2fr_1fr_1fr] w-full">
+                <th className="text-left">User ID</th>
+                <th className="text-left">Translation</th>
+                <th className="text-left">Update At</th>
+                {canSelect && <th className="text-left">Actions</th>}
+              </tr>
+            </thead>
+          </table>
+
+          {/* 历史记录列表 */}
+          <div className="flex justify-end space-x-2">
+            <List
+              height={200} // 设置列表高度
+              itemCount={paginatedHistory.length} // 设置列表项数
+              itemSize={40} // 设置列表项高度
+              width={"100%"} // 设置列表宽度
+            >
+              {({ index, style }) => {
+                const item = paginatedHistory[index];
+                return (
+                  <div
+                    style={style}
+                    key={item.timestamp}
+                    className="grid grid-cols-[1fr_2fr_1fr_1fr] items-center border-b hover:bg-muted/50"
+                  >
+                    <div className="font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
+                    <div className="font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
+                    <div>{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
+                    {canSelect && (<div>
+                      <Button variant="default" onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
+                        Select it
+                      </Button>
+                    </div>)}
+                  </div>
+                );
+              }}
+            </List>
+          </div>
+
             {/* 分页控制 */}
             {/* 分页控制 */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">

@@ -424,26 +424,26 @@ export default function ProjectDetails() {
             <div className="sticky top-0 bg-muted z-10">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="w-[100px]"> {/* 索引 */}
+                  <TableRow className="grid grid-cols-[100px_270px_400px_400px_150px] bg-muted">
+                    <TableHead> {/* 索引 */}
                       Index
                       <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[270px]"> {/* references */}
+                    <TableHead> {/* references */}
                       Key
                       <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]"> {/* 翻译原文 */}
+                    <TableHead> {/* 翻译原文 */}
                       Source
                       <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]"> {/* 被选中的翻译结果，如果没有被选中的结果将呈现空白结果 */}
+                    <TableHead> {/* 翻译结果 */}
                       Translation
                       <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
@@ -459,6 +459,8 @@ export default function ProjectDetails() {
                 </TableHeader>
               </Table>
             </div>
+          </div>
+
 
             {/* 虚拟滚动区域 */}
             <List
@@ -466,7 +468,7 @@ export default function ProjectDetails() {
               itemCount={paginatedEntries.length} // 当前页条目数
               itemSize={50} // 每个条目的固定高度
               width="100%" // 列表宽度
-              className="font-sans text-sm" // 设置全局字体和字号
+              className="font-sans text-sm"
             >
               {({ index, style }) => {
                 const entry = paginatedEntries[index];
@@ -474,7 +476,7 @@ export default function ProjectDetails() {
                   <div
                     style={style}
                     key={entry.idx_in_language}
-                    className="relative flex items-center border-b hover:bg-muted/50"
+                    className="grid grid-cols-[100px_270px_400px_400px_150px] relative items-center border-b hover:bg-muted/50"
                     onClick={() =>
                       router.push(
                         `/translation-interface?project_name=${encodeURIComponent(
@@ -484,21 +486,18 @@ export default function ProjectDetails() {
                     }
                   >
                     {/* 第一列：索引 */}
-                    <div className="w-24 font-medium pl-4 text-gray-700">
+                    <div className="font-medium pl-4 text-gray-700">
                       {entry.idx_in_language}
                     </div>
 
                     {/* 第二列：参考信息 */}
-                    <div className="w-68 font-mono text-xs text-gray-600">
+                    <div className="font-mono text-xs text-gray-600">
                       {entry.references}
                     </div>
 
                     {/* 第三列：msgid 和 标签 */}
-                    <div className="w-96 flex items-center justify-start space-x-2">
-                      {/* 词条 */}
-                      <div className="flex items-center">
-                        <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
-                      </div>
+                    <div className="flex items-center justify-start space-x-2">
+                      <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
                       <div className="flex flex-wrap mt-1">
                         {entry.tags.map((tag, idx) => (
                           <span
@@ -518,26 +517,24 @@ export default function ProjectDetails() {
                             {tag}
                           </span>
                         ))}
-
                       </div>
                     </div>
 
                     {/* 第四列：翻译内容 */}
-                    <div className="w-96 text-gray-700">
+                    <div className="text-gray-700">
                       {entry.selected_msgstr_index === -1
                         ? ""
                         : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
 
                     {/* 第五列：更新时间 */}
-                    <div className="w-40 text-xs text-gray-500">
+                    <div className="text-xs text-gray-500">
                       {new Date(entry.updated_at).toLocaleString()}
                     </div>
                   </div>
                 );
               }}
             </List>
-          </div>
 
           {/* 分页控制 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
