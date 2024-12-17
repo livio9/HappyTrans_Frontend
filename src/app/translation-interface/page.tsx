@@ -792,6 +792,7 @@ export default function TranslationInterface() {
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="comment">Comment</TabsTrigger>
           </TabsList>
+          <div className="h-72 overflow-y-auto"> {/* 设置固定高度和滚动 */}
           {/* 附近字符串内容 */}
           <TabsContent value="nearby">
             <table className="w-full text-sm">
@@ -976,6 +977,7 @@ export default function TranslationInterface() {
               )}
             </div>
           </TabsContent>
+          </div>
         </Tabs>
       </footer>
        
