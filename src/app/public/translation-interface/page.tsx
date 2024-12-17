@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"; // 导入自定义多行文
 import { Progress } from "@/components/ui/progress"; // 导入自定义进度条组件
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // 导入自定义卡片组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // 导入自定义标签页组件
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy } from "lucide-react"; // 导入图标组件
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Copy } from "lucide-react"; // 导入图标组件
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
-import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
-import { useProject } from "@/context/ProjectContext";  // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // 导入自定义头像组件
@@ -30,18 +28,10 @@ import { Separator } from "@/components/ui/separator"; // 导入自定义分隔�
 import { ScrollArea } from "@/components/ui/scroll-area"; // 导入自定义滚动区域组件
 import { formatDistanceToNow } from 'date-fns'
 import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
+import { getCookie } from '@/utils/cookies';
+import Link from 'next/link';
+import UserAvatar from "@/components/shared/UserAvatar";
 
-// Remove the misplaced CSS rule
-
-// 辅助函数：从 Cookie 中获取 CSRF token
-function getCookie(name: string): string | null {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop()?.split(";").shift() || null;
-  }
-  return null;
-}
 // 定义翻译消息的类型, 与Entries中的基本一致，在这里不做详细注解
 type msgstr = {
   msg: string;
@@ -63,7 +53,7 @@ type Entry = {
   updated_at: string; // 更新时间
   selected_msgstr_index: number; // 选择的翻译文本索引
   references: string; // 引用
-  tag: [string]; // 标签
+  tags: [string]; // 标签
 };
 
 type LanguageData = {
@@ -103,6 +93,23 @@ type Feedback = {
   idx_in_language: number;
 }
 
+interface UserType {
+  id: string;
+  username: string;
+  email?: string;
+  bio?: string;
+}
+
+// 帖子类型
+interface Discussion {
+  id: number;
+  title: string;
+  content: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  user?: UserType;
+}
 
 function FeedbackItem({ feedback }: { feedback: Feedback }) {
   function formatTitle(title: string): string {
@@ -159,9 +166,9 @@ function FeedbackItem({ feedback }: { feedback: Feedback }) {
 }
 
 export default function TranslationInterface() {
-
   const router = useRouter();//用于跳转
   const searchParams = useSearchParams();
+
   // 从 URL 获取参数
   const projectName = searchParams.get("project_name"); // 获取项目名称
   const languageCode = searchParams.get("language_code"); // 获取语言代码
@@ -169,9 +176,6 @@ export default function TranslationInterface() {
   const index1 = indexParam ? parseInt(indexParam) : 0; // 将索引参数转换为数字
   // const index1 = searchParams.get("idx_in_language");
 
-  const { user, token, projectInProcess} = useAuth(); // 使用用户上下文获取当前用户
-  const { project } = useProject(); // 使用项目上下文获取当前项目
-  console.log("fetching project from useProject", project);
   
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -186,8 +190,16 @@ export default function TranslationInterface() {
   const [isSuggestDialogOpen, setIsSuggestDialogOpen] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
-
-
+  const [discussions, setDiscussions] = useState<Discussion[]>([]); // 存储从后台获取到的讨论数据
+  const [ordering, setOrdering] = useState<string>('desc'); // 默认为降序
+  const [offset, setOffset] = useState<number>(0); // 当前页的偏移量
+  
+  const [selectedTag, setSelectedTag] = useState<string>('');  // 存储选择的标签类型
+  const [customTag, setCustomTag] = useState<string>('');      // 存储自定义标签内容
+  const [isCustom, setIsCustom] = useState<boolean>(false);    // 控制是否显示自定义标签输入框
+  const [isAdding, setIsAdding] = useState(false);
+  const [tags, setTags] = useState<string[]>(strings[currentIndex]?.tags || []);
+  const [showRemoveCross, setShowRemoveCross] = useState(false);
 
   // 对于某个特定词条管理员从历史记录中选择翻译结果
   const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
@@ -199,34 +211,81 @@ export default function TranslationInterface() {
 
   const [sourceLanguage, setSourceLanguage] = useState<string>("en"); // 源语言
 
+  // 排序更新-comments
+  const handleSortChange = (newOrdering: string) => {
+    setOrdering(newOrdering);
+    setOffset(0); // 排序更新时，页码重置为第一页
+  };
+
+  // 初始化 tags，当 strings 或 currentIndex 改变时更新 tags
+  useEffect(() => {
+    if (strings[currentIndex]?.tags) {
+      setTags(strings[currentIndex].tags);
+    } else {
+      setTags([]);
+    }
+  }, [strings, currentIndex]);
 
   useEffect(() => {
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
   
     if (projectName && languageCode) { // 确保项目名称和语言代码存在
-      const fetchProjectData = async () => {
+      // 获取讨论数据
+      const fetchDiscussions = async () => {
+        console.log("Fetching discussions...");
         try {
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/project?name=${encodeURIComponent(projectName)}`,
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?offset=${offset}&ordering=${ordering}&project_name=${encodeURIComponent(projectName)}&title=${encodeURIComponent(`#${currentIndex}`)}`,
             {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
-  
+
           if (!response.ok) {
-            throw new Error("Failed to fetch project data");
+            throw new Error("Failed to fetch discussions");
           }
           const data = await response.json();
-          console.log("Fetched project data:", data);
-          setSourceLanguage(data.source_language); // 设置源语言
+          console.log("Fetched discussions:", data);
+          
+          // 请求并附加每个讨论的用户信息
+          const discussionsWithUserInfo = await Promise.all(
+            data.results.map(async (discussion: { created_by: string; }) => {
+              try {
+                const userResponse = await fetch(
+                  `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?id=${discussion.created_by}`, // 获取用户详细信息
+                  {
+                    method: "GET",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+
+                if (!userResponse.ok) {
+                  throw new Error("Failed to fetch user data");
+                }
+                const userData = await userResponse.json();
+                return { ...discussion, user: userData }; // 将用户信息添加到讨论对象中
+              } catch (error) {
+                console.error("Error fetching user data:", error);
+                return { ...discussion, user: null }; // 如果获取用户失败，user 设置为 null
+              }
+            })
+          );
+
+          // 更新讨论状态
+          setDiscussions(discussionsWithUserInfo);
         } catch (error) {
-          console.error("Error fetching project data:", error);
+          console.error("Error fetching discussions:", error);
         }
-      }
+      };
+
+      // 只有在 projectName 和 languageCode 有值时才进行请求
+      fetchDiscussions();
+
       // 获取词条数据
       const fetchEntriesData = async () => {
         console.log("Fetching entries data...");
@@ -239,7 +298,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -287,7 +345,6 @@ export default function TranslationInterface() {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Token ${token}`,
                 },
               }
             );
@@ -347,7 +404,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -377,7 +433,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -394,59 +449,24 @@ export default function TranslationInterface() {
       };
 
       fetchFeedback(); // 获取反馈信息
-      
-
-
     } else {
       console.log("Project name or language code is missing");
     }
-  }, [projectName, languageCode, currentIndex, strings]); // 依赖 currentIndex 和 strings，确保数据更新后执行
-
+  }, [projectName, languageCode, currentIndex, strings, ordering]); // 确保数据更新后执行
 
   //判断用户是否有权限翻译
-  console.log("user.managed_projects:", user?.managed_projects);
-  const canTranslate =   user?.role==="admin"||(user && projectName && (projectInProcess?.includes(projectName)));
-
-
+  const canTranslate =   false;
+  const canSelect = false;
+  const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
   // 处理保存翻译结果
-  // 发送翻译更新请求
-  const updateTranslation = async (newTranslation: string) => {
-    const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry?index=${currentIndex}&language_code=${languageCode}&msgstr=${encodeURIComponent(newTranslation)}&project_name=${projectName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
-          },
-        }
-      );
   
-      if (!response.ok) {
-        throw new Error("Failed to update translation");
-      }
-
-      console.log("Translation updated successfully");
-    } catch (error) {
-      console.error("Error updating translation:", error);
-    }
-  };
 
   // 处理保存并跳转到下一个词条
   const handleSaveAndContinue = async () => {
-    await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
     router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 2}`); // 使用router跳转
   };
 
-  // 处理保存但不跳转
-  const handleSaveAndStay = async () => {
-    await updateTranslation(currentTranslation); // 保存当前翻译
-  };
 
 // 关于翻译建议的处理，现在还会实现相关功能。
   // 处理翻译建议
@@ -457,11 +477,10 @@ export default function TranslationInterface() {
       console.log("Current index:", currentIndex);
       console.log("Current string:", strings[currentIndex]?.msgid);
       console.log("Current language code:", languageCode);
-      const response = await fetch('/api/translate', {
+      const response = await fetch('/public/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
           projectName: projectName,
@@ -491,56 +510,14 @@ export default function TranslationInterface() {
     }
   };
   
-  
   const handleSelectSuggestion = () => {
     if (selectedSuggestion) {
       setCurrentTranslation(selectedSuggestion);
       setIsSuggestDialogOpen(false);
     }
   };
-  
+ 
 
-
-  // 管理员选择某一翻译作为最终结果
-  // 新的 select-msgstr API 调用函数
-  const selectMsgstr = async (id: string) => {
-    try {
-      const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/select-msgstr?entry_index=${currentIndex}&language_code=${languageCode}&msgstr_index=${encodeURIComponent(id)}&project=${projectName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to select msgstr");
-      }
-      console.log("msgstr selected successfully");
-    } catch (error) {
-      console.error("Error selecting msgstr:", error);
-    }
-  };
-
-  const handleSelectHistory = (id: string) => { // 选择历史记录
-    setSelectedMsgstrID(id);
-    setShowSelectDialog(true); // 显示弹窗
-  };
-
-  const handleConfirmSelect = () => { // 确认选择翻译结果
-    if (selectedMsgstrID) {
-      selectMsgstr(selectedMsgstrID); // 执行 select-msgstr API 调用
-    }
-    setShowSelectDialog(false); // 关闭弹窗
-  };
-
-  const handleCancelSelect = () => { // 取消选择翻译结果弹窗
-    setShowSelectDialog(false); // 关闭弹窗
-  };
 
 
 
@@ -558,57 +535,111 @@ export default function TranslationInterface() {
   //总页数
   const totalPages = Math.ceil(strings[currentIndex]?.msgstr.length / itemsPerPage);
 
+  // 添加tag
+  const handleAdd = async () => {
+    try {
+      if (!projectName) {
+        throw new Error("Project name is required");
+      }
+
+      const tagToSend = isCustom ? customTag : selectedTag;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/modify-entry-tag?index=${index1}&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken || '',
+          },
+          body: JSON.stringify({
+            action: 'add',
+            tag: tagToSend,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to add tag: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Tag added successfully', data);
+
+      setTags([...tags, tagToSend]);
+
+      setIsAdding(false);
+      setSelectedTag('');
+      setIsCustom(false);
+      setCustomTag('');
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  
+
+  // 获取标签颜色的类
+  const getTagColorClass = (tag: string) => {
+    switch (tag) {
+      case "To be translated":
+        return "bg-red-500 text-white";
+      case "To be reviewed":
+        return "bg-yellow-500 text-black";
+      case "Need to check again":
+        return "bg-blue-500 text-white";
+      // 自定义
+      default:
+        return "bg-gray-300 text-black";
+    }
+  };
+
+  //复制函数
+  const handleCopy = (entry: Entry) => {
+    // 获取当前行的 Translation 内容
+    const translation = entry.selected_msgstr_index === -1
+      ? ""
+      : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation";
+  
+    // 使用 clipboard API 复制文本
+    navigator.clipboard.writeText(translation)
+      .then(() => {
+        console.log("Text copied to clipboard");
+      })
+      .catch(err => {
+        console.error("Failed to copy text: ", err);
+      });
+  };
+  
+
   /**
  * 跳转到项目页面
  */
   const handleProjectNavigation = () => {
-    router.push("/projects");
+    router.push("/public/projects");
   };
   /**
    * 跳转到语言版本
    */
   const handleProjectLanguage = () => {
-    router.push(`/language-versions?project=${encodeURIComponent(projectName || "")}`);
+    router.push(`/public/language-versions?project=${encodeURIComponent(projectName || "")}`);
   };
   /**
    * 跳转到词条页面
    */
   const handleProjectEntries = () => {
-    router.push(`/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
+    router.push(`/public/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
   };
 
-  // 假设有一个字符串数组，代表每个词条的评论
-  const hardcodedComments = [
-    {
-      id: "1",
-      username: "Alice",
-      content: "This is a great project! I learned a lot from it.",
-      createdAt: "2024-12-01T12:34:56Z",
-    },
-    {
-      id: "2",
-      username: "Bob",
-      content: "I agree with Alice. It's really insightful.",
-      createdAt: "2024-12-02T09:30:00Z",
-    },
-    {
-      id: "3",
-      username: "Charlie",
-      content: "Looking forward to seeing more updates on this topic!",
-      createdAt: "2024-12-03T14:00:00Z",
-    },
-  ];
-
-
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex flex-col bg-gray-100 dark:bg-gray-900">
       {/* 项目导航面包屑 */}
       <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
         {/* Projects按钮 */}
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -618,7 +649,7 @@ export default function TranslationInterface() {
         <Button
           variant="link"
           onClick={handleProjectLanguage} 
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
@@ -628,7 +659,7 @@ export default function TranslationInterface() {
         <Button
           variant="link"
           onClick={handleProjectEntries}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {languageCode}
         </Button>
@@ -637,7 +668,7 @@ export default function TranslationInterface() {
         {/* 当前项目词条按钮 */}
         <Button
           variant="link"
-          className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           entries
         </Button>
@@ -692,16 +723,16 @@ export default function TranslationInterface() {
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
-                  disabled={!canTranslate} // 禁用翻译
+                  disabled={true} // 禁用翻译
                 />
               </CardContent>
             </Card>
             <div className="flex space-x-2">
             
-            <Button onClick={handleSaveAndContinue} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并继续 */}
+            <Button onClick={handleSaveAndContinue} disabled={true}> {/* 保存并继续 */}
               Save and Continue
             </Button>
-            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并停留 */}
+            <Button variant="outline"  disabled={true}> {/* 保存并停留 */}
               Save and Stay
             </Button>
             
@@ -772,18 +803,54 @@ export default function TranslationInterface() {
             </TabsContent>
             <TabsContent value="info">
               <div className="space-y-2">
-                <p><strong>Tag:</strong> {strings[currentIndex]?.tag}</p>
-                <p><strong>Reference:</strong> {strings[currentIndex]?.references}</p>
-                <p><strong>Last updated:</strong> {(strings[currentIndex]?.updated_at)}</p>
-                <p><strong>Source string added:</strong> 3 years ago</p>
-                <p><strong>String Location:</strong> The {strings[currentIndex]?.idx_in_language}th in the translation file </p>
+                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                  <strong>Reference:</strong> {strings[currentIndex]?.references}
+                </div>
+                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                  <strong>Last updated:</strong> {(strings[currentIndex]?.updated_at)}
+                </div>
+                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                  <strong>Source string added:</strong> 3 years ago
+                </div>
+                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                  <strong>String Location:</strong> The {strings[currentIndex]?.idx_in_language}th in the translation file
+                </div>
+                {/* tag是否可编辑需要看用户权限 */}
+                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
+                  <strong>Tags:</strong>
+                  {/* 渲染 Tags */}
+                  {/* 渲染 Tags */}
+                  {tags && tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-3 mb-4">
+                      {tags.map((tag, idx) => (
+                        <span key={idx} className={`relative py-1 px-2 text-sm rounded-md ${getTagColorClass(tag)}`}>
+                          {tag}
+                          {showRemoveCross && (
+                            <button
+                             
+                              className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                              title="Remove tag"
+                            >
+                              &times;
+                            </button>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div>null</div> 
+                  )}
+
+                  
+
+                </div>
               </div>
             </TabsContent>
           </Tabs>
         </aside>
       </div>
       {/* 页脚，包括附近字符串、相似键、其他语言、历史和评论等内容 */}
-      <footer className="bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700">
+      <footer className="bg-white dark:bg-gray-800 p-2 border-t border-gray-200 dark:border-gray-700">
         <Tabs defaultValue="nearby">
           <TabsList>
             <TabsTrigger value="nearby">Nearby Strings</TabsTrigger>
@@ -794,7 +861,7 @@ export default function TranslationInterface() {
           </TabsList>
           <div className="h-72 overflow-y-auto"> {/* 设置固定高度和滚动 */}
           {/* 附近字符串内容 */}
-          <TabsContent value="nearby">
+          <TabsContent value="nearby" className="overflow-y-auto max-h-[400px]">
             <table className="w-full text-sm">
               <thead>
                 <tr>
@@ -812,7 +879,7 @@ export default function TranslationInterface() {
                       <td>{entry.msgid || ""}</td>
                       <td>{entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
                       <td>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(entry)}>
                           <Copy className="h-4 w-4" /> {/* 复制图标 */}
                         </Button>
                       </td>
@@ -825,7 +892,7 @@ export default function TranslationInterface() {
 
           {/* <TabsContent value="similar">Similar keys content</TabsContent> 相似键内容 */}
 
-          <TabsContent value="other">
+          <TabsContent value="other" className="overflow-y-auto max-h-[400px]">
             <table className="w-full text-sm">
               <thead>
                 <tr>
@@ -840,7 +907,7 @@ export default function TranslationInterface() {
                     <td>{entry.languageCode}</td>
                     <td>{entry.entry.selected_msgstr_index === -1 ? "(No translation yet)" : entry.entry.msgstr[entry.entry.selected_msgstr_index]?.msg || "No translation"} </td>
                     <td>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleCopy(entry.entry)}>
                         <Copy className="h-4 w-4" /> {/* 复制图标 */}
                       </Button>
                     </td>
@@ -851,47 +918,48 @@ export default function TranslationInterface() {
           </TabsContent> {/* 其他语言内容 */}
 
           {/* 历史翻译结果 */}
-          <TabsContent value="history">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="text-left">User ID</th>
-                  <th className="text-left">Translation</th>
-                  <th className="text-left">Update At</th>
-                  <th className="text-left">Actions</th>
-                </tr>
-              </thead>
-            </table>
-                {/* 历史记录列表, 同样使用虚拟列表分页展示 */}
-              <div className="flex justify-end space-x-2">
-                <List
-                  height={200} // 设置列表高度
-                  itemCount={paginatedHistory.length} // 设置列表项数
-                  itemSize={40} // 设置列表项高度
-                  width={"100%"} // 设置列表宽度
-                >
-                  {({ index, style }) => {
-                    const item = paginatedHistory[index];
-                    return (
-                      <div
-                        style={style} 
-                        key={item.timestamp} 
-                        className="flex items-center border-b hover:bg-muted/50"
-                      >
-                        <div className="w-1/5 font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
-                        <div className="w-1/3 font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
-                        <div className="w-1/4">{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
-                        <div>
-                        <Button variant="default"  onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
-                          Select it
-                        </Button>
-                        </div>
-                        
-                      </div>
-                    );
-                  }}
-                </List>
-              </div>
+          <TabsContent value="history" className="overflow-y-auto max-h-[400px]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="grid grid-cols-[1fr_2fr_1fr_1fr] w-full">
+                <th className="text-left">User ID</th>
+                <th className="text-left">Translation</th>
+                <th className="text-left">Update At</th>
+                {canSelect && <th className="text-left">Actions</th>}
+              </tr>
+            </thead>
+          </table>
+
+          {/* 历史记录列表 */}
+          <div className="flex justify-end space-x-2">
+            <List
+              height={200} // 设置列表高度
+              itemCount={paginatedHistory.length} // 设置列表项数
+              itemSize={40} // 设置列表项高度
+              width={"100%"} // 设置列表宽度
+            >
+              {({ index, style }) => {
+                const item = paginatedHistory[index];
+                return (
+                  <div
+                    style={style}
+                    key={item.timestamp}
+                    className="grid grid-cols-[1fr_2fr_1fr_1fr] items-center border-b hover:bg-muted/50"
+                  >
+                    <div className="font-medium pl-4">{item.user_id}</div> {/* 用户ID */}
+                    <div className="font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
+                    <div>{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
+                    {canSelect && (<div>
+                      <Button variant="default">  {/* 选择按钮 */}
+                        Select it
+                      </Button>
+                    </div>)}
+                  </div>
+                );
+              }}
+            </List>
+          </div>
+
             {/* 分页控制 */}
             {/* 分页控制 */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
@@ -953,27 +1021,54 @@ export default function TranslationInterface() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex space-x-4 mt-4">
-                    <Button variant="outline" onClick={handleCancelSelect}>Cancel</Button>
-                    <Button onClick={handleConfirmSelect}>Confirm</Button>
+                    <Button variant="outline">Cancel</Button>
+                    <Button>Confirm</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             )}
           </TabsContent> {/* 历史内容 */}
 
-          <TabsContent value="comment">
+          <TabsContent value="comment" className="overflow-y-auto max-h-[400px]">
             <div className="p-2">
-              <h3 className="text-lg font-semibold mb-4">Comments</h3>
-              {hardcodedComments.length === 0 ? (
+              <div className="flex justify-between items-center mb-2 p-4">
+                <div className="text-xl font-semibold">Relative Discussions</div> {/* 设置较大的字体 */}
+                <button
+                  onClick={() => handleSortChange(ordering === 'asc' ? 'desc' : 'asc')}
+                  className="mr-2 text-gray-700 font-bold bg-white py-1 px-4 rounded-md hover:bg-gray-100 transition duration-200 flex items-center"
+                >
+                  {ordering === 'asc' ? 'Des' : 'Asc'}
+                  <ArrowUpDown className="h-4 w-4 ml-2" />
+                </button>
+              </div>
+
+
+              {discussions.length === 0 ? (
                 <p>No comments available.</p>
               ) : (
-                hardcodedComments.map((comment) => (
-                  <div key={comment.id} className="mb-4 p-4 border-b border-gray-300">
-                    <div className="font-semibold">{comment.username}</div>
-                    <div className="text-sm text-gray-500">{new Date(comment.createdAt).toLocaleString()}</div>
-                    <p className="mt-2 text-gray-700">{comment.content}</p>
-                  </div>
-                ))
+                  discussions.map((discussion) => (
+                    <div key={discussion.id} className="flex items-start space-x-6 w-full mb-4 p-4 border-b border-gray-300">
+                       {/* 用户头像 */}
+                      <UserAvatar username={discussion.user?.username || "Anonymous"} size="sm" />
+                      
+                      {/* 右侧内容 */}
+                      <div className="flex-1 w-full"> 
+                        <div className="font-semibold">{discussion.title}</div>
+                        <div className="font-semibold">{discussion.user?.username || "Anonymous"}</div>
+                        <div className="text-sm text-gray-500">{new Date(discussion.created_at).toLocaleString()}</div>
+                        <p className="mt-2 text-gray-700">{discussion.content}</p>
+                      </div>
+                      <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                        >
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                  ))
               )}
             </div>
           </TabsContent>

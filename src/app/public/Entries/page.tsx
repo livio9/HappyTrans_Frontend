@@ -1,12 +1,9 @@
 "use client"; // 使用客户端模式
-import { useAuth } from "@/context/AuthContext"; // 使用认证上下文获取用户信息和认证令牌
 import React, { useEffect, useState, useMemo, useCallback } from "react"; //添加useMemo实现缓存排序和筛选结果
 import { useSearchParams ,useRouter} from "next/navigation"; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
 import { FixedSizeList as List } from "react-window"; // 使用 react-window 渲染虚拟列表， 提高性能
 import {
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -40,7 +37,7 @@ type Entry = {
   updated_at: string; // 最近一次更新时间
   selected_msgstr_index: number; // 选中的翻译内容索引
   references: string; // 字符串位置
-  tag: [string]; // 新增：标签
+  tags: [string]; // 新增：标签
 };
 
 type LanguageData = {
@@ -71,21 +68,20 @@ type Entries = {
 // 根据标签设置不同的颜色类
 const getTagColorClass = (tag: string) => {
   switch (tag) {
-    case "urgent":
+    case "To be translated":
       return "bg-red-500 text-white";
-    case "important":
+    case "To be reviewed":
       return "bg-yellow-500 text-black";
-    case "review":
+    case "Need to check again":
       return "bg-blue-500 text-white";
+    // 自定义
     default:
       return "bg-gray-300 text-black";
   }
 };
 
-
 export default function ProjectDetails() {
   const router = useRouter(); // 使用路由钩子跳转页面
-  const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
   const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
   const projectName = searchParams.get("project_name"); //  获取项目名称
   const languageCode = searchParams.get("language_code"); // 获取语言代码
@@ -93,31 +89,6 @@ export default function ProjectDetails() {
 
   const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
 
-  // 获取标签的异步函数
-  const fetchTags = async (projectName: string, languageCode: string, index: number) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/modify-entry-tag?index=${index}&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify({
-            action: "add",
-            tag: "urgent",
-          }),
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch tags");
-      const data = await response.json();
-      return data.tags || [];
-    } catch (error) {
-      console.error("Error fetching tags:", error);
-      return [];
-    }
-  };
 
   // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
@@ -138,8 +109,6 @@ export default function ProjectDetails() {
 
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const [tags, setTags] = useState<Map<number, string[]>>(new Map()); // 用 Map 存储索引和对应的 tags
 
   // 添加新的状态用于排序
 
@@ -154,7 +123,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
             },
           }
         );
@@ -176,7 +144,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
             },
           }
         );
@@ -204,7 +171,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`,
             },
           }
         );
@@ -233,7 +199,7 @@ export default function ProjectDetails() {
     };
 
     fetchData();
-  }, [projectName, languageCode, query, token]);
+  }, [projectName, languageCode, query]);
 
   // 添加排序逻辑，根据点击的列名和当前排序方向进行排序
   const handleSort = (column: string) => {
@@ -256,8 +222,6 @@ export default function ProjectDetails() {
     );
 
     if (!languageData) return [];
-
-    
 
     // 排序
     const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
@@ -300,37 +264,13 @@ export default function ProjectDetails() {
 
   const handleLanguageChange = (newLanguageCode: string) => { // 处理语言切换功能
     if (projectName) {
-      router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
+      router.push(`/public/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
     }
   };
 
-  // 使用 useCallback 缓存 fetchTags 函数
-  const fetchTagsMemo = useCallback(
-    (projectName: string, languageCode: string, index: number) => {
-      return fetchTags(projectName, languageCode, index);
-    },
-    []
-  );
   
-  // 使用 useEffect 获取标签数据
-  useEffect(() => {
-    const loadTags = async () => {
-      if (!projectName || !languageCode || !paginatedEntries) return;
-      const fetchedTags = await Promise.all(
-        paginatedEntries.map((entry) =>
-          fetchTagsMemo(projectName, languageCode, entry.idx_in_language).then((tags) => ({
-            index: entry.idx_in_language,
-            tags,
-          }))
-        )
-      );
-
-      const tagsMap = new Map(fetchedTags.map(({ index, tags }) => [index, tags]));
-      setTags(tagsMap); // 设置 tags 状态
-    };
-
-    loadTags();
-  }, [projectName, languageCode, paginatedEntries, fetchTagsMemo]);
+  
+  
 
   //处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
   const handleSearch = () => {
@@ -374,7 +314,7 @@ export default function ProjectDetails() {
    * 跳转到项目页面
    */
   const handleProjectNavigation = () => {
-    router.push("/projects");
+    router.push("/public/projects");
   };
   /**
    * 跳转到语言版本
@@ -382,12 +322,11 @@ export default function ProjectDetails() {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+      router.push(`/public/language-versions?project=${encodeURIComponent(projectName)}`);
     } else {
       console.error("Project name is missing");
     }
   };
-
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -397,7 +336,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -407,7 +346,7 @@ export default function ProjectDetails() {
         <Button
           variant="link"
           onClick={handleProjectLanguage}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
@@ -416,7 +355,7 @@ export default function ProjectDetails() {
         {/* 当前项目语言按钮 */}
         <Button
           variant="link"
-          className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           {languageCode}
         </Button>
@@ -478,26 +417,26 @@ export default function ProjectDetails() {
             <div className="sticky top-0 bg-muted z-10">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted">
-                    <TableHead className="w-[100px]"> {/* 索引 */}
+                  <TableRow className="grid grid-cols-[100px_270px_400px_400px_150px] bg-muted">
+                    <TableHead> {/* 索引 */}
                       Index
                       <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[270px]"> {/* references */}
+                    <TableHead> {/* references */}
                       Key
                       <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]"> {/* 翻译原文 */}
+                    <TableHead> {/* 翻译原文 */}
                       Source
                       <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead className="w-[400px]"> {/* 被选中的翻译结果，如果没有被选中的结果将呈现空白结果 */}
+                    <TableHead> {/* 翻译结果 */}
                       Translation
                       <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
                         <ArrowUpDown className="h-4 w-4" />
@@ -513,6 +452,8 @@ export default function ProjectDetails() {
                 </TableHeader>
               </Table>
             </div>
+          </div>
+
 
             {/* 虚拟滚动区域 */}
             <List
@@ -520,62 +461,73 @@ export default function ProjectDetails() {
               itemCount={paginatedEntries.length} // 当前页条目数
               itemSize={50} // 每个条目的固定高度
               width="100%" // 列表宽度
+              className="font-sans text-sm"
             >
               {({ index, style }) => {
                 const entry = paginatedEntries[index];
-                const entryTags = tags.get(entry.idx_in_language) || [];
-
                 return (
                   <div
                     style={style}
                     key={entry.idx_in_language}
-                    className="relative flex items-center border-b hover:bg-muted/50"
+                    className="grid grid-cols-[100px_270px_400px_400px_150px] relative items-center border-b hover:bg-muted/50"
                     onClick={() =>
                       router.push(
-                        `/translation-interface?project_name=${encodeURIComponent(
+                        `/public/translation-interface?project_name=${encodeURIComponent(
                           projectName!
                         )}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`
                       )
                     }
                   >
-                    <div className="w-[100px] font-medium pl-4">{entry.idx_in_language}</div>
-                    <div className="w-[270px] font-mono text-sm">{entry.references}</div>
-                    <div className="w-[400px] flex items-center justify-between">
-                      <div className="flex-1 min-w-0 pr-2">{entry.msgid}</div>
-                      <div className="flex flex-wrap gap-1 min-w-[20px] min-h-[10px] bg-green-500 text-white"> 
-                        {entryTags.map((tag, idx) => (
+                    {/* 第一列：索引 */}
+                    <div className="font-medium pl-4 text-gray-700">
+                      {entry.idx_in_language}
+                    </div>
+
+                    {/* 第二列：参考信息 */}
+                    <div className="font-mono text-xs text-gray-600">
+                      {entry.references}
+                    </div>
+
+                    {/* 第三列：msgid 和 标签 */}
+                    <div className="flex items-center justify-start space-x-2">
+                      <div className="flex-1 pr-2 text-gray-800">{entry.msgid}</div>
+                      <div className="flex flex-wrap mt-1">
+                        {entry.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className={`inline-block px-2 py-1 text-xs rounded-full ${getTagColorClass(tag)}`}
+                            className={`px-2 py-0.5 text-[10px] text-gray-800 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
                             style={{
-                              minWidth: '70px',
-                              height: '24px',
-                              lineHeight: '18px', // 调整行高使文字垂直居中
-                              textAlign: 'center',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap',
-                              textOverflow: 'ellipsis'
+                              minWidth: '15px', // 最小宽度
+                              height: '20px', // 高度
+                              lineHeight: '18px', // 行高，使字体垂直居中
+                              textAlign: 'center', // 水平居中
+                              overflow: 'hidden', // 防止溢出
+                              whiteSpace: 'nowrap', // 防止换行
+                              textOverflow: 'ellipsis', // 文字超出时显示省略号
                             }}
+                            title={tag} // 悬浮显示完整标签
                           >
                             {tag}
                           </span>
                         ))}
-                        pass
                       </div>
                     </div>
-                    <div className="w-[400px]">
+
+                    {/* 第四列：翻译内容 */}
+                    <div className="text-gray-700">
                       {entry.selected_msgstr_index === -1
                         ? ""
                         : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
                     </div>
-                    <div className="text-muted-foreground">
+
+                    {/* 第五列：更新时间 */}
+                    <div className="text-xs text-gray-500">
                       {new Date(entry.updated_at).toLocaleString()}
                     </div>
                   </div>
                 );
               }}
             </List>
-          </div>
 
           {/* 分页控制 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">

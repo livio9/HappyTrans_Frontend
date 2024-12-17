@@ -5,14 +5,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useAuth } from '@/context/AuthContext';
 import { getCookie } from '@/utils/cookies';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import UserAvatar from '@/components/shared/UserAvatar';
-import { useDiscussions } from '@/context/DiscussionsContext';
+import { useDiscussions } from '@/context/DiscussionsContextForPublic';
 
 interface UserType {
   id: string;
@@ -32,7 +31,6 @@ interface DiscussionType {
 }
 
 const CommunityForumPage = () => {
-  const { token, user: authUser } = useAuth();
   const csrfToken = getCookie('csrftoken');
 
   const router = useRouter();
@@ -64,7 +62,7 @@ const CommunityForumPage = () => {
     (async () => {
       fetchAllDiscussions(); 
     })();
-  }, [currentPage, token, projectName]);
+  }, [currentPage, projectName]);
 
   // 解析标题并返回带有链接的标题和字段
   const parseTitle = (title: string) => {
@@ -177,7 +175,7 @@ const CommunityForumPage = () => {
 
   // 跳转到创建帖子页面
   const createNewPost = () => {
-    router.push(`/create-post?project=${encodeURIComponent(projectName)}`);
+    router.push(`/public/create-post?project=${encodeURIComponent(projectName)}`);
   };
 
   // 点击头像时显示用户信息
@@ -208,84 +206,16 @@ const CommunityForumPage = () => {
     };
   }, [showUserInfoFor]);
 
-  // 开始编辑帖子
-  const startEditing = (discussion: DiscussionType) => {
-    if (!authUser || authUser.id !== discussion.user?.id) return;
-    setEditingDiscussionId(discussion.id);
-    setEditTitle(discussion.title);
-    setEditContent(discussion.content);
-  };
 
-  // 取消编辑
-  const cancelEditing = () => {
-    setEditingDiscussionId(null);
-    setEditTitle('');
-    setEditContent('');
-  };
 
-  // 提交编辑
-  const submitEdit = async (discussionId: number) => {
-    if (!authUser) return;
-    const confirmMessage = `Editing the post will likely affect existing comments, sure you want to re-edit?`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${discussionId}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-          'X-CSRFToken': csrfToken || '',
-        },
-        body: JSON.stringify({
-          title: editTitle,
-          content: editContent,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to edit post');
-      }
-      await fetchAllDiscussions(); 
-      cancelEditing();
-    } catch (error: any) {
-      console.error('Edit discussion error:', error);
-      alert(error.message || 'Error when editing a post');
-    }
-  };
 
-  // 删除帖子
-  const deleteDiscussion = async (discussion: DiscussionType) => {
-    if (!authUser || authUser.id !== discussion.user?.id) return;
-
-    const confirmMessage = `Deleting this post will also delete all comments, sure you want to delete it?`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${discussion.id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'X-CSRFToken': csrfToken || '',
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete post');
-      }
-      await fetchAllDiscussions(); 
-    } catch (error: any) {
-      console.error('Delete discussion error:', error);
-      alert(error.message || 'Error when deleting a post');
-    }
-  };
+  
 
   /**
    * 跳转到项目页面
    */
   const handleProjectNavigation = () => {
-    router.push("/projects");
+    router.push("/public/projects");
   };
   /**
    * 跳转到语言版本
@@ -293,7 +223,7 @@ const CommunityForumPage = () => {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+      router.push(`/public/language-versions?project=${encodeURIComponent(projectName)}`);
     } else {
       console.error("Project name is missing");
     }
@@ -307,7 +237,7 @@ const CommunityForumPage = () => {
         <Button
           variant="link"
           onClick={handleProjectNavigation}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           Projects
         </Button>
@@ -317,16 +247,16 @@ const CommunityForumPage = () => {
         <Button
           variant="link"
           onClick={handleProjectLanguage}
-          className="text-gray-800 font-semibold"
+          className="text-gray-500 font-semibold"
         >
           {projectName}
         </Button>
         {/* 分隔符 */}
         <span className="text-gray-400">/</span>
-        {/* 当前项目语言按钮 */}
+        {/* 当前项目社区按钮 */}
         <Button
           variant="link"
-          className="text-blue-500 hover:text-blue-700 focus:outline-none"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
         >
           Community
         </Button>
@@ -405,7 +335,6 @@ const CommunityForumPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => submitEdit(discussion.id)}
                         className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
                       >
                         Save
@@ -413,7 +342,6 @@ const CommunityForumPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={cancelEditing}
                         className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
                       >
                         Cancel
@@ -421,7 +349,7 @@ const CommunityForumPage = () => {
                     </>
                   ) : (
                     <>
-                      <Link href={`/discussion?id=${discussion.id}`}>
+                        <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -430,27 +358,7 @@ const CommunityForumPage = () => {
                           View Details
                         </Button>
                       </Link>
-                      {/* 如果当前用户是帖子作者，显示编辑/删除按钮 */}
-                      {authUser && authUser.id === discussion.user?.id && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditing(discussion)}
-                              className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteDiscussion(discussion)}
-                              className="bg-transparent border-gray-300 text-red-500 hover:bg-red-50 rounded-md transition duration-200"
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
+                      
                     </>
                   )}
                 </div>
