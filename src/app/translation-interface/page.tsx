@@ -20,6 +20,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
 import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
+import { useProject } from "@/context/ProjectContext";  // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // 导入自定义头像组件
@@ -169,6 +170,8 @@ export default function TranslationInterface() {
   // const index1 = searchParams.get("idx_in_language");
 
   const { user, token, projectInProcess} = useAuth(); // 使用用户上下文获取当前用户
+  const { project } = useProject(); // 使用项目上下文获取当前项目
+  console.log("fetching project from useProject", project);
   
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -192,13 +195,38 @@ export default function TranslationInterface() {
   
   const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
 
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+
+  const [sourceLanguage, setSourceLanguage] = useState<string>("en"); // 源语言
 
 
   useEffect(() => {
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
   
     if (projectName && languageCode) { // 确保项目名称和语言代码存在
+      const fetchProjectData = async () => {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/project?name=${encodeURIComponent(projectName)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Token ${token}`,
+              },
+            }
+          );
+  
+          if (!response.ok) {
+            throw new Error("Failed to fetch project data");
+          }
+          const data = await response.json();
+          console.log("Fetched project data:", data);
+          setSourceLanguage(data.source_language); // 设置源语言
+        } catch (error) {
+          console.error("Error fetching project data:", error);
+        }
+      }
       // 获取词条数据
       const fetchEntriesData = async () => {
         console.log("Fetching entries data...");
@@ -428,12 +456,18 @@ export default function TranslationInterface() {
       console.log("Fetching translation suggestions...");
       console.log("Current index:", currentIndex);
       console.log("Current string:", strings[currentIndex]?.msgid);
+      console.log("Current language code:", languageCode);
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
+          projectName: projectName,
+          idx_in_project: currentIndex,
+          // sourceLanguage: project.source_language,
+          sourceLanguage: sourceLanguage, // 源语言为英文
           text: strings[currentIndex]?.msgid || '',
           // text: "Hello, world!", // 传递源文本
           targetLanguage: languageCode, // 根据需要调整目标语言，DeepL 需要大写

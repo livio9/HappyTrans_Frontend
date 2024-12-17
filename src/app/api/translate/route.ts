@@ -1,8 +1,7 @@
 // src/app/api/translate/route.ts
-
+"use strict";
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
 
 type TranslationSuggestion = {
   source: string;
@@ -68,9 +67,10 @@ function getYoudaoTargetLanguage(languageCode: string): string | undefined {
 export async function POST(request: Request) {
   console.log('Received POST request to /api/translate');
   try {
-    const { text, targetLanguage } = await request.json();
-    const { token } = useAuth(); // 从用户上下文中获取 token
-
+    const {projectName, sourceLanguage, idx_in_project, text, targetLanguage } = await request.json();
+    console.log('Received POST request to /api/translate', projectName, sourceLanguage, idx_in_project, text, targetLanguage);
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Token ') ? authHeader.split(' ')[1] : null;
     if (!text || !targetLanguage) {
       return NextResponse.json({ error: '缺少 text 或 targetLanguage 参数' }, { status: 400 });
     }
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
        if (baiduResponse.ok) {
          const baiduData = await baiduResponse.json();
          if (baiduData.error_code) {
-           console.error('百度翻译 API Error:', baiduData.error_code, baiduData.error_msg);
+           console.error('BaiDu API Error:', baiduData.error_code, baiduData.error_msg);
          } else {
            const baiduTranslation = baiduData.trans_result.map((item: any) => item.dst).join(' ');
            suggestions.push({ source: '百度翻译', translation: baiduTranslation });
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
           const youdaoData = await youdaoResponse.json();
           if (youdaoData.errorCode === '0') {
             const youdaoTranslation = youdaoData.translation[0];
-            suggestions.push({ source: '有道翻译', translation: youdaoTranslation });
+            suggestions.push({ source: 'YouDao', translation: youdaoTranslation });
           } else {
             console.error('有道翻译 API Error:', youdaoData.errorCode, youdaoData.errorMsg);
           }
@@ -166,36 +166,36 @@ export async function POST(request: Request) {
       }
     }
 
-    // if(1){
-    //   try {
-    //     const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target-language=${targetLanguage}&text=${text}`, {
-    //       method: 'GET',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //         Authorization: `Token ${token}`,
-    //       },
-    //       }
-    //     );
-    //     if (LLMResponse.ok) {
-    //       const LLMData = await LLMResponse.json();
-    //       if (LLMData.error) {
-    //         console.error('LLM API Error:', LLMData.error);
-    //       } else {
-    //         LLMData.map((llm: {name: string, translation: string}) => {
-    //           suggestions.push({ source: llm.name, translation: llm.translation });
-    //         });
+    if(1){
+      try {
+        const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${targetLanguage}&idx_in_project=${idx_in_project}&source_language=${sourceLanguage}&project_name=${projectName}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Token ${token}`,
+          },
+          }
+        );
+        if (LLMResponse.ok) {
+          const LLMData = await LLMResponse.json();
+          if (LLMData.error) {
+            console.error('LLM API Error:', LLMData.error);
+          } else {
+            LLMData.map((llm: {name: string, suggestion: string}) => {
+              suggestions.push({ source: llm.name, translation: llm.suggestion });
+            });
 
             
-    //       }
-    //     } else {
-    //       const errorText = await LLMResponse.text();
-    //       console.error('LLM API 网络错误:', errorText);
-    //     }
-    //   }
-    //   catch (error) {
-    //     console.error('调用LLM API 时出错:', error);
-    //   }
-    // }
+          }
+        } else {
+          const errorText = await LLMResponse.text();
+          console.error('LLM API 网络错误:', errorText);
+        }
+      }
+      catch (error) {
+        console.error('调用LLM API 时出错:', error);
+      }
+    }
 
     if (suggestions.length === 0) {
       return NextResponse.json({ error: '未能获取任何翻译建议' }, { status: 500 });
