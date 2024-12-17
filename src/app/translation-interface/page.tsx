@@ -710,6 +710,24 @@ export default function TranslationInterface() {
     }
   };
 
+  //复制函数
+  const handleCopy = (entry: Entry) => {
+    // 获取当前行的 Translation 内容
+    const translation = entry.selected_msgstr_index === -1
+      ? ""
+      : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation";
+  
+    // 使用 clipboard API 复制文本
+    navigator.clipboard.writeText(translation)
+      .then(() => {
+        console.log("Text copied to clipboard");
+      })
+      .catch(err => {
+        console.error("Failed to copy text: ", err);
+      });
+  };
+  
+
   /**
  * 跳转到项目页面
  */
@@ -1082,7 +1100,7 @@ export default function TranslationInterface() {
                       <td>{entry.msgid || ""}</td>
                       <td>{entry.selected_msgstr_index === -1 ? "" : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}</td>
                       <td>
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => handleCopy(entry)}>
                           <Copy className="h-4 w-4" /> {/* 复制图标 */}
                         </Button>
                       </td>
@@ -1110,7 +1128,7 @@ export default function TranslationInterface() {
                     <td>{entry.languageCode}</td>
                     <td>{entry.entry.selected_msgstr_index === -1 ? "(No translation yet)" : entry.entry.msgstr[entry.entry.selected_msgstr_index]?.msg || "No translation"} </td>
                     <td>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleCopy(entry.entry)}>
                         <Copy className="h-4 w-4" /> {/* 复制图标 */}
                       </Button>
                     </td>
