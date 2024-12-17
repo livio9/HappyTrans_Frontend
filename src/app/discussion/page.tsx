@@ -157,7 +157,6 @@ const PostDetails = () => {
         return date.toLocaleString(); // 格式化时间
     };
 
-<<<<<<< HEAD
     /**
    * 跳转到项目页面
    */
@@ -223,10 +222,6 @@ const PostDetails = () => {
                     Discussion
                 </Button>
             </div>
-=======
-    return (
-        <div className="post-details">
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
             {/* 帖子标题和内容 */}
             <Card className="mb-4 shadow-md rounded-lg border border-gray-200">
                 <CardHeader className="bg-white p-8">

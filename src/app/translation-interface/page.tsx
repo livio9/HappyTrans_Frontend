@@ -235,19 +235,12 @@ export default function TranslationInterface() {
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
   
     if (projectName && languageCode) { // 确保项目名称和语言代码存在
-<<<<<<< HEAD
       // 获取讨论数据
       const fetchDiscussions = async () => {
         console.log("Fetching discussions...");
         try {
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?offset=${offset}&ordering=${ordering}&project_name=${encodeURIComponent(projectName)}&title=${encodeURIComponent(`#${currentIndex}`)}`,
-=======
-      const fetchProjectData = async () => {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/project?name=${encodeURIComponent(projectName)}`,
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
             {
               method: "GET",
               headers: {
@@ -256,7 +249,6 @@ export default function TranslationInterface() {
               },
             }
           );
-<<<<<<< HEAD
 
           if (!response.ok) {
             throw new Error("Failed to fetch discussions");
@@ -301,19 +293,6 @@ export default function TranslationInterface() {
       // 只有在 projectName 和 languageCode 有值时才进行请求
       fetchDiscussions();
 
-=======
-  
-          if (!response.ok) {
-            throw new Error("Failed to fetch project data");
-          }
-          const data = await response.json();
-          console.log("Fetched project data:", data);
-          setSourceLanguage(data.source_language); // 设置源语言
-        } catch (error) {
-          console.error("Error fetching project data:", error);
-        }
-      }
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
       // 获取词条数据
       const fetchEntriesData = async () => {
         console.log("Fetching entries data...");
@@ -785,11 +764,7 @@ export default function TranslationInterface() {
         {/* 当前项目词条按钮 */}
         <Button
           variant="link"
-<<<<<<< HEAD
           className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
-=======
-          className="text-gray-500 hover:text-gray-700 focus:outline-none"
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
         >
           entries
         </Button>

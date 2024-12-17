@@ -421,11 +421,7 @@ const CommunityForumPage = () => {
                     </>
                   ) : (
                     <>
-<<<<<<< HEAD
                         <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
-=======
-                      <Link href={`/discussion?id=${discussion.id}`}>
->>>>>>> 6ab770a1da8796dc7576c899c27f2665e20506fc
                         <Button
                           variant="ghost"
                           size="sm"
