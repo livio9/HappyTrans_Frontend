@@ -7,18 +7,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useDiscussions } from '@/context/DiscussionsContext';
 import CommentSection from './CommentSection'; // 评论区组件
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 
 const PostDetails = () => {
     const { singleDiscussion, fetchDiscussion, loading } = useDiscussions(); // 使用上下文提供的单个帖子数据
     const searchParams = useSearchParams();
     const { user } = useAuth(); // 获取当前登录用户信息
-    const projectName = searchParams.get("project_name") || "";
     const id = searchParams.get('id'); // 获取帖子 ID
     const [isOwner, setIsOwner] = useState(false); // 用于标识当前用户是否为帖子创建者
-    const router = useRouter();
-  
 
     // 解析标题并返回带有链接的标题和字段
     const parseTitle = (title: string) => {
@@ -71,7 +66,7 @@ const PostDetails = () => {
                     {/* projectName */}
                     {projectName && (
                         <a
-                            href={`language-versions?project=${projectName}`}
+                            href={`/public/language-versions?project=${projectName}`}
                             style={{
                                 fontSize: '1.2rem',        // 话题字体大小
                                 color: '#6b7280',        // 灰色字体
@@ -88,7 +83,7 @@ const PostDetails = () => {
                     {/* languageCode */}
                     {languageCode && (
                         <a
-                            href={`Entries?project_name=${projectName}&language_code=${languageCode}`}
+                            href={`/public/Entries?project_name=${projectName}&language_code=${languageCode}`}
                             style={{
                                 fontSize: '1.2rem',
                                 color: '#6b7280',
@@ -149,71 +144,8 @@ const PostDetails = () => {
         return date.toLocaleString(); // 格式化时间
     };
 
-    /**
-   * 跳转到项目页面
-   */
-    const handleProjectNavigation = () => {
-        router.push("/projects");
-    };
-    /**
-     * 跳转到语言版本
-     */
-    const handleProjectLanguage = () => {
-        if (projectName) {
-            // 只有当 projectName 有值时，才会进行跳转
-            router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
-        } else {
-            console.error("Project name is missing");
-        }
-    };
-
-    // 跳转到社区页面
-    const handleCommunityNavigation = () => {
-        router.push(`/community-forum?project=${projectName}`);
-    };
-
     return (
         <div className="post-details">
-            {/* 项目导航面包屑 */}
-            <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
-                {/* Projects按钮 */}
-                <Button
-                    variant="link"
-                    onClick={handleProjectNavigation}
-                    className="text-gray-500 font-semibold"
-                >
-                    Projects
-                </Button>
-                {/* 分隔符 */}
-                <span className="text-gray-400">/</span>
-                {/* 当前项目按钮 */}
-                <Button
-                    variant="link"
-                    onClick={handleProjectLanguage}
-                    className="text-gray-500 font-semibold"
-                >
-                    {projectName}
-                </Button>
-                {/* 分隔符 */}
-                <span className="text-gray-400">/</span>
-                {/* 当前项目社区按钮 */}
-                <Button
-                    variant="link"
-                    onClick={handleCommunityNavigation}
-                    className="text-gray-500 font-semibold"
-                >
-                    Community
-                </Button>
-                {/* 分隔符 */}
-                <span className="text-gray-400">/</span>
-                {/* 当前社区帖子按钮 */}
-                <Button
-                    variant="link"
-                    className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
-                >
-                    Discussion
-                </Button>
-            </div>
             {/* 帖子标题和内容 */}
             <Card className="mb-4 shadow-md rounded-lg border border-gray-200">
                 <CardHeader className="bg-white p-8">
