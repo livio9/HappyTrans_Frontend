@@ -51,6 +51,12 @@ const Header: React.FC = () => {
         router.push('/user-profile');
     };
 
+    const handleProfileClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+        router.push('/user-profile');
+    };
+    const handleAccountClick = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
+        router.push('/settings');
+    };
     return (
         <header className="bg-white shadow-sm dark:bg-background border-b">
             <div className="flex items-center justify-between px-8 py-4">
@@ -79,18 +85,13 @@ const Header: React.FC = () => {
                             <ul className="space-y-2 p-4">
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     
-                                    <Button variant="ghost" className="w-full text-left text-sm">
+                                    <Button variant="ghost" className="w-full text-left text-sm"  onClick={handleProfileClick}>
                                         Profile Settings
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
-                                    <Button variant="ghost" className="w-full text-left text-sm">
+                                    <Button variant="ghost" className="w-full text-left text-sm" onClick={handleAccountClick}>
                                         Account Settings
-                                    </Button>
-                                </li>
-                                <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
-                                    <Button variant="ghost" className="w-full text-left text-sm">
-                                        Privacy
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
