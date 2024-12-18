@@ -52,7 +52,7 @@ const Header: React.FC = () => {
     };
 
     return (
-        <header className="bg-white shadow-sm">
+        <header className="bg-white shadow-sm dark:bg-background border-b">
             <div className="flex items-center justify-between px-8 py-4">
                 <h2 className="text-2xl font-semibold text-gray-800">TranslateOS</h2>
                 <div className="flex items-center relative">
@@ -73,26 +73,27 @@ const Header: React.FC = () => {
                     {dropdownOpen && (
                         <div
                             ref={dropdownRef}
-                            className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md z-20"
+                            className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary text-secondary-foreground shadow-lg rounded-md z-20"
                             style={{ top: "100%", marginTop: "8px" }} // 确保菜单下移
                         >
                             <ul className="space-y-2 p-4">
-                                <li className="hover:bg-gray-200 rounded-md p-2">
+                                <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
+                                    
                                     <Button variant="ghost" className="w-full text-left text-sm">
                                         Profile Settings
                                     </Button>
                                 </li>
-                                <li className="hover:bg-gray-200 rounded-md p-2">
+                                <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     <Button variant="ghost" className="w-full text-left text-sm">
                                         Account Settings
                                     </Button>
                                 </li>
-                                <li className="hover:bg-gray-200 rounded-md p-2">
+                                <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     <Button variant="ghost" className="w-full text-left text-sm">
                                         Privacy
                                     </Button>
                                 </li>
-                                <li className="hover:bg-gray-200 rounded-md p-2">
+                                <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     <Button
                                         variant="ghost"
                                         className="w-full text-left text-red-600 text-sm"

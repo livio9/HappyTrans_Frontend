@@ -9,6 +9,18 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+		height: {
+			'10vh': '10vh', // 视口高度的 10%
+			'20vh': '20vh', // 视口高度的 20%
+			'30vh': '30vh', // 视口高度的 30%
+			'40vh': '40vh', // 视口高度的 40%
+			'50vh': '50vh', // 视口高度的 50%
+			'60vh': '60vh', // 视口高度的 60%
+			'70vh': '70vh', // 视口高度的 70%
+			'80vh': '80vh', // 视口高度的 80%
+			'90vh': '90vh', // 视口高度的 90%
+			'100vh': '100vh', // 视口高度的 100%
+		  },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

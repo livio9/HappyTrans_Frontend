@@ -21,7 +21,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             {!isPublicPath && <Sidebar />}
 
             {/* 主页面内容 */}
-            <main className={`flex-1 overflow-y-auto ${!isPublicPath ? 'flex flex-col' : 'flex items-center justify-center'}`}>
+            <main className={`flex-1 overflow-y-auto bg-background ${!isPublicPath ? 'flex flex-col' : 'flex items-center justify-center'}`}>
                 {!isPublicPath && <Header />}
                 {!isPublicPath ? (
                     <div className="p-8">
