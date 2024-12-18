@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useState, useContext } from "react";
+import { useAuth } from "./AuthContext";
 
 // 创建 ProjectContext
 const ProjectContext = createContext();
@@ -9,10 +10,12 @@ const ProjectContext = createContext();
  * ProjectProvider 组件
  * 提供项目管理上下文，包括当前项目信息、加载状态、错误信息及相关操作函数
  */
+
 export const ProjectProvider = ({ children }) => {
   const [project, setProject] = useState(null); // 当前项目的信息
   const [loading, setLoading] = useState(false); // 加载状态
   const [error, setError] = useState(null); // 错误信息
+  const { token } = useAuth();
 
   // 直接设置当前项目的信息
   const setCurrentProject = (projectData) => {
@@ -30,11 +33,14 @@ export const ProjectProvider = ({ children }) => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
         },
       });
 
       if (response.ok) {
+        
         const projectData = await response.json();
+        console.log("Project info fetched in ProjectContext:", projectData);
         setProject(projectData); // 设置项目信息
         return projectData; // 返回项目信息
       } else if (response.status === 404) {
@@ -52,6 +58,11 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  // 获取项目名称
+  const getProjectName = () => {
+    return project?.name || null; // 假设项目对象中的 `name` 字段存储了项目名称
+  };
+
   // 清空项目信息（可用于切换项目时）
   const clearProject = () => {
     setProject(null);
@@ -60,7 +71,7 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ project, loading, error, setCurrentProject, fetchProjectInfo, clearProject }}>
+    <ProjectContext.Provider value={{ project, loading, error, setProject, setCurrentProject, fetchProjectInfo, clearProject, getProjectName  }}>
       {children}
     </ProjectContext.Provider>
   );

@@ -1,303 +1,513 @@
-"use client"; // 指定该文件为客户端组件，确保在客户端渲染
+// src/app/community-forum/page.tsx
+'use client';
 
-import * as React from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // 导入头像组件
-import { Button } from "@/components/ui/button"; // 导入按钮组件
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"; // 导入卡片组件
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // 导入对话框组件
-import { Input } from "@/components/ui/input"; // 导入输入框组件
-import { Textarea } from "@/components/ui/textarea"; // 导入多行文本框组件
-import { Badge } from "@/components/ui/badge"; // 导入徽章组件
-import { MessageCircle, ThumbsUp, Eye } from "lucide-react"; // 导入图标组件
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
+import { getCookie } from '@/utils/cookies';
+import { useSearchParams } from 'next/navigation';
+import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import UserAvatar from '@/components/shared/UserAvatar';
+import { useDiscussions } from '@/context/DiscussionsContext';
 
-// 定义用户类型
-type User = {
-  id: string; // 用户唯一标识符
-  name: string; // 用户姓名
-  email: string; // 用户邮箱
-  avatar: string; // 用户头像的URL
-  contributionCount: number; // 用户贡献数量，用于计算徽章等级
-};
-
-// 定义评论类型
-type Comment = {
-  id: string; // 评论唯一标识符
-  user: User; // 发表评论的用户
-  content: string; // 评论内容
-  likes: number; // 点赞数量
-  replies: Comment[]; // 回复列表，嵌套同类型的评论
-  createdAt: string; // 评论创建时间
-};
-
-// 示例用户数据
-const users: User[] = [
-  {
-    id: "1",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    avatar: "/placeholder.svg?height=40&width=40", // 用户头像的占位图
-    contributionCount: 150, // 贡献数量，150代表高级别徽章
-  },
-  {
-    id: "2",
-    name: "Bob Smith",
-    email: "bob@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-    contributionCount: 75, // 中等级别徽章
-  },
-  {
-    id: "3",
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    avatar: "/placeholder.svg?height=40&width=40",
-    contributionCount: 30, // 初级别徽章
-  },
-];
-
-// 示例评论数据
-const comments: Comment[] = [
-  {
-    id: "1",
-    user: users[0],
-    content: "This is a great feature! I've been waiting for something like this.", // 评论内容
-    likes: 5, // 点赞数
-    replies: [
-      {
-        id: "1.1",
-        user: users[1],
-        content: "I agree! It's really useful.", // 回复内容
-        likes: 2,
-        replies: [], // 无进一步回复
-        createdAt: "2023-05-15T10:30:00Z", // 回复创建时间
-      },
-      {
-        id: "1.2",
-        user: users[2],
-        content: "How does it compare to other solutions?", // 回复内容
-        likes: 1,
-        replies: [],
-        createdAt: "2023-05-15T11:15:00Z",
-      },
-    ],
-    createdAt: "2023-05-15T09:00:00Z", // 评论创建时间
-  },
-  {
-    id: "2",
-    user: users[1],
-    content: "I'm having trouble with the installation. Can someone help?", // 评论内容
-    likes: 2,
-    replies: [
-      {
-        id: "2.1",
-        user: users[2],
-        content: "What error are you seeing?", // 回复内容
-        likes: 1,
-        replies: [],
-        createdAt: "2023-05-16T14:30:00Z",
-      },
-    ],
-    createdAt: "2023-05-16T13:00:00Z",
-  },
-];
-
-// 根据用户的贡献数量返回对应的徽章等级
-function getBadge(contributionCount: number): string {
-  if (contributionCount >= 100) return "Gold"; // 100及以上为金牌
-  if (contributionCount >= 50) return "Silver"; // 50及以上为银牌
-  return "Bronze"; // 低于50为铜牌
+interface UserType {
+  id: string;
+  username: string;
+  email?: string;
+  bio?: string;
 }
 
-// 社区论坛组件
-export default function CommunityForum() {
-  const [newComment, setNewComment] = React.useState(""); // 新评论内容的状态
-  const [replyingTo, setReplyingTo] = React.useState<{ commentId: string; replyId: string | null } | null>(null); // 当前正在回复的评论或回复的状态
-  const [newReply, setNewReply] = React.useState(""); // 新回复内容的状态
-  const [expandedComments, setExpandedComments] = React.useState<Set<string>>(new Set()); // 展开评论的ID集合
+interface DiscussionType {
+  id: number;
+  title: string;
+  content: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  user?: UserType;
+}
 
-  // 切换评论的展开状态
-  const toggleCommentExpansion = (commentId: string) => {
-    setExpandedComments((prev) => {
-      const newSet = new Set(prev); // 创建一个新的Set以避免直接修改状态
-      if (newSet.has(commentId)) {
-        newSet.delete(commentId); // 如果已展开，则收起
-      } else {
-        newSet.add(commentId); // 如果未展开，则展开
+const CommunityForumPage = () => {
+  const { token, user: authUser } = useAuth();
+  const csrfToken = getCookie('csrftoken');
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectName = searchParams.get("project") || "";
+
+  // 编辑相关状态
+  const [editingDiscussionId, setEditingDiscussionId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editContent, setEditContent] = useState<string>('');
+
+  // 用户信息弹出框相关状态
+  const [showUserInfoFor, setShowUserInfoFor] = useState<string | null>(null);
+  const [hoveredUserInfo, setHoveredUserInfo] = useState<UserType | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  const {
+    discussions,
+    fetchAllDiscussions,
+    loading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+  } = useDiscussions();
+
+  // 获取所有帖子及对应用户信息
+  useEffect(() => {
+    (async () => {
+      fetchAllDiscussions(); 
+    })();
+  }, [currentPage, token, projectName]);
+
+  // 解析标题并返回带有链接的标题和字段
+  const parseTitle = (title: string) => {
+    // 按照 # 分割字符串
+    const parts = title.split('#');
+
+    // 获取标题、projectName、languageCode 和 idxInLanguage
+    const mainTitle = parts[0]; // 标题部分是 # 之前的内容
+    const projectName = (parts[1] || null)?.trim(); // 第一个 # 后面的部分，并去除空格
+    const languageCode = (parts[2] || null)?.trim(); // 第二个 # 后面的部分，并去除空格
+    const idxInLanguage = (parts[3] || null)?.trim(); // 第三个 # 后面的部分，并去除空格
+
+    console.log('mainTitle:', mainTitle);
+    console.log('projectName:', projectName);
+    console.log('languageCode:', languageCode);
+    console.log('idxInLanguage:', idxInLanguage);
+
+    // 返回提取的结果
+    return {
+      mainTitle,
+      projectName,
+      languageCode,
+      idxInLanguage
+    };
+  };
+
+  // 组件展示逻辑
+  const TitleDisplay = ({ title }: { title: string }) => {
+    const { mainTitle, projectName, languageCode, idxInLanguage } = parseTitle(title);
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+        {/* 主标题部分 */}
+        <h1 style={{
+          fontSize: '1.5rem', // 标题字体大小
+          fontWeight: 'bold', // 标题加粗
+          margin: 0,          // 清除默认的 margin
+          lineHeight: '1.2',  // 设置行高，与话题对齐更紧密
+        }}>
+          {mainTitle}
+        </h1>
+
+        {/* 项目链接、语言代码链接、索引链接 */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          flexWrap: 'wrap',
+          flexDirection: 'row', // 默认是水平方向
+        }}>
+          {/* projectName */}
+          {projectName && (
+            <a
+              href={`language-versions?project=${projectName}`}
+              style={{
+                fontSize: '1.2rem',        // 话题字体大小
+                color: '#6b7280',        // 灰色字体
+                textDecoration: 'none',  // 默认无下划线
+                lineHeight: '1.2',       // 与标题保持一致的行高
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              {`#${projectName}`}
+            </a>
+          )}
+
+          {/* languageCode */}
+          {projectName && languageCode && (
+            <a
+              href={`Entries?project_name=${projectName}&language_code=${languageCode}`}
+              style={{
+                fontSize: '1.2rem',
+                color: '#6b7280',
+                textDecoration: 'none',
+                lineHeight: '1.2',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              {`#${languageCode}`}
+            </a>
+          )}
+
+          {/* idxInLanguage */}
+          {projectName && languageCode && idxInLanguage && (
+            <a
+              href={`translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${idxInLanguage}`}
+              style={{
+                fontSize: '1.2rem',
+                color: '#6b7280',
+                textDecoration: 'none',
+                lineHeight: '1.2',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+              onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+            >
+              {`#${idxInLanguage}`}
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // 格式化日期
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+
+  // 跳转到创建帖子页面
+  const createNewPost = () => {
+    router.push(`/create-post?project=${encodeURIComponent(projectName)}`);
+  };
+
+  // 点击头像时显示用户信息
+  const handleAvatarClick = (userId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    const discussion = discussions.find(d => d.user?.id === userId);
+    if (discussion && discussion.user) {
+      setShowUserInfoFor(userId);
+      setHoveredUserInfo(discussion.user);
+      setPopupPosition({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  // 仅在显示弹框时监听全局点击
+  useEffect(() => {
+    if (!showUserInfoFor) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setShowUserInfoFor(null);
+        setHoveredUserInfo(null);
       }
-      return newSet;
-    });
+    };
+
+    document.addEventListener('click', handleClickOutside, { capture: true });
+    return () => {
+      document.removeEventListener('click', handleClickOutside, { capture: true });
+    };
+  }, [showUserInfoFor]);
+
+  // 开始编辑帖子
+  const startEditing = (discussion: DiscussionType) => {
+    if (!authUser || authUser.id !== discussion.user?.id) return;
+    setEditingDiscussionId(discussion.id);
+    setEditTitle(discussion.title);
+    setEditContent(discussion.content);
   };
 
-  // 处理提交新评论的逻辑
-  const handlePostComment = () => {
-    // TODO: 在这里添加将新评论发送到后端的逻辑
-    console.log("Posting comment:", newComment); // 打印新评论内容到控制台
-    setNewComment(""); // 清空新评论输入框
+  // 取消编辑
+  const cancelEditing = () => {
+    setEditingDiscussionId(null);
+    setEditTitle('');
+    setEditContent('');
   };
 
-  // 处理提交新回复的逻辑
-  const handlePostReply = (commentId: string, replyId: string | null) => {
-    // TODO: 在这里添加将新回复发送到后端的逻辑
-    console.log("Posting reply to comment", commentId, "reply", replyId, ":", newReply); // 打印新回复内容到控制台
-    setNewReply(""); // 清空新回复输入框
-    setReplyingTo(null); // 清除正在回复的状态
+  // 提交编辑
+  const submitEdit = async (discussionId: number) => {
+    if (!authUser) return;
+    const confirmMessage = `Editing the post will likely affect existing comments, sure you want to re-edit?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${discussionId}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+          'X-CSRFToken': csrfToken || '',
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to edit post');
+      }
+      await fetchAllDiscussions(); 
+      cancelEditing();
+    } catch (error: any) {
+      console.error('Edit discussion error:', error);
+      alert(error.message || 'Error when editing a post');
+    }
+  };
+
+  // 删除帖子
+  const deleteDiscussion = async (discussion: DiscussionType) => {
+    if (!authUser || authUser.id !== discussion.user?.id) return;
+
+    const confirmMessage = `Deleting this post will also delete all comments, sure you want to delete it?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${discussion.id}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'X-CSRFToken': csrfToken || '',
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
+      await fetchAllDiscussions(); 
+    } catch (error: any) {
+      console.error('Delete discussion error:', error);
+      alert(error.message || 'Error when deleting a post');
+    }
+  };
+
+  /**
+   * 跳转到项目页面
+   */
+  const handleProjectNavigation = () => {
+    router.push("/projects");
+  };
+  /**
+   * 跳转到语言版本
+   */
+  const handleProjectLanguage = () => {
+    if (projectName) {
+      // 只有当 projectName 有值时，才会进行跳转
+      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+    } else {
+      console.error("Project name is missing");
+    }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Community Forum</h1> {/* 页面标题 */}
-
-      {/* 创建新讨论的卡片 */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Start a new discussion</CardTitle> {/* 卡片标题 */}
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="What's on your mind?" // 输入框占位符
-            value={newComment} // 绑定输入框的值
-            onChange={(e) => setNewComment(e.target.value)} // 监听输入变化，更新状态
-            className="mb-2"
-          />
-          <Button onClick={handlePostComment}>Post</Button> {/* 提交按钮 */}
-        </CardContent>
-      </Card>
-
-      {/* 评论列表区域 */}
-      <div className="space-y-4">
-        {comments.map((comment) => (
-          <Card key={comment.id}>
-            {/* 评论头部，显示用户信息 */}
-            <CardHeader>
-              <div className="flex items-center space-x-4">
-                {/* 用户头像及详情对话框 */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Avatar className="cursor-pointer">
-                      <AvatarImage src={comment.user.avatar} alt={comment.user.name} /> {/* 用户头像图片 */}
-                      <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback> {/* 用户名首字母作为备用显示 */}
-                    </Avatar>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{comment.user.name}</DialogTitle> {/* 对话框标题，显示用户姓名 */}
-                      <DialogDescription>
-                        Email: {comment.user.email}
-                        <br />
-                        Contributions: {comment.user.contributionCount}
-                        <br />
-                        Badge: <Badge>{getBadge(comment.user.contributionCount)}</Badge> {/* 显示用户徽章 */}
-                      </DialogDescription>
-                    </DialogHeader>
-                  </DialogContent>
-                </Dialog>
-                <div>
-                  <h3 className="font-semibold">{comment.user.name}</h3> {/* 显示用户姓名 */}
-                  <p className="text-sm text-gray-500">{new Date(comment.createdAt).toLocaleString()}</p> {/* 显示评论时间 */}
-                </div>
-              </div>
-            </CardHeader>
-
-            {/* 评论内容 */}
-            <CardContent>
-              <p>{comment.content}</p> {/* 显示评论文本 */}
-            </CardContent>
-
-            {/* 评论操作区，包括点赞和回复按钮，以及查看回复 */}
-            <CardFooter className="flex justify-between">
-              <div className="flex items-center space-x-2">
-                {/* 点赞按钮 */}
-                <Button variant="ghost" size="sm">
-                  <ThumbsUp className="w-4 h-4 mr-1" /> {/* 点赞图标 */}
-                  {comment.likes} {/* 显示点赞数 */}
-                </Button>
-                {/* 回复按钮 */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setReplyingTo({ commentId: comment.id, replyId: null })} // 设置当前回复的评论ID，无特定回复ID
-                >
-                  <MessageCircle className="w-4 h-4 mr-1" /> {/* 回复图标 */}
-                  Reply {/* 按钮文字 */}
-                </Button>
-              </div>
-              {/* 查看或隐藏回复按钮 */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => toggleCommentExpansion(comment.id)} // 切换评论的展开状态
-              >
-                <Eye className="w-4 h-4 mr-1" /> {/* 查看图标 */}
-                {expandedComments.has(comment.id) ? 'Hide' : 'View'} Replies ({comment.replies.length}) {/* 按钮文字根据状态变化 */}
-              </Button>
-            </CardFooter>
-
-            {/* 显示回复列表，如果评论被展开则显示所有回复，否则只显示前两条 */}
-            {(expandedComments.has(comment.id) ? comment.replies : comment.replies.slice(0, 2)).map((reply) => (
-              <Card key={reply.id} className="ml-8 mt-2">
-                {/* 回复头部，显示回复用户信息 */}
-                <CardHeader>
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={reply.user.avatar} alt={reply.user.name} /> {/* 回复者头像图片 */}
-                      <AvatarFallback>{reply.user.name.charAt(0)}</AvatarFallback> {/* 回复者姓名首字母 */}
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold">{reply.user.name}</h4> {/* 回复者姓名 */}
-                      <p className="text-sm text-gray-500">{new Date(reply.createdAt).toLocaleString()}</p> {/* 回复时间 */}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                {/* 回复内容 */}
-                <CardContent>
-                  <p className="text-sm">{reply.content}</p> {/* 显示回复文本 */}
-                </CardContent>
-
-                {/* 回复操作区，包括点赞和回复按钮 */}
-                <CardFooter>
-                  <Button variant="ghost" size="sm">
-                    <ThumbsUp className="w-3 h-3 mr-1" /> {/* 点赞图标 */}
-                    {reply.likes} {/* 显示点赞数 */}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setReplyingTo({ commentId: comment.id, replyId: reply.id })} // 设置当前回复的评论ID和回复ID
-                  >
-                    <MessageCircle className="w-3 h-3 mr-1" /> {/* 回复图标 */}
-                    Reply {/* 按钮文字 */}
-                  </Button>
-                </CardFooter>
-
-                {/* 如果当前正在回复该回复，则显示回复输入框和提交按钮 */}
-                {replyingTo && replyingTo.commentId === comment.id && replyingTo.replyId === reply.id && (
-                  <CardContent>
-                    <Textarea
-                      placeholder="Write a reply..." // 输入框占位符
-                      value={newReply} // 绑定输入框的值
-                      onChange={(e) => setNewReply(e.target.value)} // 监听输入变化，更新状态
-                      className="mb-2"
-                    />
-                    <Button onClick={() => handlePostReply(comment.id, reply.id)}>Post Reply</Button> {/* 提交回复按钮 */}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-
-            {/* 如果评论未展开且有超过两条回复，则显示查看更多回复的按钮 */}
-            {!expandedComments.has(comment.id) && comment.replies.length > 2 && (
-              <Button
-                variant="link"
-                size="sm"
-                className="ml-8 mt-2"
-                onClick={() => toggleCommentExpansion(comment.id)} // 切换评论的展开状态
-              >
-                View {comment.replies.length - 2} more replies {/* 按钮文字，显示剩余的回复数量 */}
-              </Button>
-            )}
-          </Card>
-        ))}
+    <div className="community-forum-page container mx-auto p-4">
+      {/* 项目导航面包屑 */}
+      <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
+        {/* Projects按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectNavigation}
+          className="text-gray-500 font-semibold"
+        >
+          Projects
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目按钮 */}
+        <Button
+          variant="link"
+          onClick={handleProjectLanguage}
+          className="text-gray-500 font-semibold"
+        >
+          {projectName}
+        </Button>
+        {/* 分隔符 */}
+        <span className="text-gray-400">/</span>
+        {/* 当前项目社区按钮 */}
+        <Button
+          variant="link"
+          className="font-semibold text-gray-800 hover:text-blue-700 focus:outline-none"
+        >
+          Community
+        </Button>
       </div>
+      
+      {/* 项目标题和按钮容器 */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold mb-6">Community Forum</h1>
+        <Button
+          onClick={createNewPost}
+          className="text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 rounded-md py-2 px-6 shadow-sm transition-all duration-200"
+        >
+          Create new discussion
+        </Button>
+      </div>
+
+      {/* 讨论列表 */}
+      <div className="discussions-list">
+        {loading ? (
+          <p>Loading...</p>
+        ) : discussions.length === 0 ? (
+            <p>There is no discussion at this time, so come on and start the first one!</p>
+        ) : (
+          discussions.map(discussion => (
+            <Card
+              key={discussion.id}
+              className="mb-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <CardHeader className="flex justify-between">
+                {editingDiscussionId === discussion.id ? (
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full p-2 border rounded mb-2"
+                    />
+                  </div>
+                ) : (
+                  <CardTitle className="text-xl font-semibold">
+                    <TitleDisplay title={discussion.title} />
+                  </CardTitle>
+                )}
+                <div className="text-sm text-gray-500">
+                  {formatDate(discussion.created_at)}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {editingDiscussionId === discussion.id ? (
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full p-2 border rounded"
+                    rows={4}
+                  />
+                ) : (
+                  <p className="text-gray-700">
+                    {discussion.content.length > 200
+                      ? `${discussion.content.substring(0, 200)}...`
+                      : discussion.content}
+                  </p>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <div onClick={(e) => handleAvatarClick(discussion.user?.id || 'Anonymous', e)}>
+                    <UserAvatar username={discussion.user?.username || 'Anonymous'} size="sm" />
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    {discussion.user?.username || 'Anonymous'}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  {editingDiscussionId === discussion.id ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => submitEdit(discussion.id)}
+                        className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={cancelEditing}
+                        className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                        <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                            className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                        >
+                          View Details
+                        </Button>
+                      </Link>
+                      {/* 如果当前用户是帖子作者，显示编辑/删除按钮 */}
+                      {authUser && authUser.id === discussion.user?.id && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditing(discussion)}
+                              className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteDiscussion(discussion)}
+                              className="bg-transparent border-gray-300 text-red-500 hover:bg-red-50 rounded-md transition duration-200"
+                          >
+                            Delete
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+
+              </CardFooter>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* 分页 */}
+      {totalPages > 0 && (
+        <div className="pagination flex justify-center items-center space-x-4 mt-6">
+          <Button
+            onClick={() => setCurrentPage((prev: number) => prev - 1)}
+            disabled={currentPage === 1}
+            variant="outline"
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+            <span>Previous</span>
+          </Button>
+          <span className="text-sm text-gray-700">
+            Page {currentPage} of  {totalPages} 
+          </span>
+          <Button
+            onClick={() => setCurrentPage((prev: number) => prev + 1)}
+            disabled={currentPage === totalPages}
+            variant="outline"
+            size="sm"
+            className="flex items-center space-x-1"
+          >
+            <span>Next</span>
+            <ChevronRightIcon className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* 用户信息弹出框 */}
+      {showUserInfoFor && hoveredUserInfo && (
+        <div
+          ref={popupRef}
+          className="absolute z-50 p-4 bg-white border border-gray-300 rounded shadow-md"
+          style={{
+            top: popupPosition.y,
+            left: popupPosition.x,
+            transform: 'translate(-50%, 10px)',
+          }}
+        >
+          <h3 className="font-semibold mb-2">{hoveredUserInfo.username}</h3>
+          {hoveredUserInfo.email && <p className="text-sm text-gray-600">Email: {hoveredUserInfo.email}</p>}
+          {hoveredUserInfo.bio && <p className="text-sm text-gray-600">Bio: {hoveredUserInfo.bio}</p>}
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default CommunityForumPage;
