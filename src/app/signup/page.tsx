@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import zxcvbn from "zxcvbn"; // 导入 zxcvbn
 
 export default function SignUp() {
   const router = useRouter();
@@ -27,13 +28,64 @@ export default function SignUp() {
     });
   };
 
+  // 辅助函数：检查用户名格式
+  const isValidUsername = (username: string) => {
+    const usernameRegex = /^[A-Za-z0-9_.+-]{1,150}$/;
+    return usernameRegex.test(username);
+  };
+
+  // 辅助函数：检查密码是否与用户名过于相似
+  const isPasswordSimilarToUsername = (password: string, username: string) => {
+    // 简单的相似度检查，可以根据需要调整
+    return password.toLowerCase().includes(username.toLowerCase());
+  };
+
   // 提交表单的处理函数
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    setSuccess(false);
 
-    // 检查两次密码是否一致
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    const { name, email, password, confirmPassword } = formData;
+
+    // Username validation
+    if (!name.trim()) {
+      setError("Username is required.");
+      return;
+    }
+    if (name.length > 150) {
+      setError("Username must be 150 characters or fewer.");
+      return;
+    }
+    if (!isValidUsername(name)) {
+      setError("Username can only contain letters, numbers, _, +, ., and - characters.");
+      return;
+    }
+
+    // Password validation
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (/^\d+$/.test(password)) {
+      setError("Password cannot be all numbers.");
+      return;
+    }
+    if (isPasswordSimilarToUsername(password, name)) {
+      setError("Password is too similar to the username. Please choose a more complex password.");
+      return;
+    }
+
+    // Use zxcvbn to check password strength
+    const passwordStrength = zxcvbn(password);
+    if (passwordStrength.score < 3) { // Score range is 0-4; 3 or above is recommended
+      setError("Password strength is insufficient. Please choose a more complex password.");
+      return;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -46,9 +98,9 @@ export default function SignUp() {
           "Accept-Language": "zh-hans" // 可选: 指定响应语言
         },
         body: JSON.stringify({
-          username: formData.name,
-          email: formData.email,
-          password: formData.password,
+          username: name,
+          email: email,
+          password: password,
         }),
       });
 
@@ -57,10 +109,10 @@ export default function SignUp() {
       if (response.ok) {
         setSuccess(true);  // 注册成功
         setError("");      // 清空错误信息
-        router.push(`/signin?username=${encodeURIComponent(formData.name)}`);
+        router.push(`/signin?username=${encodeURIComponent(name)}`);
         console.log("Token:", result.token); // 你可以保存 token 或跳转到其他页面
       } else {
-        setError(result.error || "Registration failed"); // 显示错误信息
+        setError(result.error || "Registration failed");
       }
     } catch (error) {
       setError("An unexpected error occurred");
@@ -75,7 +127,7 @@ export default function SignUp() {
         {success && <p className="text-green-500 text-center">Registration successful!</p>}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="name">Full Name</Label>
             <Input
               id="name"
               type="text"
@@ -108,7 +160,7 @@ export default function SignUp() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
             <Input
               id="confirmPassword"
               type="password"
