@@ -2,6 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import Layout from "@/components/shared/Layout"; // 引入共享布局
+import { DiscussionsProvider } from "@/context/DiscussionsContext";
+
+import { DiscussionsProviderForPublic } from "@/context/DiscussionsContextForPublic";
 import LayoutForPubilc from "@/components/shared-public/shared/Layout";
 
 export default function RootLayoutClient({
@@ -17,8 +20,8 @@ export default function RootLayoutClient({
   return (
     <div>
       {/* 条件渲染：如果是 public 页面，则不显示 Layout */}
-      {!isPublicPage && <Layout>{children}</Layout>}
-      {isPublicPage && <LayoutForPubilc>{children}</LayoutForPubilc>}
+      {!isPublicPage && <DiscussionsProvider><Layout>{children}</Layout></DiscussionsProvider>}
+      {isPublicPage && <DiscussionsProviderForPublic><LayoutForPubilc>{children}</LayoutForPubilc></DiscussionsProviderForPublic>}
     </div>
   );
 }

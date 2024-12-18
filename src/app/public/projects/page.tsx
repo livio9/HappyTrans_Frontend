@@ -274,6 +274,9 @@ export default function Projects() {
                 ))}
               </div>
             </TabsContent>
+            <TabsContent value="in-progress">
+              <p>Please log in to view the projects </p>
+            </TabsContent>
           </Tabs>
         )}
       </div>

@@ -1,6 +1,6 @@
 'use client'; 
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // 定义讨论的数据结构类型
@@ -32,7 +32,7 @@ const DiscussionsContext = createContext(undefined);
  * @param {React.ReactNode} props.children - 子组件
  * @returns {JSX.Element}
  */
-export const DiscussionsProvider = ({ children }) => {
+export const DiscussionsProviderForPublic = ({ children }) => {
   const [discussions, setDiscussions] = useState([]); // 存储讨论列表
   const [singleDiscussion, setSingleDiscussion] = useState(null); // 存储单个讨论的详细信息
   const [loading, setLoading] = useState(false); // 表示加载状态
@@ -53,7 +53,6 @@ export const DiscussionsProvider = ({ children }) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Token ${token}`,
         },
       });
 
@@ -74,7 +73,9 @@ export const DiscussionsProvider = ({ children }) => {
    * @returns {Promise<void>}
    */
   const fetchAllDiscussions = async () => {
-    setLoading(true);
+    if (projectName)
+    {
+      setLoading(true);
     try {
       const offset = (currentPage - 1) * pageSize;
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?offset=${offset}&page_length=${pageSize}&ordering=desc&project_name=${encodeURIComponent(
@@ -83,7 +84,6 @@ export const DiscussionsProvider = ({ children }) => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
       });
       if (!response.ok) {
@@ -107,6 +107,7 @@ export const DiscussionsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  }
   };
 
   /**
@@ -121,7 +122,6 @@ export const DiscussionsProvider = ({ children }) => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Token ${token}`,
       },
     });
 
@@ -148,11 +148,11 @@ export const DiscussionsProvider = ({ children }) => {
     setDiscussions((prev) => [...prev, discussion]);
   };
 
-  // // 在 currentPage 或 projectName 变化时重新获取讨论列表
-  // useEffect(() => {
-  //   fetchAllDiscussions();
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [currentPage, projectName, token]);
+  // 在 currentPage 或 projectName 变化时重新获取讨论列表
+  useEffect(() => {
+    fetchAllDiscussions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, projectName]);
 
   return (
     <DiscussionsContext.Provider
@@ -187,7 +187,7 @@ export const DiscussionsProvider = ({ children }) => {
  *   totalPages: number,
  * }}
  */
-export const useDiscussions = () => {
+export const useDiscussionsForPublic = () => {
   const context = useContext(DiscussionsContext);
   if (!context) {
     throw new Error('useDiscussions must be used within a DiscussionsProvider');

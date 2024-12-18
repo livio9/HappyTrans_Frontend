@@ -66,7 +66,7 @@ const PostDetails = () => {
                     {/* projectName */}
                     {projectName && (
                         <a
-                            href={`language-versions?project=${projectName}`}
+                            href={`/public/language-versions?project=${projectName}`}
                             style={{
                                 fontSize: '1.2rem',        // 话题字体大小
                                 color: '#6b7280',        // 灰色字体
@@ -83,7 +83,7 @@ const PostDetails = () => {
                     {/* languageCode */}
                     {languageCode && (
                         <a
-                            href={`Entries?project_name=${projectName}&language_code=${languageCode}`}
+                            href={`/public/Entries?project_name=${projectName}&language_code=${languageCode}`}
                             style={{
                                 fontSize: '1.2rem',
                                 color: '#6b7280',

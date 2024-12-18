@@ -11,7 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import UserAvatar from '@/components/shared/UserAvatar';
-import { useDiscussions } from '@/context/DiscussionsContextForPublic';
+import { useDiscussionsForPublic } from '@/context/DiscussionsContextForPublic';
 
 interface UserType {
   id: string;
@@ -55,7 +55,7 @@ const CommunityForumPage = () => {
     currentPage,
     setCurrentPage,
     totalPages,
-  } = useDiscussions();
+  } = useDiscussionsForPublic();
 
   // 获取所有帖子及对应用户信息
   useEffect(() => {
@@ -173,10 +173,6 @@ const CommunityForumPage = () => {
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
-  // 跳转到创建帖子页面
-  const createNewPost = () => {
-    router.push(`/public/create-post?project=${encodeURIComponent(projectName)}`);
-  };
 
   // 点击头像时显示用户信息
   const handleAvatarClick = (userId: string, event: React.MouseEvent) => {
@@ -265,12 +261,22 @@ const CommunityForumPage = () => {
       {/* 项目标题和按钮容器 */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold mb-6">Community Forum</h1>
-        <Button
-          onClick={createNewPost}
-          className="text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 rounded-md py-2 px-6 shadow-sm transition-all duration-200"
-        >
-          Create new discussion
-        </Button>
+        <div className="relative inline-block group">
+          {/* 禁用按钮 */}
+          <div className="pointer-events-none">
+            <Button
+              disabled={true}
+              className="text-white bg-black cursor-not-allowed opacity-50 rounded-md py-2 px-6 shadow-sm"
+            >
+              Create new discussion
+            </Button>
+          </div>
+          
+          {/* 悬浮提示 */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-max whitespace-nowrap rounded-md bg-gray-700 px-2 py-1 text-xs text-white shadow-md group-hover:block">
+            You need to be logged in to create a new discussion
+          </div>
+        </div>
       </div>
 
       {/* 讨论列表 */}
@@ -349,16 +355,24 @@ const CommunityForumPage = () => {
                     </>
                   ) : (
                     <>
-                        <Link href={`/discussion?project_name=${projectName}&id=${discussion.id}`}>
+                    <div className="relative inline-block group">
+                      {/* 禁用按钮 */}
+                      <div className="pointer-events-none">
                         <Button
                           variant="ghost"
                           size="sm"
-                            className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                          className="bg-transparent border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md transition duration-200"
+                          disabled={true}
+
                         >
                           View Details
                         </Button>
-                      </Link>
-                      
+                        {/* 悬浮提示 */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden w-max whitespace-nowrap rounded-md bg-gray-700 px-2 py-1 text-xs text-white shadow-md group-hover:block">
+                          You need to be logged in to view details
+                        </div>
+                      </div>
+                    </div>
                     </>
                   )}
                 </div>
