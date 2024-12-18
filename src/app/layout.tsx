@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import "./globals.css"; // 引入全局样式
 import RootLayoutServer, { metadata } from './RootLayout.server';
 import RootLayoutClient from './RootLayout.client';
+import { ThemeProvider } from "@/context/ThemeContext";
 
 // 字体加载
 const geistSans = localFont({
@@ -23,7 +24,9 @@ export default function RootLayout({
 }) {
   return (
     <RootLayoutServer>
-      <RootLayoutClient>{children}</RootLayoutClient>
+      <ThemeProvider>
+        <RootLayoutClient>{children}</RootLayoutClient>
+      </ThemeProvider>
     </RootLayoutServer>
   );
 }

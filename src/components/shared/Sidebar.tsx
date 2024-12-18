@@ -29,7 +29,7 @@ const Sidebar: React.FC = () => {
     };
 
     return (
-        <aside className={`bg-white shadow-md ${isExpanded ? "w-64" : "w-16"} transition-width duration-300`}>
+        <aside className={`bg-white shadow-md dark:bg-background ${isExpanded ? "w-64" : "w-16"} transition-width duration-300`}>
             {/* 侧边栏头部 */}
             <div className="flex items-center justify-between p-4">
                 {isExpanded && <h1 className="text-2xl font-bold text-gray-800">Contents</h1>}
@@ -42,15 +42,15 @@ const Sidebar: React.FC = () => {
             </div>
 
             {/* 侧边栏导航 */}
-            <nav className={`mt-3 ${isExpanded ? "block" : "hidden"} md:block`}>
+            <nav className={`secondary text-secondary-foreground mt-3 ${isExpanded ? "block" : "hidden"} md:block`}>
                 {/* 普通菜单项 */}
                 {menuItems.map((item) => (
                     <Link
                         key={item.href}
                         href={item.href}
                         className={`flex items-center px-4 py-2 ${pathname === item.href
-                            ? "text-gray-700 bg-gray-200"
-                            : "text-gray-700 hover:bg-gray-200"
+                            ? " bg-muted"
+                            : " hover:bg-muted"
                             }`}
                     >
                         {item.icon}
@@ -64,8 +64,8 @@ const Sidebar: React.FC = () => {
                         key={item.href}
                         href={item.href}
                         className={`flex items-center px-4 py-2 ${pathname === item.href
-                            ? "text-gray-700 bg-gray-200"
-                            : "text-gray-700 hover:bg-gray-200"
+                            ? " bg-muted"
+                            : " hover:bg-muted"
                             }`}
                     >
                         {item.icon}

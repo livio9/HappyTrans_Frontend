@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { useTheme } from '@/context/ThemeContext';
 
 // 定义完整的语言选项
 const languageOptions = [
@@ -31,6 +32,7 @@ const languageOptions = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   // 个人资料设置状态
   const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -206,7 +208,7 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="mx-auto p-4">
       {/* 显示全局错误消息 */}
       {errorMessage && (
         <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
@@ -247,29 +249,25 @@ const SettingsPage: React.FC = () => {
 
       {/* 通知设置部分 */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Notification Settings</CardTitle>
-          <CardDescription>Manage your notification preferences</CardDescription>
+      <CardHeader>
+          <CardTitle>Theme Settings</CardTitle>
+          <CardDescription>Choose your preferred theme</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 邮件通知开关 */}
           <div className="flex items-center justify-between">
-            <Label htmlFor="email-notifications">Email Notifications</Label>
+            <Label htmlFor="theme-toggle">Dark Mode</Label>
             <Switch
-              id="email-notifications"
-              checked={emailNotifications}
-              onCheckedChange={(checked) => setEmailNotifications(checked)}
+              id="theme-toggle"
+              checked={theme === 'dark'}
+              onCheckedChange={toggleTheme}
             />
           </div>
-          {/* 推送通知开关 */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="push-notifications">Push Notifications</Label>
-            <Switch
-              id="push-notifications"
-              checked={pushNotifications}
-              onCheckedChange={(checked) => setPushNotifications(checked)}
-            />
-          </div>
+          {/* 或者使用按钮 */}
+          {/* 
+          <Button onClick={toggleTheme}>
+            Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
+          </Button>
+          */}
         </CardContent>
       </Card>
 
@@ -360,7 +358,7 @@ const SettingsPage: React.FC = () => {
                 </p>
               </div>
 
-              <Button onClick={handleEditLanguages}>Edit Languages</Button>
+              <Button className="bg-primary text-primary-foreground border border-border px-4 py-2 rounded transition duration-300 ease-in-out hover:bg-primary-hover hover:text-primary-foreground-hover hover:border-border-hover" onClick={handleEditLanguages}>Edit Languages</Button>
             </>
           )}
         </CardContent>

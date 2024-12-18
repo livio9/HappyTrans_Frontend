@@ -165,7 +165,7 @@ export default function LanguageVersions() {
             {/* 项目标题和按钮容器 */}
             <div className="flex items-center justify-between mb-6">
                 {/* 项目标题 */}
-                <h1 className="text-3xl font-semibold text-gray-900">
+                <h1 className="text-3xl font-bold mb-6">
                     Language Versions - {projectName}
                 </h1>
 
