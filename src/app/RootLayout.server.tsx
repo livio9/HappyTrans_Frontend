@@ -3,6 +3,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProjectProvider } from "@/context/ProjectContext";
 import { DiscussionsProvider } from "@/context/DiscussionsContext";
 import Layout from "@/components/shared/Layout"; // 引入共享布局
+import { ThemeProvider } from "@/context/ThemeContext";
 
 // 页面元数据 (只能在服务器端定义)
 export const metadata: Metadata = {
@@ -17,14 +18,21 @@ export default function RootLayoutServer({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TranslateOS</title>
+      </head>
       <body>
-        <AuthProvider>
-          <ProjectProvider>
-            <DiscussionsProvider>
-              {children} {/* 子页面内容 */}
-            </DiscussionsProvider>
-          </ProjectProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ProjectProvider>
+              <DiscussionsProvider>
+                {children}
+              </DiscussionsProvider>
+            </ProjectProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
