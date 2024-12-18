@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/dialog"; // 导入自定义对话框组件
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // 导入自定义单选按钮组组件
 import { Label } from "@/components/ui/label"; // 导入自定义标签组件
-import { useAuth } from "@/context/AuthContext"; // 导入用户上下文钩子
-import { useProject } from "@/context/ProjectContext";  // 导入项目上下文钩子
 import { useSearchParams ,useRouter} from "next/navigation";// 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // 导入自定义头像组件
@@ -178,10 +176,6 @@ export default function TranslationInterface() {
   const index1 = indexParam ? parseInt(indexParam) : 0; // 将索引参数转换为数字
   // const index1 = searchParams.get("idx_in_language");
 
-  const { user, token, projectInProcess, projectManaged } = useAuth(); // 使用用户上下文获取当前用户
-  const isAdmin = user?.role === "admin"; // 判断是否为管理员
-  const { project } = useProject(); // 使用项目上下文获取当前项目
-  console.log("fetching project from useProject", project);
   
   const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
   const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -246,7 +240,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -267,7 +260,6 @@ export default function TranslationInterface() {
                     method: "GET",
                     headers: {
                       "Content-Type": "application/json",
-                      Authorization: `Token ${token}`,
                     },
                   }
                 );
@@ -306,7 +298,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -354,7 +345,6 @@ export default function TranslationInterface() {
                 method: "GET",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Token ${token}`,
                 },
               }
             );
@@ -414,7 +404,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -444,7 +433,6 @@ export default function TranslationInterface() {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Token ${token}`,
               },
             }
           );
@@ -467,47 +455,18 @@ export default function TranslationInterface() {
   }, [projectName, languageCode, currentIndex, strings, ordering]); // 确保数据更新后执行
 
   //判断用户是否有权限翻译
-  console.log("user.managed_projects:", user?.managed_projects);
-  const canTranslate =   user?.role==="admin"||(user && projectName && (projectInProcess?.includes(projectName)));
-  const canSelect = user?.role==="admin" || (user && projectName && (projectManaged?.includes(projectName)));
+  const canTranslate =   false;
+  const canSelect = false;
   const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
   // 处理保存翻译结果
-  // 发送翻译更新请求
-  const updateTranslation = async (newTranslation: string) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/update-entry?index=${currentIndex}&language_code=${languageCode}&msgstr=${encodeURIComponent(newTranslation)}&project_name=${projectName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
-          },
-        }
-      );
   
-      if (!response.ok) {
-        throw new Error("Failed to update translation");
-      }
-
-      console.log("Translation updated successfully");
-    } catch (error) {
-      console.error("Error updating translation:", error);
-    }
-  };
 
   // 处理保存并跳转到下一个词条
   const handleSaveAndContinue = async () => {
-    await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
     router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 2}`); // 使用router跳转
   };
 
-  // 处理保存但不跳转
-  const handleSaveAndStay = async () => {
-    await updateTranslation(currentTranslation); // 保存当前翻译
-  };
 
 // 关于翻译建议的处理，现在还会实现相关功能。
   // 处理翻译建议
@@ -518,11 +477,10 @@ export default function TranslationInterface() {
       console.log("Current index:", currentIndex);
       console.log("Current string:", strings[currentIndex]?.msgid);
       console.log("Current language code:", languageCode);
-      const response = await fetch('/api/translate', {
+      const response = await fetch('/public/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
           projectName: projectName,
@@ -559,46 +517,9 @@ export default function TranslationInterface() {
     }
   };
  
-  // 管理员选择某一翻译作为最终结果
-  // 新的 select-msgstr API 调用函数
-  const selectMsgstr = async (id: string) => {
-    try {
-      const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/select-msgstr?entry_index=${currentIndex}&language_code=${languageCode}&msgstr_index=${encodeURIComponent(id)}&project=${projectName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-            "X-CSRFTOKEN": csrfToken || "", // 添加 CSRF token
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to select msgstr");
-      }
-      console.log("msgstr selected successfully");
-    } catch (error) {
-      console.error("Error selecting msgstr:", error);
-    }
-  };
 
-  const handleSelectHistory = (id: string) => { // 选择历史记录
-    setSelectedMsgstrID(id);
-    setShowSelectDialog(true); // 显示弹窗
-  };
 
-  const handleConfirmSelect = () => { // 确认选择翻译结果
-    if (selectedMsgstrID) {
-      selectMsgstr(selectedMsgstrID); // 执行 select-msgstr API 调用
-    }
-    setShowSelectDialog(false); // 关闭弹窗
-  };
 
-  const handleCancelSelect = () => { // 取消选择翻译结果弹窗
-    setShowSelectDialog(false); // 关闭弹窗
-  };
 
   //历史记录分页显示
   const [currentHisPage, setCurrentHisPage] = useState(1);//当前页码
@@ -629,7 +550,6 @@ export default function TranslationInterface() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
             'X-CSRFToken': csrfToken || '',
           },
           body: JSON.stringify({
@@ -657,43 +577,7 @@ export default function TranslationInterface() {
     }
   };
 
-  // 移除tag
-  const handleRemoveTag = async (tag: string) => {
-    if (!window.confirm(`Are you sure you want to delete the tag "${tag}"?`)) {
-      return;
-    }
-
-    try {
-      if(projectName == null)
-        return;
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/modify-entry-tag?index=${index1}&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Token ${token}`,
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken || '',
-          },
-          body: JSON.stringify({
-            action: 'remove',
-            tag: tag,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to remove tag: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Tag removed successfully', data);
-
-      setTags(tags.filter(t => t !== tag));
-    } catch (error) {
-      console.error('Error removing tag:', error);
-    }
-  };
+  
 
   // 获取标签颜色的类
   const getTagColorClass = (tag: string) => {
@@ -732,19 +616,19 @@ export default function TranslationInterface() {
  * 跳转到项目页面
  */
   const handleProjectNavigation = () => {
-    router.push("/projects");
+    router.push("/public/projects");
   };
   /**
    * 跳转到语言版本
    */
   const handleProjectLanguage = () => {
-    router.push(`/language-versions?project=${encodeURIComponent(projectName || "")}`);
+    router.push(`/public/language-versions?project=${encodeURIComponent(projectName || "")}`);
   };
   /**
    * 跳转到词条页面
    */
   const handleProjectEntries = () => {
-    router.push(`/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
+    router.push(`/public/Entries?project_name=${encodeURIComponent(projectName || "")}&language_code=${encodeURIComponent(languageCode || "")}`);
   };
 
   return (
@@ -839,16 +723,16 @@ export default function TranslationInterface() {
                   onChange={(e) => setCurrentTranslation(e.target.value)} // 更新文本框内容
                   rows={4}
                   className="w-full"
-                  disabled={!canTranslate} // 禁用翻译
+                  disabled={true} // 禁用翻译
                 />
               </CardContent>
             </Card>
             <div className="flex space-x-2">
             
-            <Button onClick={handleSaveAndContinue} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并继续 */}
+            <Button onClick={handleSaveAndContinue} disabled={true}> {/* 保存并继续 */}
               Save and Continue
             </Button>
-            <Button variant="outline" onClick={handleSaveAndStay} disabled={!canTranslate || currentTranslation.length === 0}> {/* 保存并停留 */}
+            <Button variant="outline"  disabled={true}> {/* 保存并停留 */}
               Save and Stay
             </Button>
             
@@ -943,7 +827,7 @@ export default function TranslationInterface() {
                           {tag}
                           {showRemoveCross && (
                             <button
-                              onClick={() => handleRemoveTag(tag)}
+                             
                               className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
                               title="Remove tag"
                             >
@@ -957,112 +841,7 @@ export default function TranslationInterface() {
                     <div>null</div> 
                   )}
 
-                  {/* 添加/移除tags */}
-                 
-                  {canTranslate && (
-                    <div className="flex items-center space-x-4 mb-4 ml-auto">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => setShowRemoveCross(!showRemoveCross)}
-                          className="text-gray-700 text-xs py-1 px-3 rounded-md hover:bg-gray-200 transition duration-200"
-                        >
-                          {showRemoveCross ? 'Cancel' : 'Remove'}
-                        </button>
-                        <button
-                          onClick={() => setIsAdding(true)}
-                          className="text-gray-700 text-xs py-1 px-3 rounded-md hover:bg-gray-200 transition duration-200"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Add Tag Form */}
-                  {isAdding && (
-                    <div className="border p-4 rounded-md">
-                      <div className="flex flex-col space-y-2 mb-4">
-                        <label className="flex items-center text-sm">
-                          <input
-                            type="radio"
-                            name="tag"
-                            value="To be translated"
-                            checked={selectedTag === 'To be translated'}
-                            onChange={() => { setSelectedTag('To be translated'); setIsCustom(false); }}
-                            className="mr-2"
-                          />
-                          To be translated
-                        </label>
-                        <label className="flex items-center text-sm">
-                          <input
-                            type="radio"
-                            name="tag"
-                            value="To be reviewed"
-                            checked={selectedTag === 'To be reviewed'}
-                            onChange={() => { setSelectedTag('To be reviewed'); setIsCustom(false); }}
-                            className="mr-2"
-                          />
-                          To be reviewed
-                        </label>
-                        <label className="flex items-center text-sm">
-                          <input
-                            type="radio"
-                            name="tag"
-                            value="Need to check again"
-                            checked={selectedTag === 'Need to check again'}
-                            onChange={() => { setSelectedTag('Need to check again'); setIsCustom(false); }}
-                            className="mr-2"
-                          />
-                          Need to check again
-                        </label>
-                        <label className="flex items-center text-sm">
-                          <input
-                            type="radio"
-                            name="tag"
-                            value="Custom"
-                            checked={isCustom}
-                            onChange={() => { setSelectedTag(''); setIsCustom(true); }}
-                            className="mr-2"
-                          />
-                          Default
-                        </label>
-                      </div>
-
-                      {isCustom && (
-                        <div className="mb-4">
-                          <input
-                            type="text"
-                            value={customTag}
-                            onChange={(e) => setCustomTag(e.target.value)}
-                            placeholder="Enter custom tag"
-                            className="border p-2 w-full rounded-md text-sm"
-                          />
-                        </div>
-                      )}
-
-                      {/* 保存/取消 */}
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={handleAdd}
-                          className="text-gray-700 text-sm py-2 px-4 rounded-md hover:bg-gray-200 transition duration-200"
-                          disabled={isCustom ? !customTag.trim() : !selectedTag}
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setIsAdding(false);
-                            setSelectedTag('');
-                            setIsCustom(false);
-                            setCustomTag('');
-                          }}
-                          className="text-gray-700 text-sm py-2 px-4 rounded-md hover:bg-gray-200 transition duration-200"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  
 
                 </div>
               </div>
@@ -1171,7 +950,7 @@ export default function TranslationInterface() {
                     <div className="font-mono text-sm">{item.msg}</div> {/* 翻译文本 */}
                     <div>{new Date(item.timestamp).toLocaleString()}</div> {/* 更新时间 */}
                     {canSelect && (<div>
-                      <Button variant="default" onClick={() => handleSelectHistory(item.id)}>  {/* 选择按钮 */}
+                      <Button variant="default">  {/* 选择按钮 */}
                         Select it
                       </Button>
                     </div>)}
@@ -1242,8 +1021,8 @@ export default function TranslationInterface() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex space-x-4 mt-4">
-                    <Button variant="outline" onClick={handleCancelSelect}>Cancel</Button>
-                    <Button onClick={handleConfirmSelect}>Confirm</Button>
+                    <Button variant="outline">Cancel</Button>
+                    <Button>Confirm</Button>
                   </div>
                 </DialogContent>
               </Dialog>

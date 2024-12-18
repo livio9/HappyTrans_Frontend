@@ -146,7 +146,7 @@ export default function Welcome() {
         {/* 继续按钮居中，宽度适中 */}
         <div className="flex justify-center mt-4 md:mt-6">
           <Button variant="secondary" className="w-48 md:w-60 text-sm md:text-lg py-2 md:py-3">
-            <Link href="/dashboard">Continue Without Login</Link>
+            <Link href="public/projects">Continue Without Login</Link>
           </Button>
         </div>
       </div>

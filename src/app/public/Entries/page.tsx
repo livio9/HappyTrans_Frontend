@@ -1,12 +1,9 @@
 "use client"; // 使用客户端模式
-import { useAuth } from "@/context/AuthContext"; // 使用认证上下文获取用户信息和认证令牌
 import React, { useEffect, useState, useMemo, useCallback } from "react"; //添加useMemo实现缓存排序和筛选结果
 import { useSearchParams ,useRouter} from "next/navigation"; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
 import { FixedSizeList as List } from "react-window"; // 使用 react-window 渲染虚拟列表， 提高性能
 import {
   Table,
-  TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -85,7 +82,6 @@ const getTagColorClass = (tag: string) => {
 
 export default function ProjectDetails() {
   const router = useRouter(); // 使用路由钩子跳转页面
-  const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
   const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
   const projectName = searchParams.get("project_name"); //  获取项目名称
   const languageCode = searchParams.get("language_code"); // 获取语言代码
@@ -127,7 +123,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
             },
           }
         );
@@ -149,7 +144,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`, // 使用认证令牌
             },
           }
         );
@@ -177,7 +171,6 @@ export default function ProjectDetails() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Token ${token}`,
             },
           }
         );
@@ -206,7 +199,7 @@ export default function ProjectDetails() {
     };
 
     fetchData();
-  }, [projectName, languageCode, query, token]);
+  }, [projectName, languageCode, query]);
 
   // 添加排序逻辑，根据点击的列名和当前排序方向进行排序
   const handleSort = (column: string) => {
@@ -271,7 +264,7 @@ export default function ProjectDetails() {
 
   const handleLanguageChange = (newLanguageCode: string) => { // 处理语言切换功能
     if (projectName) {
-      router.push(`/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
+      router.push(`/public/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`);
     }
   };
 
@@ -321,7 +314,7 @@ export default function ProjectDetails() {
    * 跳转到项目页面
    */
   const handleProjectNavigation = () => {
-    router.push("/projects");
+    router.push("/public/projects");
   };
   /**
    * 跳转到语言版本
@@ -329,7 +322,7 @@ export default function ProjectDetails() {
   const handleProjectLanguage = () => {
     if (projectName) {
       // 只有当 projectName 有值时，才会进行跳转
-      router.push(`/language-versions?project=${encodeURIComponent(projectName)}`);
+      router.push(`/public/language-versions?project=${encodeURIComponent(projectName)}`);
     } else {
       console.error("Project name is missing");
     }
@@ -479,7 +472,7 @@ export default function ProjectDetails() {
                     className="grid grid-cols-[100px_270px_400px_400px_150px] relative items-center border-b hover:bg-muted/50"
                     onClick={() =>
                       router.push(
-                        `/translation-interface?project_name=${encodeURIComponent(
+                        `/public/translation-interface?project_name=${encodeURIComponent(
                           projectName!
                         )}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`
                       )
