@@ -1,8 +1,8 @@
 "use client"; // 使用客户端模式
 import { useAuth } from "@/context/AuthContext"; // 使用认证上下文获取用户信息和认证令牌
-import React, { useEffect, useState, useMemo, useCallback } from "react"; //添加useMemo实现缓存排序和筛选结果
-import { useSearchParams ,useRouter} from "next/navigation"; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
-import { FixedSizeList as List } from "react-window"; // 使用 react-window 渲染虚拟列表， 提高性能
+import React, { useEffect, useState, useMemo, useCallback } from "react"; // 添加useMemo实现缓存排序和筛选结果
+import { useSearchParams, useRouter } from "next/navigation"; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
+import { FixedSizeList as List } from "react-window"; // 使用 react-window 渲染虚拟列表，提高性能
 import {
   Table,
   TableBody,
@@ -10,26 +10,26 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";//使用表格组件
-import { Input } from "@/components/ui/input" //使用输入框组件
-import { Button } from "@/components/ui/button" //使用按钮组件
-import { Progress } from "@/components/ui/progress" //使用进度条组件
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" //使用下拉选择组件
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Search } from 'lucide-react' //使用lucide图标
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card" //  使用卡片组件
+} from "@/components/ui/table"; // 使用表格组件
+import { Input } from "@/components/ui/input"; // 使用输入框组件
+import { Button } from "@/components/ui/button"; // 使用按钮组件
+import { Progress } from "@/components/ui/progress"; // 使用进度条组件
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // 使用下拉选择组件
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Search } from 'lucide-react'; // 使用lucide图标
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // 使用卡片组件
 
-//用于entries返回的数据结构中的msgstr数组
+// 用于entries返回的数据结构中的msgstr数组
 type msgstr = {
-  msg: string; //翻译内容
-  timestamp: string; //时间戳，更新时间
-  user_id: string; //提交翻译的用户id
-  id: string; //在 msgstr 数组中的索引
+  msg: string; // 翻译内容
+  timestamp: string; // 时间戳，更新时间
+  user_id: string; // 提交翻译的用户id
+  id: string; // 在 msgstr 数组中的索引
 }
 
-//用于entries返回的数据结构中的entry数组
+// 用于entries返回的数据结构中的entry数组
 type Entry = {
   comments: string; // 提交翻译时的注释
-  extracted_comments: string; //  提取的注释
+  extracted_comments: string; // 提取的注释
   flags: string; // 标记
   msgctxt: string | null; // 上下文
   idx_in_language: number; // 索引
@@ -40,27 +40,28 @@ type Entry = {
   updated_at: string; // 最近一次更新时间
   selected_msgstr_index: number; // 选中的翻译内容索引
   references: string; // 字符串位置
-  tags: [string]; // 新增：标签
+  tags: string[]; // 新增：标签（修改为数组类型）
 };
 
 type LanguageData = {
   language_code: string; // 语言代码
   entries: Entry[]; // 翻译条目数组
 };
-//这两个LanguageData的区别在于第二个是从project_info返回的数据结构中的languages数组中取出的，第一个是从entries返回的数据结构中取出的
-type ProjectLanguageData= {
+
+// 这两个LanguageData的区别在于第二个是从project_info返回的数据结构中的languages数组中取出的，第一个是从entries返回的数据结构中取出的
+type ProjectLanguageData = {
   language_code: string;
   pot_creation_date: string;
   po_revision_date: string;
 }
-//用于project_info返回的数据结构
+
+// 用于project_info返回的数据结构
 type ProjectData = {
   name: string; // 项目名称
   description: string; // 项目描述
-  sorce_language: string; // 源语言
+  source_language: string; // 源语言（修正拼写错误）
   languages: ProjectLanguageData[]; // 语言数组
   created_at: string; // 创建时间
-
 };
 
 type Entries = {
@@ -83,45 +84,47 @@ const getTagColorClass = (tag: string) => {
   }
 };
 
+// 自定义 List 的外部元素，移除水平滚动
+const OuterElement = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>((props, ref) => (
+  <div {...props} ref={ref} style={{ ...props.style, overflowX: 'hidden' }} />
+));
+
 export default function ProjectDetails() {
   const router = useRouter(); // 使用路由钩子跳转页面
   const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
   const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
-  const projectName = searchParams.get("project_name"); //  获取项目名称
+  const projectName = searchParams.get("project_name"); // 获取项目名称
   const languageCode = searchParams.get("language_code"); // 获取语言代码
   const query = searchParams.get("query"); // 获取查询参数，只有在搜索时才会使用
 
   const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
-
 
   // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
   const queryParams = useMemo(() => {
     return new URLSearchParams({
       project_name: projectName || "",
       language_code: languageCode || "",
-      ...(query ? { query } : {}),  // 只有在 query 存在时才添加到查询参数中
+      ...(query ? { query } : {}), // 只有在 query 存在时才添加到查询参数中
     });
   }, [projectName, languageCode, query]);
-  
 
-  const [currentPage, setCurrentPage] = useState(1);//当前页码
+  const [currentPage, setCurrentPage] = useState(1); // 当前页码
   const itemsPerPage = 8; // 每页显示的条目数
 
   const [entriesdata, setEntriesData] = useState<Entries>(); // 保存 entries 数据到状态
-  const [projectData, setProjectData] = useState<ProjectData | null >(null); // 保存 project_info 数据到状态
+  const [projectData, setProjectData] = useState<ProjectData | null>(null); // 保存 project_info 数据到状态
   const [loading, setLoading] = useState<boolean>(true); // 加载状态
 
   // 搜索、排序和分页相关状态
   const [searchTerm, setSearchTerm] = useState("");
 
   // 添加新的状态用于排序
-
-  const [sortColumn, setSortColumn] = useState<string>("idx_in_language"); //选择用于排序的列，默认使用index
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); //排序方向，默认升序
+  const [sortColumn, setSortColumn] = useState<string>("idx_in_language"); // 选择用于排序的列，默认使用index
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); // 排序方向，默认升序
 
   useEffect(() => {
     const fetchProjectData = async () => { // 获取 project_info 数据
-      try { 
+      try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName || "")}`, {
             method: "GET",
@@ -131,7 +134,7 @@ export default function ProjectDetails() {
             },
           }
         );
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch project data");
         }
@@ -153,15 +156,11 @@ export default function ProjectDetails() {
             },
           }
         );
-        // console.log(`${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?${queryParams.toString()}`);
         if (!response.ok) {
           throw new Error("Failed to fetch entries data");
         }
         const data: Entries = await response.json();
-        // console.log(data);
         setEntriesData(data); // 保存 entriesdata 到状态
-        // console.log("here is entriesdata");
-        // console.log(entriesdata);
       } catch (error) {
         console.error("Error fetching entries data:", error);
       }
@@ -206,7 +205,7 @@ export default function ProjectDetails() {
     };
 
     fetchData();
-  }, [projectName, languageCode, query, token]);
+  }, [projectName, languageCode, query, token, queryParams]);
 
   // 添加排序逻辑，根据点击的列名和当前排序方向进行排序
   const handleSort = (column: string) => {
@@ -218,8 +217,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Modify the sorting logic in the useEffect hook
-  //修改筛选逻辑为使用appliedSearchTerm而不是动态更新searchTerm
   // 使用 useMemo 缓存筛选和排序结果
   const filteredAndSortedEntries = useMemo(() => {
     if (!entriesdata || !entriesdata.languages) return [];
@@ -231,7 +228,7 @@ export default function ProjectDetails() {
     if (!languageData) return [];
 
     // 排序
-    const sorted = [...entriesdata.languages[0].entries].sort((a, b) => {
+    const sorted = [...languageData.entries].sort((a, b) => {
       if (sortColumn === "idx_in_language") { // 根据索引排序
         return sortDirection === "asc" ? a.idx_in_language - b.idx_in_language : b.idx_in_language - a.idx_in_language;
       } else if (sortColumn === "key") { // 根据references排序
@@ -257,7 +254,7 @@ export default function ProjectDetails() {
     });
 
     return sorted;
-  }, [entriesdata, searchTerm, sortColumn, sortDirection, languageCode]);
+  }, [entriesdata, sortColumn, sortDirection, languageCode]);
 
   // 分页数据
   const paginatedEntries = useMemo(() => { // 使用 useMemo 缓存entries的分页结果
@@ -275,11 +272,7 @@ export default function ProjectDetails() {
     }
   };
 
-  
-  
-  
-
-  //处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
+  // 处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
   const handleSearch = () => {
     if (projectName && languageCode) {
       const baseUrl = `/Entries?project_name=${encodeURIComponent(
@@ -288,11 +281,11 @@ export default function ProjectDetails() {
       const queryParam = searchTerm
         ? `&query=${encodeURIComponent(searchTerm)}`
         : "";
-  
+
       router.push(baseUrl + queryParam);
     }
   };
-  
+
   if (loading) { // 加载状态，显示加载动画
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -301,7 +294,7 @@ export default function ProjectDetails() {
     );
   }
 
-  //现在不区分错误和没有数据的情况，显示一个友好的消息，一般是因为没有数据
+  // 现在不区分错误和没有数据的情况，显示一个友好的消息，一般是因为没有数据
   if (!entriesdata?.languages.length) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -335,8 +328,11 @@ export default function ProjectDetails() {
     }
   };
 
+  // 确定表格总宽度
+  const tableTotalWidth = 100 + 270 + 400 + 400 + 150; // 1320px
+
   return (
-    <div className="h-100vh mx-auto p-6 space-y-8">
+    <div className="h-screen mx-auto p-6 space-y-8"> {/* 使用 h-screen 代替 h-100vh */}
       {/* 项目导航面包屑 */}
       <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
         {/* Projects按钮 */}
@@ -370,7 +366,7 @@ export default function ProjectDetails() {
       {/* 项目信息部分 */}
       <Card className="w-full">
         <CardHeader> {/* 项目标题和描述 */}
-          <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle> 
+          <CardTitle className="text-3xl font-bold">{projectData?.name || projectName}</CardTitle>
           <p className="text-muted-foreground mt-2">{projectData?.description}</p>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-3"> {/* 项目信息 */}
@@ -402,7 +398,8 @@ export default function ProjectDetails() {
           <CardTitle>Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6"> {/* 搜索框和搜索按钮 */}
+          {/* 搜索框和搜索按钮 */}
+          <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
             <div className="relative md:w-2/3">
               <Input
                 type="text"
@@ -418,123 +415,136 @@ export default function ProjectDetails() {
             </Button>
           </div>
 
-          {/* 使用 react-window 渲染虚拟列表，分页显示当前项目语言下的所有词条 */}
+          {/* 表格容器，处理水平滚动 */}
           <div className="overflow-x-auto rounded-md border">
-            {/* 表头部分 */}
-            <div className="sticky top-0 bg-muted z-10">
-              <Table>
-                <TableHeader>
-                  <TableRow className="grid grid-cols-[100px_270px_400px_400px_150px] bg-muted">
-                    <TableHead> {/* 索引 */}
-                      Index
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2">
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead> {/* references */}
-                      Key
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2">
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead> {/* 翻译原文 */}
-                      Source
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2">
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead> {/* 翻译结果 */}
-                      Translation
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2">
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                    <TableHead> {/* 更新时间 */}
-                      Updated At
-                      <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2">
-                        <ArrowUpDown className="h-4 w-4" />
-                      </Button>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-              </Table>
-            </div>
-          </div>
+            {/* 表头和列表一起放在一个容器内，统一水平滚动 */}
+            <div style={{ minWidth: `${tableTotalWidth}px` }}> {/* 确保总宽度足够，避免内容溢出 */}
+              {/* 表头部分 */}
+              <div className="sticky top-0 bg-muted z-10">
+                <Table>
+                  <TableHeader>
+                    <TableRow className={`grid grid-cols-[100px_270px_400px_400px_150px] bg-muted`}>
+                      <TableHead> {/* 索引 */}
+                        <div className="flex items-center">
+                          Index
+                          <Button variant="ghost" size="sm" onClick={() => handleSort("idx_in_language")} className="ml-2 p-0">
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableHead>
+                      <TableHead> {/* references */}
+                        <div className="flex items-center">
+                          Key
+                          <Button variant="ghost" size="sm" onClick={() => handleSort("key")} className="ml-2 p-0">
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableHead>
+                      <TableHead> {/* 翻译原文 */}
+                        <div className="flex items-center">
+                          Source
+                          <Button variant="ghost" size="sm" onClick={() => handleSort("original")} className="ml-2 p-0">
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableHead>
+                      <TableHead> {/* 翻译结果 */}
+                        <div className="flex items-center">
+                          Translation
+                          <Button variant="ghost" size="sm" onClick={() => handleSort("translation")} className="ml-2 p-0">
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableHead>
+                      <TableHead> {/* 更新时间 */}
+                        <div className="flex items-center">
+                          Updated At
+                          <Button variant="ghost" size="sm" onClick={() => handleSort("updatedAt")} className="ml-2 p-0">
+                            <ArrowUpDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
 
+              {/* 虚拟滚动区域 */}
+              <List
+                height={400} // 表格可滚动区域的高度
+                itemCount={paginatedEntries.length} // 当前页条目数
+                itemSize={50} // 每个条目的固定高度
+                width={tableTotalWidth} // 与表头的总宽度一致
+                className="font-sans text-sm"
+                outerElementType={OuterElement} // 移除水平滚动
+              >
+                {({ index, style }) => {
+                  const entry = paginatedEntries[index];
+                  return (
+                    <div
+                      style={style}
+                      key={entry.idx_in_language}
+                      className="grid grid-cols-[100px_270px_400px_400px_150px] items-center border-b hover:bg-muted/50 cursor-pointer"
+                      onClick={() =>
+                        router.push(
+                          `/translation-interface?project_name=${encodeURIComponent(
+                            projectName!
+                          )}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`
+                        )
+                      }
+                    >
+                      {/* 第一列：索引 */}
+                      <div className="font-medium pl-4 text-gray-500">
+                        {entry.idx_in_language}
+                      </div>
 
-            {/* 虚拟滚动区域 */}
-            <List
-              height={400} // 表格可滚动区域的高度
-              itemCount={paginatedEntries.length} // 当前页条目数
-              itemSize={50} // 每个条目的固定高度
-              width="100%" // 列表宽度
-              className="font-sans text-sm"
-            >
-              {({ index, style }) => {
-                const entry = paginatedEntries[index];
-                return (
-                  <div
-                    style={style}
-                    key={entry.idx_in_language}
-                    className="grid grid-cols-[100px_270px_400px_400px_150px] relative items-center border-b hover:bg-muted/50"
-                    onClick={() =>
-                      router.push(
-                        `/translation-interface?project_name=${encodeURIComponent(
-                          projectName!
-                        )}&language_code=${encodeURIComponent(languageCode!)}&idx_in_language=${entry.idx_in_language}`
-                      )
-                    }
-                  >
-                    {/* 第一列：索引 */}
-                    <div className="font-medium pl-4 text-gray-500">
-                      {entry.idx_in_language}
-                    </div>
+                      {/* 第二列：参考信息 */}
+                      <div className="font-mono text-xs text-gray-600">
+                        {entry.references}
+                      </div>
 
-                    {/* 第二列：参考信息 */}
-                    <div className="font-mono text-xs text-gray-600">
-                      {entry.references}
-                    </div>
+                      {/* 第三列：msgid 和 标签 */}
+                      <div className="flex items-center justify-start space-x-2">
+                        <div className="flex-1 pr-2 text-gray-700">{entry.msgid}</div>
+                        <div className="flex flex-wrap mt-1">
+                          {entry.tags.map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-2 py-0.5 text-[10px] text-gray-900 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
+                              style={{
+                                minWidth: '15px', // 最小宽度
+                                height: '20px', // 高度
+                                lineHeight: '18px', // 行高，使字体垂直居中
+                                textAlign: 'center', // 水平居中
+                                overflow: 'hidden', // 防止溢出
+                                whiteSpace: 'nowrap', // 防止换行
+                                textOverflow: 'ellipsis', // 文字超出时显示省略号
+                              }}
+                              title={tag} // 悬浮显示完整标签
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
 
-                    {/* 第三列：msgid 和 标签 */}
-                    <div className="flex items-center justify-start space-x-2">
-                      <div className="flex-1 pr-2 text-gray-700">{entry.msgid}</div>
-                      <div className="flex flex-wrap mt-1">
-                        {entry.tags.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className={`px-2 py-0.5 text-[10px] text-gray-900 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
-                            style={{
-                              minWidth: '15px', // 最小宽度
-                              height: '20px', // 高度
-                              lineHeight: '18px', // 行高，使字体垂直居中
-                              textAlign: 'center', // 水平居中
-                              overflow: 'hidden', // 防止溢出
-                              whiteSpace: 'nowrap', // 防止换行
-                              textOverflow: 'ellipsis', // 文字超出时显示省略号
-                            }}
-                            title={tag} // 悬浮显示完整标签
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                      {/* 第四列：翻译内容 */}
+                      <div className="text-gray-700">
+                        {entry.selected_msgstr_index === -1
+                          ? ""
+                          : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
+                      </div>
+
+                      {/* 第五列：更新时间 */}
+                      <div className="text-xs text-gray-500">
+                        {new Date(entry.updated_at).toLocaleString()}
                       </div>
                     </div>
-
-                    {/* 第四列：翻译内容 */}
-                    <div className="text-gray-700">
-                      {entry.selected_msgstr_index === -1
-                        ? ""
-                        : entry.msgstr[entry.selected_msgstr_index]?.msg || "No translation"}
-                    </div>
-
-                    {/* 第五列：更新时间 */}
-                    <div className="text-xs text-gray-500">
-                      {new Date(entry.updated_at).toLocaleString()}
-                    </div>
-                  </div>
-                );
-              }}
-            </List>
+                  );
+                }}
+              </List>
+            </div>
+          </div>
 
           {/* 分页控制 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
@@ -543,7 +553,7 @@ export default function ProjectDetails() {
             </div>
             <div className="flex space-x-2"> {/* 分页按钮 */}
               {/* 第一页 */}
-              <Button 
+              <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setCurrentPage(1)}
