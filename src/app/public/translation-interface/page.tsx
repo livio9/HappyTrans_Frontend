@@ -840,9 +840,6 @@ export default function TranslationInterface() {
                   ) : (
                     <div>null</div> 
                   )}
-
-                  
-
                 </div>
               </div>
             </TabsContent>

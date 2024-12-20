@@ -50,6 +50,9 @@ const CommunityForumPage = () => {
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
 
+  const { user, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
+  const canCreateDiscussion = user && projectName && (projectInProcess?.includes(projectName));
+
   const {
     discussions,
     fetchAllDiscussions,
@@ -69,7 +72,7 @@ const CommunityForumPage = () => {
   // 解析标题并返回带有链接的标题和字段
   const parseTitle = (title: string) => {
     // 按照 # 分割字符串
-    const parts = title.split('#');
+    const parts = title.split('#').map(part => part.trim()); // 对每个部分使用 trim() 去除首尾空格
 
     // 获取标题、projectName、languageCode 和 idxInLanguage
     const mainTitle = parts[0]; // 标题部分是 # 之前的内容
@@ -335,12 +338,14 @@ const CommunityForumPage = () => {
       {/* 项目标题和按钮容器 */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold mb-6">Community Forum</h1>
-        <Button
-          onClick={createNewPost}
-          className="text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 rounded-md py-2 px-6 shadow-sm transition-all duration-200"
-        >
-          Create new discussion
-        </Button>
+        {canCreateDiscussion &&
+          <Button
+            onClick={createNewPost}
+            className="text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 rounded-md py-2 px-6 shadow-sm transition-all duration-200"
+          >
+            Create new discussion
+          </Button>
+        }
       </div>
 
       {/* 讨论列表 */}
