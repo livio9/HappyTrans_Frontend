@@ -104,12 +104,22 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
                 <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className={`w-full p-2 border rounded`}
                     rows={4}
                     placeholder="Write your comment..."
+                    disabled={false}
                 />
+                <div className="mt-2 mb-4 text-gray-500 text-sm italic">
+                    You have not been added to this project yet, so you cannot post comments.
+                </div>
                 <div className="mt-2">
-                    <Button onClick={submitNewComment}>Submit</Button>
+                    <Button
+                        onClick={submitNewComment}
+                        disabled={false}
+                        className={'opacity-50 cursor-not-allowed'}
+                    >
+                        Submit
+                    </Button>
                 </div>
             </div>
 

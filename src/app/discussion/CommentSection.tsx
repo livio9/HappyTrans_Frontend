@@ -7,6 +7,7 @@ import Comment from "./Comment"; // 导入 Comment 组件
 import { getCookie } from '@/utils/cookies';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 
 interface CommentSection {
     total: string;
@@ -38,6 +39,12 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
     const csrfToken = getCookie("csrftoken");
     const [comments, setComments] = useState<CommentType[]>([]);
     const [newComment, setNewComment] = useState("");
+
+    const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
+    const projectName = searchParams.get("project_name"); // 获取项目名称
+
+    const { user, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
+    const canCreateComment = user && projectName && (projectInProcess?.includes(projectName));
 
     // 获取所有评论
     const fetchComments = async () => {
@@ -104,12 +111,24 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
                 <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className={`w-full p-2 border rounded ${!canCreateComment ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                     rows={4}
                     placeholder="Write your comment..."
+                    disabled={!canCreateComment}
                 />
+                {!canCreateComment && (
+                    <div className="mt-2 mb-4 text-gray-500 text-sm italic">
+                        You have not been added to this project yet, so you cannot post comments.
+                    </div>
+                )}
                 <div className="mt-2">
-                    <Button onClick={submitNewComment}>Submit</Button>
+                    <Button
+                        onClick={submitNewComment}
+                        disabled={!canCreateComment}
+                        className={!canCreateComment ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                        Submit
+                    </Button>
                 </div>
             </div>
 
