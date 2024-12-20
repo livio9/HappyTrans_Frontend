@@ -471,6 +471,10 @@ export default function TranslationInterface() {
   const canTranslate =   user?.role==="admin"||(user && projectName && (projectInProcess?.includes(projectName)));
   const canSelect = user?.role==="admin" || (user && projectName && (projectManaged?.includes(projectName)));
   const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
+
+  // 判断用户是否有权限编辑词条
+  const canEditTags = user?.role === "admin";
+
   // 处理保存翻译结果
   // 发送翻译更新请求
   const updateTranslation = async (newTranslation: string) => {
@@ -939,7 +943,6 @@ export default function TranslationInterface() {
                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary  shadow-sm p-4">
                   <strong>Tags:</strong>
                   {/* 渲染 Tags */}
-                  {/* 渲染 Tags */}
                   {tags && tags.length > 0 ? (
                     <div className="flex flex-wrap gap-3 mb-4">
                       {tags.map((tag, idx) => (
@@ -962,8 +965,7 @@ export default function TranslationInterface() {
                   )}
 
                   {/* 添加/移除tags */}
-                 
-                  {canTranslate && (
+                  {canEditTags && (
                     <div className="flex items-center space-x-4 mb-4 ml-auto">
                       <div className="flex space-x-2">
                         <button
