@@ -233,10 +233,12 @@ export default function Projects() {
 
   // 组件挂载时获取项目列表
   useEffect(() => {
+    if(!user || !token) return;
     fetchProjectsInProcess();
   }, [fetchProjectsInProcess]);
 
   useEffect(() => {
+    if(!user || !token) return;
     if (shouldFetchProjects) {
       fetchProjects();
     }
@@ -470,6 +472,7 @@ export default function Projects() {
       // After all operations, close the dialog and refresh the project list
       setIsEditDialogOpen(false);
       fetchProjects();
+      fetchProjectsInProcess();
     } catch (error) {
       console.error("Error updating project:", error);
       alert("An error occurred while updating the project.");
@@ -605,7 +608,7 @@ export default function Projects() {
   const ProjectCard = ({ project }: { project: Project }) => {
     const { user } = useAuth(); // 使用认证上下文
 
-    const isManager = project.is_managed;
+    const isManager = isAdmin || project.is_managed;
 
     return (
       <Card className="h-48 flex flex-col justify-between">

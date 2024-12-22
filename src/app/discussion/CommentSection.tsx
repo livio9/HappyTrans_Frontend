@@ -68,6 +68,7 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
     };
 
     useEffect(() => {
+        if (!token) return;
         fetchComments();
     }, [discussionId, token]);
 

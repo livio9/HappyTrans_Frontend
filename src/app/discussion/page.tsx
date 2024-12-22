@@ -123,12 +123,14 @@ const PostDetails = () => {
     };
 
     useEffect(() => {
+        if(!user) return;
         if (id) {
             fetchDiscussion(Number(id)); // 根据帖子 ID 获取帖子数据
         }
     }, [id]);
 
     useEffect(() => {
+        if(!user) return;
         if (singleDiscussion && user) {
             // 判断当前用户是否是帖子创建者
             setIsOwner(singleDiscussion.created_by === user.id);

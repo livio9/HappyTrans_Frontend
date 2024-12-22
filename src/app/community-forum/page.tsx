@@ -64,6 +64,7 @@ const CommunityForumPage = () => {
 
   // 获取所有帖子及对应用户信息
   useEffect(() => {
+    if (!token) return;
     (async () => {
       fetchAllDiscussions(); 
     })();

@@ -123,6 +123,7 @@ export default function ProjectDetails() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); // 排序方向，默认升序
 
   useEffect(() => {
+    if(!token) return;
     const fetchProjectData = async () => { // 获取 project_info 数据
       try {
         const response = await fetch(
@@ -416,14 +417,14 @@ export default function ProjectDetails() {
           </div>
 
           {/* 表格容器，处理水平滚动 */}
-          <div className="overflow-x-auto rounded-md border">
+          <div className="overflow-x-auto rounded-md border w-full">
             {/* 表头和列表一起放在一个容器内，统一水平滚动 */}
             <div style={{ minWidth: `${tableTotalWidth}px` }}> {/* 确保总宽度足够，避免内容溢出 */}
               {/* 表头部分 */}
               <div className="sticky top-0 bg-muted z-10">
                 <Table>
                   <TableHeader>
-                    <TableRow className={`grid grid-cols-[100px_270px_400px_400px_150px] bg-muted`}>
+                    <TableRow className={`grid grid-cols-[2fr_5.4fr_8fr_8fr_3fr] bg-muted`}>
                       <TableHead> {/* 索引 */}
                         <div className="flex items-center">
                           Index
@@ -474,7 +475,7 @@ export default function ProjectDetails() {
                 height={400} // 表格可滚动区域的高度
                 itemCount={paginatedEntries.length} // 当前页条目数
                 itemSize={50} // 每个条目的固定高度
-                width={tableTotalWidth} // 与表头的总宽度一致
+                width="100%" // 宽度
                 className="font-sans text-sm"
                 outerElementType={OuterElement} // 移除水平滚动
               >
@@ -484,7 +485,7 @@ export default function ProjectDetails() {
                     <div
                       style={style}
                       key={entry.idx_in_language}
-                      className="grid grid-cols-[100px_270px_400px_400px_150px] items-center border-b hover:bg-muted/50 cursor-pointer"
+                      className="grid grid-cols-[2fr_5.4fr_8fr_8fr_3fr] items-center border-b hover:bg-muted/50 cursor-pointer"
                       onClick={() =>
                         router.push(
                           `/translation-interface?project_name=${encodeURIComponent(

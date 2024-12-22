@@ -114,6 +114,7 @@ export default function LanguageVersions() {
 
     // 组件挂载时获取语言版本信息
     useEffect(() => {
+        if(!user || !token) return;
         fetchLanguageVersions();
     }, [fetchLanguageVersions]);
 

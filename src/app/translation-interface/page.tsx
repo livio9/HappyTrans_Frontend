@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge"; // 导入自定义徽章组件
 import { motion } from 'framer-motion';
 import { Separator } from "@/components/ui/separator"; // 导入自定义分隔符组件
 import { ScrollArea } from "@/components/ui/scroll-area"; // 导入自定义滚动区域组件
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, set } from 'date-fns'
 import { FixedSizeList as List } from "react-window"; // 导入固定大小列表组件,虚拟窗口提升性能
 import { getCookie } from '@/utils/cookies';
 import Link from 'next/link';
@@ -211,7 +211,8 @@ export default function TranslationInterface() {
   const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
   const [selectedMsgstrID, setSelectedMsgstrID] = useState<string>(""); // 选定的 msgstr
   
-  const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
+  
+  const [shouldFetchEntries, setShouldFetchEntries] = useState(true); // 控制是否重新获取数据
 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
@@ -233,6 +234,7 @@ export default function TranslationInterface() {
   }, [strings, currentIndex]);
 
   useEffect(() => {
+    if(!user || !token) return;
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
   
     if (projectName && languageCode) { // 确保项目名称和语言代码存在
@@ -324,6 +326,7 @@ export default function TranslationInterface() {
           if (languageData) {
             console.log("Found language data:", languageData);
             setStrings(languageData.entries); // 更新 strings为获取的词条数据
+            setShouldFetchEntries(false); // 设置 shouldFetchEntries 为 false
           } else {
             console.log(`No language data found for ${languageCode}`);
           }
@@ -333,9 +336,8 @@ export default function TranslationInterface() {
       };
 
       // 仅在 entries 数据未加载时获取
-      if (!fetchedEntries.current) {
-        fetchEntriesData(); // 立即调用
-        fetchedEntries.current = true; // 防止再次请求
+      if (shouldFetchEntries) {
+        fetchEntriesData();
       }
 
       // 获取相邻词条数据
@@ -464,7 +466,7 @@ export default function TranslationInterface() {
     } else {
       console.log("Project name or language code is missing");
     }
-  }, [projectName, languageCode, currentIndex, strings, ordering]); // 确保数据更新后执行
+  }, [projectName, languageCode, currentIndex, strings, ordering, shouldFetchEntries]); // 确保数据更新后执行
 
   //判断用户是否有权限翻译
   console.log("user.managed_projects:", user?.managed_projects);
@@ -505,12 +507,14 @@ export default function TranslationInterface() {
   const handleSaveAndContinue = async () => {
     await updateTranslation(currentTranslation); // 保存当前翻译
     setCurrentIndex(currentIndex + 1); // 跳转到下一个词条
-    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 2}`); // 使用router跳转
+    router.push(`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${currentIndex + 1}`); // 使用router跳转
+    setShouldFetchEntries(true); // 设置 shouldFetchEntries 为 true
   };
 
   // 处理保存但不跳转
   const handleSaveAndStay = async () => {
     await updateTranslation(currentTranslation); // 保存当前翻译
+    setShouldFetchEntries(true); // 设置 shouldFetchEntries 为 true
   };
 
 // 关于翻译建议的处理，现在还会实现相关功能。
