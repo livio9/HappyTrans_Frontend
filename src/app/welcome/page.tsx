@@ -135,12 +135,16 @@ export default function Welcome() {
 
         {/* 登录和注册按钮平齐排列，使用flex布局并居中 */}
         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mt-6 md:mt-10 w-full max-w-2xl justify-center mx-auto">
-          <Button className="w-full md:w-1/2 text-sm md:text-lg py-2 md:py-3">
-            <Link href="/signin">Sign In</Link>
-          </Button>
-          <Button variant="outline" className="w-full md:w-1/2 text-sm md:text-lg py-2 md:py-3">
-            <Link href="/signup">Sign Up</Link>
-          </Button>
+          <Link href="/signin">
+            <Button className="w-full md:w-64 text-sm md:text-lg py-2 md:py-3">
+              Sign In
+            </Button>
+          </Link>
+          <Link href="/signup">
+            <Button variant="outline" className="w-full md:w-64 text-sm md:text-lg py-2 md:py-3">
+              Sign Up
+            </Button>
+          </Link>
         </div>
 
         {/* 继续按钮居中，宽度适中 */}
