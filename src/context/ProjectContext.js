@@ -39,8 +39,7 @@ export const ProjectProvider = ({ children }) => {
     
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?
-        &language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}&start=0`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}&start=0`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -57,6 +56,7 @@ export const ProjectProvider = ({ children }) => {
           setEntries([]);
           setEntriesMap(new Map());
         }
+        return Array.isArray(entries) ? entries : [];
       } else {
         setError('Failed to fetch entries');
       }

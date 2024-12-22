@@ -84,6 +84,8 @@ const CreatePost = () => {
         setSelectedLanguage(languageCode);
         setSelectedEntry(''); // 清空条目选择
         if (languageCode) {
+            console.log("selectedProject:", selectedProject);
+            console.log("languageCode:", languageCode);
             await fetchEntries(selectedProject, languageCode);
         }
         updateTopics(selectedProject, languageCode, '');
