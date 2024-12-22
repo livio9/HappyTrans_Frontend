@@ -234,6 +234,7 @@ export default function TranslationInterface() {
   }, [strings, currentIndex]);
 
   useEffect(() => {
+    if(!user || !token) return;
     console.log("useEffect triggered", { projectName, languageCode, index1, strings, currentIndex });
   
     if (projectName && languageCode) { // 确保项目名称和语言代码存在

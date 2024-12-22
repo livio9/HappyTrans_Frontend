@@ -123,6 +123,7 @@ export default function ProjectDetails() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc"); // 排序方向，默认升序
 
   useEffect(() => {
+    if(!token) return;
     const fetchProjectData = async () => { // 获取 project_info 数据
       try {
         const response = await fetch(

@@ -233,10 +233,12 @@ export default function Projects() {
 
   // 组件挂载时获取项目列表
   useEffect(() => {
+    if(!user || !token) return;
     fetchProjectsInProcess();
   }, [fetchProjectsInProcess]);
 
   useEffect(() => {
+    if(!user || !token) return;
     if (shouldFetchProjects) {
       fetchProjects();
     }
