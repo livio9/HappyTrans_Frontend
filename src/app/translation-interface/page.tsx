@@ -218,6 +218,10 @@ export default function TranslationInterface() {
 
   const [sourceLanguage, setSourceLanguage] = useState<string>("en"); // 源语言
 
+  // 管理底部面板的高度
+  const [footerHeight, setFooterHeight] = useState(200); // 默认高度
+  const [isResizing, setIsResizing] = useState(false);
+
   // 排序更新-comments
   const handleSortChange = (newOrdering: string) => {
     setOrdering(newOrdering);
@@ -1091,7 +1095,10 @@ export default function TranslationInterface() {
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="comment">Comment</TabsTrigger>
           </TabsList>
-          <div className="h-72 overflow-y-auto"> {/* 设置固定高度和滚动 */}
+          <div
+            className="overflow-y-auto"
+            style={{ height: `${footerHeight}px` }}
+          > {/* 设置固定高度和滚动 */}
           {/* 附近字符串内容 */}
           <TabsContent value="nearby" className="overflow-y-auto max-h-[400px]">
             <table className="w-full text-sm">
@@ -1261,7 +1268,7 @@ export default function TranslationInterface() {
             )}
           </TabsContent> {/* 历史内容 */}
 
-          <TabsContent value="comment" className="overflow-y-auto max-h-[400px]">
+            <TabsContent value="comment" className="h-full">
             <div className="p-2">
               <div className="flex justify-between items-center mb-2 p-4">
                 <div className="text-xl font-semibold">Relative Discussions</div> {/* 设置较大的字体 */}
