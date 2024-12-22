@@ -228,6 +228,7 @@ export function CollaboratorList({
         setShouldFetch={setShouldFetch}
         isOpen={isAddPeopleOpen}
         onOpenChange={setIsAddPeopleOpen}
+        isadmin={isadmin}
       />
     </div>
   )
