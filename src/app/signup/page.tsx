@@ -78,7 +78,7 @@ export default function SignUp() {
 
     // Use zxcvbn to check password strength
     const passwordStrength = zxcvbn(password);
-    if (passwordStrength.score < 3) { // Score range is 0-4; 3 or above is recommended
+    if (passwordStrength.score < 2) { // Score range is 0-4; 3 or above is recommended
       setError("Password strength is insufficient. Please choose a more complex password.");
       return;
     }
