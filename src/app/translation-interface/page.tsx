@@ -473,7 +473,7 @@ export default function TranslationInterface() {
   const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
 
   // 判断用户是否有权限编辑词条
-  const canEditTags = user?.role === "admin";
+  const canEditTags = user?.role === "admin" || (user && projectName && (projectManaged?.includes(projectName)));
 
   // 处理保存翻译结果
   // 发送翻译更新请求
