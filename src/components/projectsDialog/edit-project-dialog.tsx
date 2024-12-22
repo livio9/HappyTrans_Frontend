@@ -132,7 +132,7 @@ export function EditProjectDialog({
             </div>
 
             {/* 目标语言 */}
-            <div className="grid grid-cols-4 items-start gap-4">
+            {isadmin && (<div className="grid grid-cols-4 items-start gap-4">
               <Label className="text-right">Target Languages</Label>
               <div className="col-span-3 flex flex-col space-y-2">
                 {languages.map((lang: string) => {
@@ -152,7 +152,7 @@ export function EditProjectDialog({
                   )
                 })}
               </div>
-            </div>
+            </div>)}
 
             {/* 仅在有新增语言时展示 .po 文件上传 */}
             {languagesToAdd.length > 0 && (

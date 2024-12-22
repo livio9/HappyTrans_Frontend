@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Search, Trash2, UserPlus } from 'lucide-react'
 import { AddPeopleDialog } from "./add-people-dialog"
 import { useAuth } from "@/context/AuthContext"
+import UserAvatar from "@/components/shared/UserAvatar"; // 引入共享的 UserAvatar 组件
 
 interface User {
   id: number;
@@ -161,11 +162,11 @@ export function CollaboratorList({
       <div className="rounded-md border">
         <div className="border-b p-4">
           <div className="flex justify-between items-center">
-            <Checkbox
+            {(isadmin || type === "translators") && (<Checkbox
               checked={selectedIds.size === filteredCollaborators.length}
               onCheckedChange={handleSelectAll}
               aria-label="Select all"
-            />
+            />)}
             {(isadmin || (ismanager && type === "translators")) && (
               <Button
                 type="button"
@@ -184,15 +185,20 @@ export function CollaboratorList({
           {filteredCollaborators.map((collaborator) => (
             <div key={collaborator.id} className="flex items-center justify-between p-4">
               <div className="flex items-center gap-4">
-                <Checkbox
+                {(isadmin || type === "translators") && (<Checkbox
                   checked={selectedIds.has(collaborator.id)}
                   onCheckedChange={(checked) => handleSelect(collaborator.id, checked as boolean)}
                   aria-label={`Select ${collaborator.username}`}
-                />
-                <Avatar className="h-8 w-8">
+                />)}
+                {/* <Avatar className="h-8 w-8">
                   <AvatarImage src={collaborator.avatarUrl} alt={collaborator.username} />
-                  <AvatarFallback>{collaborator.username[0]}</AvatarFallback>
-                </Avatar>
+                  <AvatarFallback>{collaborator.username[0].toUpperCase()}</AvatarFallback>
+                  
+                </Avatar> */}
+                <UserAvatar 
+                        username={collaborator.username || "U"} 
+                        size="sm"  // 使用小尺寸
+                    />
                 <div>
                   <div className="font-medium">{collaborator.username}</div>
                   <div className="text-sm text-muted-foreground">
