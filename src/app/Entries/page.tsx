@@ -333,7 +333,7 @@ export default function ProjectDetails() {
   const tableTotalWidth = 100 + 270 + 400 + 400 + 150; // 1320px
 
   return (
-    <div className="h-screen mx-auto p-6 space-y-8"> {/* 使用 h-screen 代替 h-100vh */}
+    <div className="min-h-screen mx-auto p-6 space-y-8"> {/* 使用 h-screen 代替 h-100vh */}
       {/* 项目导航面包屑 */}
       <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
         {/* Projects按钮 */}
@@ -472,12 +472,13 @@ export default function ProjectDetails() {
 
               {/* 虚拟滚动区域 */}
               <List
-                height={400} // 表格可滚动区域的高度
-                itemCount={paginatedEntries.length} // 当前页条目数
-                itemSize={50} // 每个条目的固定高度
-                width="100%" // 宽度
+                // 移除 height={400} 的固定高度
+                height={Math.max(paginatedEntries.length * 50, window.innerHeight - 600)} // 动态计算高度
+                itemCount={paginatedEntries.length}
+                itemSize={50}
+                width="100%"
                 className="font-sans text-sm"
-                outerElementType={OuterElement} // 移除水平滚动
+                outerElementType={OuterElement}
               >
                 {({ index, style }) => {
                   const entry = paginatedEntries[index];
