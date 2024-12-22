@@ -40,7 +40,7 @@ interface CommentProps {
 type FlattenedReply = CommentType & { replyToUsername?: string };
 
 const Comment = ({ comment, fetchComments }: CommentProps) => {
-    const { token, user } = useAuth(); // 获取 token 和当前用户信息
+    const { token, user, projectInProcess } = useAuth(); // 获取 token 和当前用户信息
     const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
     const [commentUser, setCommentUser] = useState<UserType | null>(null); // 存储评论用户信息
     const [replies, setReplies] = useState<CommentType[]>([]); // 存储回复
@@ -55,6 +55,10 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
     const [commentCache, setCommentCache] = useState<Map<number, CommentType>>(new Map()); // 缓存评论信息
     const searchParams = useSearchParams();
     const discussion_id = searchParams.get("id") || "";
+    const projectName = searchParams.get("project_name"); // 获取项目名称
+
+    const canCreateComment = user && projectName && (projectInProcess?.includes(projectName));
+
 
     // 初始化 replies 状态与 comment.replies 同步
     useEffect(() => {
@@ -465,15 +469,17 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
                     {/* 回复按钮和删除按钮 */}
                     <div className="flex space-x-6 mt-2 ml-10">
                         {/* 回复按钮 */}
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="flex items-center space-x-1 p-2 transition-colors duration-200 hover:text-blue-500"
-                            onClick={() => setIsReplyingToReply(!isReplyingToReply)}
-                        >
-                            <MessageCircle className="w-2 h-2" />
-                            <span className="text-xs">Reply</span>
-                        </Button>
+                        {canCreateComment &&
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex items-center space-x-1 p-2 transition-colors duration-200 hover:text-blue-500"
+                                onClick={() => setIsReplyingToReply(!isReplyingToReply)}
+                            >
+                                <MessageCircle className="w-2 h-2" />
+                                <span className="text-xs">Reply</span>
+                            </Button>
+                        }
 
                         {/* 删除按钮，仅作者可见 */}
                         {replyUser?.id === user?.id && (
@@ -544,14 +550,16 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
 
             <CardFooter className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 ml-20">
-                    <Button
-                        variant="ghost"
-                        onClick={startReplying}
-                        className="flex items-center space-x-1 p-2 transition-colors duration-200 hover:text-blue-500"
-                    >
-                        <MessageCircle className="w-4 h-4" />
-                        <span className="text-xs">Reply</span>
-                    </Button>
+                    {canCreateComment &&
+                        <Button
+                            variant="ghost"
+                            onClick={startReplying}
+                            className="flex items-center space-x-1 p-2 transition-colors duration-200 hover:text-blue-500"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                            <span className="text-xs">Reply</span>
+                        </Button>
+                    }
 
                     {/* 编辑按钮 */}
                     {user?.id === commentUser?.id && (
