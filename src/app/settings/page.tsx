@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { useTheme } from '@/context/ThemeContext';
+import { User } from "lucide-react"; // 导入图标组件
+import { useRouter } from "next/navigation";  // 使用 Next.js 路由
+import { useAuth } from "@/context/AuthContext";
 
 // 定义完整的语言选项
 const languageOptions = [
@@ -59,6 +62,8 @@ const SettingsPage: React.FC = () => {
 
   // 通用错误消息状态
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  const router = useRouter();
 
   // 获取用户资料（个人资料和通知设置）
   useEffect(() => {
@@ -219,8 +224,20 @@ const SettingsPage: React.FC = () => {
       {/* 个人资料设置部分 */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
-          <CardDescription>Manage your account information</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>Manage your account information</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/user-profile')}
+              className="flex items-center space-x-2"
+            >
+              <User className="h-4 w-4" /> {/* 假设你使用 lucide-react 图标 */}
+              <span>Go To Profile</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 用户名显示 */}
