@@ -261,12 +261,29 @@ const Dashboard: React.FC = () => {
       });
 
       const activitiesResults = await Promise.all(activitiesPromises);
-
+      console.log("activitiesResults",activitiesResults)
       // 合并所有活动日志，并附加项目名称
-      const allActivities: ActivityLog[] = activitiesResults
-        .filter(result => result.projectName)
-        .flatMap(result => result.activities.map(activity => ({ ...activity, project: result.projectName })));
+      // 添加去重函数
+      const removeDuplicateActivities = (activities: ActivityLog[]): ActivityLog[] => {
+        const seen = new Set<number>();
+        return activities.filter(activity => {
+          if (seen.has(activity.id)) {
+            return false;
+          }
+          seen.add(activity.id);
+          return true;
+        });
+      };
 
+      // 在 initializeDashboard 函数中修改相关代码
+      const allActivities: ActivityLog[] = removeDuplicateActivities(
+        activitiesResults
+          .filter(result => result.projectName)
+          .flatMap(result => result.activities.map(activity => ({ 
+            ...activity, 
+            project: result.projectName 
+          })))
+      );
       // 按时间排序，取最新的三条
       const sortedActivities = allActivities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       const latestThreeActivities = sortedActivities.slice(0, 3);
@@ -355,6 +372,7 @@ const Dashboard: React.FC = () => {
             {recentActivities.length === 0 ? (
               <p className="text-sm text-gray-500">No recent activities available.</p>
             ) : (
+              console.log("recent",recentActivities),
               recentActivities.map((activity) => (
                 <li key={activity.id} className="flex items-center">
                   <UserAvatar
