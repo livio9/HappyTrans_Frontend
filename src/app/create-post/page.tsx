@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { getCookie } from '@/utils/cookies';
@@ -13,7 +13,6 @@ const CreatePost = () => {
     const [content, setContent] = useState('');
     const [selectedTopics, setSelectedTopics] = useState('');
     const [errorMessage, setErrorMessage] = useState(''); // 用于显示错误信息
-    const [projectName, setProjectName] = useState('');
     const [languageCode, setLanguageCode] = useState('');
     const [idxInLanguage, setIdxInLanguage] = useState('');
     const [inputError, setInputError] = useState(''); // 用于显示输入错误信息
@@ -22,7 +21,7 @@ const CreatePost = () => {
     const csrfToken = getCookie('csrftoken'); // 获取 CSRF token
     const { user, token, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
     const searchParams = useSearchParams();
-    const fetchprojectName = searchParams.get('project');
+    const projectName = searchParams.get('project');
     const { addDiscussion } = useDiscussions();
 
     interface Language {
@@ -45,50 +44,33 @@ const CreatePost = () => {
         getFormattedEntryInfo,
     } = useProject();
 
-    // 使用 projectInProcess 作为项目列表
-    const projects = projectInProcess || [];
-    const [selectedProject, setSelectedProject] = useState('');
     const [selectedLanguage, setSelectedLanguage] = useState('');
     const [selectedEntry, setSelectedEntry] = useState('');
     const [languages, setLanguages] = useState([]);
 
-    // 处理项目选择变更
-    const handleProjectChange = async (e: ChangeEvent<HTMLSelectElement>) => {
-        const projectName = e.target.value;
-        setInputError('');
-        setSelectedProject(projectName);
-        setSelectedLanguage(''); // 清空语言选择
-        setSelectedEntry(''); // 清空条目选择
+    // 在组件加载时获取项目信息
+    useEffect(() => {
         if (projectName) {
-            const projectData = await fetchProjectInfo(projectName);
-            if (projectData && projectData.languages) {
-                setLanguages(projectData.languages);
-            }
-        } else {
-            setLanguages([]);
-            setSelectedLanguage('');
-            setSelectedEntry('');
+            fetchProjectInfo(projectName).then((projectData: { languages: SetStateAction<never[]>; }) => {
+                if (projectData && projectData.languages) {
+                    setLanguages(projectData.languages);
+                }
+            });
+            // 初始化 topics 为项目名
+            setSelectedTopics(`#${projectName}`);
         }
-        updateTopics(projectName, '', '');
-    };
+    }, [projectName]);
 
     const handleLanguageChange = async (e: ChangeEvent<HTMLSelectElement>) => {
         setInputError(''); // 清除错误信息
-        if (!selectedProject) {
-            setInputError('Please select a Project first.');
-            setSelectedLanguage('');
-            return;
-        }
 
         const languageCode = e.target.value;
         setSelectedLanguage(languageCode);
         setSelectedEntry(''); // 清空条目选择
         if (languageCode) {
-            console.log('selectedProject:', selectedProject);
-            console.log('languageCode:', languageCode);
-            await fetchEntries(selectedProject, languageCode);
+            await fetchEntries(projectName, languageCode);
         }
-        updateTopics(selectedProject, languageCode, '');
+        updateTopics(languageCode, '');
     };
 
     const handleEntryChange = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -101,7 +83,7 @@ const CreatePost = () => {
 
         const entryValue = e.target.value;
         setSelectedEntry(entryValue);
-        updateTopics(selectedProject, selectedLanguage, entryValue);
+        updateTopics(selectedLanguage, entryValue);
     };
 
     // 处理Topics的格式化
@@ -126,7 +108,7 @@ const CreatePost = () => {
 
     // 跳转到社区页面
     const handleCommunityNavigation = () => {
-        router.push(`/community-forum?project=${fetchprojectName}`);
+        router.push(`/community-forum?project=${projectName }`);
     };
 
     // 提交新评论
@@ -159,7 +141,7 @@ const CreatePost = () => {
         // 4. 提交表单数据
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${fetchprojectName}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${projectName }`,
                 {
                     method: 'POST',
                     headers: {
@@ -191,15 +173,12 @@ const CreatePost = () => {
     };
 
     // 更新 Topics
-    const updateTopics = (project: string, language: string, entry: string) => {
-        let topics = '';
-        if (project) {
-            topics = `#${project}`;
-            if (language) {
-                topics += ` #${language}`;
-                if (entry) {
-                    topics += ` #${entry}`;
-                }
+    const updateTopics = (language: string, entry: string) => {
+        let topics = `#${projectName}`; // 始终包含项目名
+        if (language) {
+            topics += ` #${language}`;
+            if (entry) {
+                topics += ` #${entry}`;
             }
         }
         setSelectedTopics(topics);
@@ -259,28 +238,6 @@ const CreatePost = () => {
             <div className="mb-4 flex space-x-4">
                 <div className="flex-1">
                     <label
-                        htmlFor="projectName"
-                        className="block text-sm font-semibold mb-2"
-                    >
-                        Project Name
-                    </label>
-                    <select
-                        id="projectName"
-                        value={selectedProject}
-                        onChange={handleProjectChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                        <option value="">Select a project</option>
-                        {(projects || []).map((projectName: string) => (
-                            <option key={projectName} value={projectName}>
-                                {projectName}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="flex-1">
-                    <label
                         htmlFor="languageCode"
                         className="block text-sm font-semibold mb-2"
                     >
@@ -291,7 +248,6 @@ const CreatePost = () => {
                         value={selectedLanguage}
                         onChange={handleLanguageChange}
                         className="w-full p-2 border border-gray-300 rounded-md"
-                        disabled={!selectedProject}
                     >
                         <option value="">Select a language</option>
                         {languages.map((lang: Language) => (
