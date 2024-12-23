@@ -1,11 +1,17 @@
-"use client"; // 指定该文件为客户端组件
+'use client'; // 指定该文件为客户端组件
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useProject } from "@/context/ProjectContext";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useProject } from '@/context/ProjectContext';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface LanguageVersion {
     code: string;
@@ -16,25 +22,28 @@ interface LanguageVersion {
 export default function LanguageVersions() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const projectName = searchParams.get("project") || "";
-
+    const projectName = searchParams.get('project') || '';
 
     // （等后端API接口包含语言之后再用下面的函数）
-    const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>([]);
+    const [languageVersions, setLanguageVersions] = useState<LanguageVersion[]>(
+        []
+    );
     const [loading, setLoading] = useState(true);
-    
 
     // 获取语言版本信息
     const fetchLanguageVersions = useCallback(async () => {
         if (!projectName) return;
         setLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName)}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName)}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
             if (response.ok) {
                 // console.log("Project info fetched successfully");
                 // console.log(response.json());
@@ -42,31 +51,40 @@ export default function LanguageVersions() {
                 // 确保返回的数据中包含 languages
                 const languages = data.languages || [];
                 // 映射语言版本
-                const formattedLanguages = languages.map((lang: { language_code: string; selected_entries_ratio?: number }) => { // fix： selected_entries_ratio 为翻译进度
-                    // 语言代码与名称的映射
-                    const languageNames: { [key: string]: string } = {
-                        "zh-hans": "Simplified Chinese",
-                        "en": "English",
-                        // 需要支持更多语言时可扩展
-                    };
+                const formattedLanguages = languages.map(
+                    (lang: {
+                        language_code: string;
+                        selected_entries_ratio?: number;
+                    }) => {
+                        // fix： selected_entries_ratio 为翻译进度
+                        // 语言代码与名称的映射
+                        const languageNames: { [key: string]: string } = {
+                            'zh-hans': 'Simplified Chinese',
+                            en: 'English',
+                            // 需要支持更多语言时可扩展
+                        };
 
-                    // 计算进度（假定翻译进度逻辑）
-                    const progress = lang.selected_entries_ratio ? lang.selected_entries_ratio : 0;
+                        // 计算进度（假定翻译进度逻辑）
+                        const progress = lang.selected_entries_ratio
+                            ? lang.selected_entries_ratio
+                            : 0;
 
-                    return {
-                        code: lang.language_code, // 语言代码
-                        name: languageNames[lang.language_code] || lang.language_code, // 语言名称或回退到代码
-                        progress, // 翻译进度
-                    };
-                });
+                        return {
+                            code: lang.language_code, // 语言代码
+                            name:
+                                languageNames[lang.language_code] ||
+                                lang.language_code, // 语言名称或回退到代码
+                            progress, // 翻译进度
+                        };
+                    }
+                );
 
                 setLanguageVersions(formattedLanguages); // 设置格式化后的语言版本
-                
             } else {
-                console.error("Failed to fetch language versions");
+                console.error('Failed to fetch language versions');
             }
         } catch (error) {
-            console.error("Error fetching language versions:", error);
+            console.error('Error fetching language versions:', error);
         } finally {
             setLoading(false);
         }
@@ -82,20 +100,24 @@ export default function LanguageVersions() {
      * @param {string} languageCode - 目标语言代码
      */
     const handleStartTranslation = (languageCode: string) => {
-        router.push(`/public/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`);
+        router.push(
+            `/public/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(languageCode)}`
+        );
     };
 
     /**
-    * 跳转到项目页面
-    */
+     * 跳转到项目页面
+     */
     const handleProjectNavigation = () => {
-        router.push("/public/projects");
+        router.push('/public/projects');
     };
 
     // 跳转到社区页面
     const handleCommunityNavigation = () => {
-        router.push(`/public/community-forum?project=${encodeURIComponent(projectName)}`);
-        // router.push("/community-forum?project_name=${encodeURIComponent(projectName)}"); 
+        router.push(
+            `/public/community-forum?project=${encodeURIComponent(projectName)}`
+        );
+        // router.push("/community-forum?project_name=${encodeURIComponent(projectName)}");
     };
 
     return (
@@ -121,7 +143,6 @@ export default function LanguageVersions() {
                 </Button>
             </div>
 
-
             {/* 项目标题和按钮容器 */}
             <div className="flex items-center justify-between mb-6">
                 {/* 项目标题 */}
@@ -138,31 +159,38 @@ export default function LanguageVersions() {
                 </Button>
             </div>
 
-
             {/* 加载状态显示 */}
             {loading ? (
                 <p>Loading language versions...</p>
             ) : (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {languageVersions.map((version) => (
-                        <Card key={version.code} >
+                        <Card key={version.code}>
                             <CardHeader>
                                 <div className="flex flex-row items-center justify-between pb-1">
-                                <CardTitle>
-                                    {version.name} ({version.code})
-                                </CardTitle>
-                                
+                                    <CardTitle>
+                                        {version.name} ({version.code})
+                                    </CardTitle>
                                 </div>
 
-                                <CardDescription>Progress in translation</CardDescription>
-                                
+                                <CardDescription>
+                                    Progress in translation
+                                </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 {/* 翻译进度条 */}
-                                <Progress value={version.progress} className="mb-4" />
+                                <Progress
+                                    value={version.progress}
+                                    className="mb-4"
+                                />
                                 <p>{version.progress}% Completion</p>
                                 {/* 启动翻译按钮 */}
-                                <Button onClick={() => handleStartTranslation(version.code)} className="mt-4">
+                                <Button
+                                    onClick={() =>
+                                        handleStartTranslation(version.code)
+                                    }
+                                    className="mt-4"
+                                >
                                     Start Translation
                                 </Button>
                             </CardContent>
