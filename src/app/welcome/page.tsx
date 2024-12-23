@@ -63,11 +63,11 @@ export default function Welcome() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-400 px-4">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
             {/* 外层灰色容器，填充100%宽度 */}
-            <div className="w-[70vw] bg-gray-400 p-4">
+            <div className="w-[100vw] bg-gray-100 p-4">
                 {/* 欢迎部分 */}
-                <h1 className="text-3xl md:text-4xl font-bold mb-6 text-white flex items-center justify-center text-center">
+                <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-700 flex items-center justify-center text-center">
                     <span>—— ——</span>
                     <span className="mx-4 md:mx-6">Welcome to TranslateOS</span>
                     <span>—— ——</span>
@@ -147,7 +147,7 @@ export default function Welcome() {
                     <Link href="/signup">
                         <Button
                             variant="outline"
-                            className="w-full md:w-64 text-sm md:text-lg py-2 md:py-3"
+                            className="w-full md:w-64 text-sm md:text-lg py-2 md:py-3 bg-white hover:bg-gray-100 border-2 border-zinc-900"
                         >
                             Sign Up
                         </Button>
@@ -156,14 +156,14 @@ export default function Welcome() {
 
                 {/* 继续按钮居中，宽度适中 */}
                 <div className="flex justify-center mt-4 md:mt-6">
-                    <Button
+                    {/* <Button
                         variant="secondary"
-                        className="w-48 md:w-60 text-sm md:text-lg py-2 md:py-3"
-                    >
-                        <Link href="public/projects">
+                        className="w-48 md:w-60 text-sm md:text-lg py-2 md:py-3 bg-gray-200 hover:bg-gray-300 border-2 border-zinc-900"
+                    > */}
+                        <Link href="public/projects" className="text-gray-800 hover:underline text-sm ">
                             Continue Without Login
                         </Link>
-                    </Button>
+                    {/* </Button> */}
                 </div>
             </div>
         </div>

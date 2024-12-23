@@ -2,6 +2,45 @@
 'use strict';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { Redis } from 'ioredis';
+import { headers } from 'next/headers';
+
+// 初始化 Redis 客户端（确保在无服务器环境中复用连接）
+let redis: Redis | null = null;
+
+if (!redis) {
+    redis = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+    });
+
+    redis.on('error', (err) => {
+        console.error('Redis 连接错误:', err);
+    });
+}
+
+// 速率限制相关常量
+const RATE_LIMIT_MAX = 5; // 每小时最大请求次数
+const RATE_LIMIT_WINDOW = 3600; // 时间窗口(秒)
+  // 添加检查速率限制的函数
+  async function checkRateLimit(ip: string): Promise<boolean> {
+    const key = `ratelimit:${ip}`;
+    try {
+        const count = await redis!.incr(key);
+        console.log(`IP: ${ip}, Key: ${key}, Count: ${count}`);
+
+        if (count === 1) {
+            await redis!.expire(key, RATE_LIMIT_WINDOW);
+            console.log(`设置键 ${key} 的过期时间为 ${RATE_LIMIT_WINDOW} 秒`);
+        }
+
+        return count <= RATE_LIMIT_MAX;
+    } catch (error) {
+        console.error('检查速率限制时出错:', error);
+        // 根据需求选择允许或拒绝请求
+        return false; // 拒绝请求
+    }
+}
 
 type TranslationSuggestion = {
     source: string;
@@ -63,6 +102,19 @@ function getYoudaoTargetLanguage(languageCode: string): string | undefined {
 
 export async function POST(request: Request) {
     console.log('Received POST request to /api/translate');
+    // 获取请求的 IP 地址
+    const headersList = await headers();
+    const xForwardedFor = headersList.get('x-forwarded-for');
+    const ip = xForwardedFor ? xForwardedFor.split(',')[0].trim() : 'unknown';
+    
+    // 检查速率限制
+    const allowed = await checkRateLimit(ip);
+    if (!allowed) {
+        return NextResponse.json(
+            { error: '请求太频繁，请稍后再试' },
+            { status: 429 }
+        );
+    }
     try {
         const {
             projectName,
@@ -144,7 +196,7 @@ export async function POST(request: Request) {
                             .map((item: any) => item.dst)
                             .join(' ');
                         suggestions.push({
-                            source: '百度翻译',
+                            source: 'Baidu',
                             translation: baiduTranslation,
                         });
                     }
@@ -211,6 +263,10 @@ export async function POST(request: Request) {
                 console.error('调用有道翻译 API 时出错:', error);
             }
         }
+        suggestions.push({
+            source: 'ZhiPu',
+            translation: '(You have to sign up for a free account to use the API)',
+        });
 
         if (suggestions.length === 0) {
             return NextResponse.json(

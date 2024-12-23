@@ -74,17 +74,17 @@ export default function SignIn() {
         }
     };
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            {' '}
+        <div className="flex items-center justify-center min-h-screen ">
+            
             {/*包裹整个表单的容器，居中显示*/}
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
                 <h2 className="text-3xl font-bold text-center">
                     Sign In to TranslateOS
                 </h2>
-                {error && <p className="text-red-500 text-center">{error}</p>}{' '}
+                {error && <p className="text-red-500 text-center">{error}</p>}
                 {/*如果有错误信息采用红色文本居中显示在表单顶部*/}
                 <form className="space-y-4" onSubmit={handleSubmit}>
-                    {' '}
+                    
                     {/*onSubmit绑定到指定的handleSubmit函数上*/}
                     <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
@@ -110,11 +110,11 @@ export default function SignIn() {
                     </div>
                     <Button type="submit" className="w-full">
                         Sign In
-                    </Button>{' '}
+                    </Button>
                     {/* 提交按钮 */}
                 </form>
                 <p className="text-center">
-                    Don't have an account?{' '}
+                    Don't have an account?
                     <Link
                         href="/signup"
                         className="text-blue-600 hover:underline"
