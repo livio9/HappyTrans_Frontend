@@ -471,7 +471,7 @@ export default function ProjectDetails() {
                         <div className="relative md:w-2/3">
                             <Input
                                 type="text"
-                                placeholder="Search translations..."
+                                placeholder="Search Index/Source/Translation..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 w-full"
