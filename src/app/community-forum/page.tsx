@@ -20,12 +20,23 @@ import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import UserAvatar from '@/components/shared/UserAvatar';
 import { useDiscussions } from '@/context/DiscussionsContext';
 import { useProject } from '@/context/ProjectContext';
+import { Badge } from '@/components/ui/badge'; // 导入自定义徽章组件
 
 interface UserType {
     id: string;
     username: string;
     email?: string;
     bio?: string;
+}
+
+interface UserInfo {
+    id: string;
+    username: string;
+    email?: string;
+    bio?: string;
+    accepted_entries?: number;
+    native_language?: string;
+    preferred_languages?: string[];
 }
 
 interface DiscussionType {
@@ -58,8 +69,9 @@ const CommunityForumPage = () => {
     const [editContent, setEditContent] = useState<string>('');
 
     // 用户信息弹出框相关状态
+    const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false);
     const [showUserInfoFor, setShowUserInfoFor] = useState<string | null>(null);
-    const [hoveredUserInfo, setHoveredUserInfo] = useState<UserType | null>(
+    const [hoveredUserInfo, setHoveredUserInfo] = useState<UserInfo | null>(
         null
     );
     const [popupPosition, setPopupPosition] = useState<{
@@ -105,11 +117,6 @@ const CommunityForumPage = () => {
         const projectName = parts[1] || null; // 第一个 # 后面的部分
         const languageCode = parts[2] || null; // 第二个 # 后面的部分
         const idxInLanguage = parts[3] || null; // 第三个 # 后面的部分
-
-        console.log('mainTitle:', mainTitle);
-        console.log('projectName:', projectName);
-        console.log('languageCode:', languageCode);
-        console.log('idxInLanguage:', idxInLanguage);
 
         // 返回提取的结果
         return {
@@ -231,14 +238,73 @@ const CommunityForumPage = () => {
         router.push(`/create-post?project=${encodeURIComponent(projectName)}`);
     };
 
+    // 添加获取用户信息的函数
+    const fetchUserInfo = async (userId: string) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?id=${userId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Token ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                const contentType = response.headers.get('Content-Type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '未知错误');
+                } else {
+                    const text = await response.text();
+                    throw new Error(`意外的响应格式: ${text}`);
+                }
+            }
+
+            const userData = await response.json();
+            return userData;
+        } catch (error) {
+            console.error('Error fetching user info:', error);
+            return null;
+        }
+    };
+
     // 点击头像时显示用户信息
-    const handleAvatarClick = (userId: string, event: React.MouseEvent) => {
+    const handleAvatarClick = async (userId: string, event: React.MouseEvent) => {
         event.stopPropagation();
         const discussion = discussions.find((d) => d.user?.id === userId);
-        if (discussion && discussion.user) {
-            setShowUserInfoFor(userId);
-            setHoveredUserInfo(discussion.user);
-            setPopupPosition({ x: event.clientX, y: event.clientY });
+        if (discussion) {
+            setIsLoadingUserInfo(true);
+            try {
+                const userInfo = await fetchUserInfo(userId);
+                if (userInfo) {
+                    // pageX/pageY 已经包含了滚动偏移量
+                    const mouseX = event.pageX;
+                    const mouseY = event.pageY;
+
+                    // 获取视窗尺寸
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+
+                    // 设置一个偏移量，避免弹出框直接在鼠标位置
+                    const offsetX = 20;
+                    const offsetY = 20;
+
+                    // 计算最终位置，确保弹出框不会超出视窗
+                    let finalX = mouseX + offsetX;
+                    let finalY = mouseY + offsetY;
+
+                    setShowUserInfoFor(userId);
+                    setHoveredUserInfo(userInfo);
+                    setPopupPosition({
+                        x: finalX,
+                        y: finalY
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching user information:', error);
+            } finally {
+                setIsLoadingUserInfo(false);
+            }
         }
     };
 
@@ -286,20 +352,19 @@ const CommunityForumPage = () => {
         if (!authUser) return;
 
         // 解析编辑后的标题
-        const { mainTitle, projectName, languageCode, idxInLanguage } =
+        const { mainTitle, projectName: extractedProjectName, languageCode, idxInLanguage } =
             parseTitle(editTitle);
 
         // 1. 验证 projectName
-        if (projectName) {
-            if (!projectInProcess?.includes(projectName)) {
-                window.alert(`Error: Project "${projectName}" is not valid`);
+        if (extractedProjectName) {
+            if (projectName !== extractedProjectName) { // 修复语法错误，移除多余的括号
+                window.alert(`Error: Project "${extractedProjectName}" is not current project`);
                 return;
             }
         }
-
         // 2. 验证 languageCode
         if (languageCode) {
-            if (!projectName) {
+            if (!extractedProjectName) {
                 window.alert(
                     'Error: Cannot validate language code without a valid project'
                 );
@@ -307,7 +372,7 @@ const CommunityForumPage = () => {
             }
 
             try {
-                const projectData = await fetchProjectInfo(projectName);
+                const projectData = await fetchProjectInfo(extractedProjectName);
                 if (!projectData || !projectData.languages) {
                     window.alert('Error: Failed to fetch project data');
                     return;
@@ -316,9 +381,11 @@ const CommunityForumPage = () => {
                 const validLanguages = projectData.languages.map(
                     (lang: { language_code: string }) => lang.language_code
                 );
+
+                console.log("validLanguages: ", validLanguages);
                 if (!validLanguages.includes(languageCode)) {
                     window.alert(
-                        `Error: Language "${languageCode}" is not valid for project "${projectName}"`
+                        `Error: Language "${languageCode}" is not valid for project "${extractedProjectName}"`
                     );
                     return;
                 }
@@ -339,13 +406,10 @@ const CommunityForumPage = () => {
             }
 
             try {
-                console.log('name:', projectName);
-                console.log('lang: ', languageCode);
                 const entriesData = await fetchEntries(
                     projectName,
                     languageCode
                 );
-                console.log('entriesData', entriesData);
                 if (!entriesData) {
                     window.alert('Error: Failed to fetch entries data');
                     return;
@@ -354,6 +418,7 @@ const CommunityForumPage = () => {
                 const validEntries = entriesData.map((entry: Entry) =>
                     entry.value.toString()
                 );
+                console.log("validEntries: ", validEntries);
                 if (!validEntries.includes(idxInLanguage)) {
                     window.alert(
                         `Error: Entry "${idxInLanguage}" is not valid for the selected project and language`
@@ -428,6 +493,36 @@ const CommunityForumPage = () => {
             alert(error.message || 'Error when deleting a post');
         }
     };
+
+    function getAcceptedEntriesBadge(entries?: number) {
+        if (!entries) return null;
+        
+        if (entries < 50) {
+            return (
+                <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">
+                    Bronze
+                </Badge>
+            );
+        } else if (entries < 200) {
+            return (
+                <Badge className="bg-gray-100 text-gray-800 border border-gray-300 inline-flex items-center">
+                    Silver
+                </Badge>
+            );
+        } else if (entries < 500) {
+            return (
+                <Badge className="bg-yellow-200 text-yellow-900 border border-yellow-400 inline-flex items-center">
+                    Gold
+                </Badge>
+            );
+        } else {
+            return (
+                <Badge className="bg-blue-100 text-blue-800 border border-blue-300 inline-flex items-center">
+                    Diamond
+                </Badge>
+            );
+        }
+    }
 
     /**
      * 跳转到项目页面
@@ -694,18 +789,39 @@ const CommunityForumPage = () => {
                         transform: 'translate(-50%, 10px)',
                     }}
                 >
-                    <h3 className="font-semibold mb-2">
-                        {hoveredUserInfo.username}
-                    </h3>
-                    {hoveredUserInfo.email && (
-                        <p className="text-sm text-gray-600">
-                            Email: {hoveredUserInfo.email}
-                        </p>
-                    )}
-                    {hoveredUserInfo.bio && (
-                        <p className="text-sm text-gray-600">
-                            Bio: {hoveredUserInfo.bio}
-                        </p>
+                    {isLoadingUserInfo ? (
+                        <div className="flex items-center justify-center p-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                        </div>
+                    ) : (
+                        hoveredUserInfo && (
+                            <>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-semibold">
+                                        {hoveredUserInfo.username}
+                                    </h3>
+                                    <span className="ml-2">
+                                        {getAcceptedEntriesBadge(hoveredUserInfo.accepted_entries)}
+                                    </span>
+                                </div>
+
+                                {hoveredUserInfo.email && (
+                                    <p className="text-sm text-gray-600">
+                                        Email: {hoveredUserInfo.email}
+                                    </p>
+                                )}
+                                {hoveredUserInfo.bio && (
+                                    <p className="text-sm text-gray-600">
+                                        Bio: {hoveredUserInfo.bio}
+                                    </p>
+                                )}
+                                {hoveredUserInfo.native_language && (
+                                    <p className="text-sm text-gray-600">
+                                        Native Language: {hoveredUserInfo.native_language}
+                                    </p>
+                                )}
+                            </>
+                        )
                     )}
                 </div>
             )}
