@@ -597,10 +597,6 @@ export default function TranslationInterface() {
     };
 
     const handleSelectSuggestion = () => {
-        if (selectedSuggestion) {
-            setCurrentTranslation(selectedSuggestion);
-            setIsSuggestDialogOpen(false);
-        }
     };
 
     //历史记录分页显示
@@ -911,12 +907,6 @@ export default function TranslationInterface() {
                                                         key={idx}
                                                         className="flex items-center space-x-2"
                                                     >
-                                                        <RadioGroupItem
-                                                            value={
-                                                                suggestion.translation
-                                                            }
-                                                            id={`suggestion-${idx}`}
-                                                        />
                                                         <Label
                                                             htmlFor={`suggestion-${idx}`}
                                                         >

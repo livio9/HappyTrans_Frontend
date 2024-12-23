@@ -20,7 +20,7 @@ if (!redis) {
 }
 
 // 速率限制相关常量
-const RATE_LIMIT_MAX = 5; // 每小时最大请求次数
+const RATE_LIMIT_MAX = 20; // 每小时最大请求次数
 const RATE_LIMIT_WINDOW = 3600; // 时间窗口(秒)
   // 添加检查速率限制的函数
   async function checkRateLimit(ip: string): Promise<boolean> {
