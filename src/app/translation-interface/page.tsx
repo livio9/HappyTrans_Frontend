@@ -616,40 +616,34 @@ function TranslationInterfaceContent() {
     const handleSuggest = async () => {
         setIsLoadingSuggestions(true);
         try {
-            console.log('Fetching translation suggestions...');
-            console.log('Current index:', currentIndex);
-            console.log('Current string:', strings[currentIndex]?.msgid);
-            console.log('Current language code:', languageCode);
-            const response = await fetch('/api/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-                body: JSON.stringify({
-                    projectName: projectName,
-                    idx_in_project: currentIndex,
-                    // sourceLanguage: project.source_language,
-                    sourceLanguage: sourceLanguage, // 源语言为英文
-                    text: strings[currentIndex]?.msgid || '',
-                    // text: "Hello, world!", // 传递源文本
-                    targetLanguage: languageCode, // 根据需要调整目标语言，DeepL 需要大写
-                    // targetLanguage: "zh-CHS", // 目标语言为中文
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '获取翻译建议失败');
-            }
-
-            const data = await response.json();
-
-            setSuggestions(data.suggestions); // 设置多个翻译建议
-            setIsSuggestDialogOpen(true); // 打开 Dialog
-        } catch (error) {
-            console.error('获取翻译建议时出错:', error);
-        } finally {
+            const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Token ${token}`,
+              },
+              }
+            );
+            if (LLMResponse.ok) {
+              const LLMData = await LLMResponse.json();
+              if (LLMData.error) {
+                console.error('LLM API Error:', LLMData.error);
+              } else {
+                // 使用 setSuggestions 更新状态
+                setSuggestions(prevSuggestions => [
+                    ...prevSuggestions,
+                    ...LLMData.map((llm: {name: string, suggestion: string}) => ({
+                    source: llm.name,
+                    translation: llm.suggestion
+                    }))
+                ]);
+                setIsSuggestDialogOpen(true); // 打开翻译建议对话框
+                }
+            } 
+          }
+          catch (error) {
+            console.error('调用LLM API 时出错:', error);
+          } finally {
             setIsLoadingSuggestions(false);
         }
     };
