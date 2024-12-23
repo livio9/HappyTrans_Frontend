@@ -8,6 +8,7 @@ import { getCookie } from '@/utils/cookies';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 
 interface CommentSection {
     total: string;
@@ -34,7 +35,11 @@ interface UserType {
     username: string;
 }
 
-const CommentsSection = ({ discussionId }: { discussionId: number }) => {
+interface CommentsSectionProps {
+    discussionId: number;
+}
+
+function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
     const { token } = useAuth();
     const csrfToken = getCookie('csrftoken');
     const [comments, setComments] = useState<CommentType[]>([]);
@@ -162,6 +167,14 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
                 )}
             </div>
         </div>
+    );
+}
+
+const CommentsSection = ({ discussionId }: { discussionId: number }) => {
+    return (
+        <WithSearchParams>
+            <CommentsSectionContent discussionId={discussionId} />
+        </WithSearchParams>
     );
 };
 

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 
 // 定义讨论的数据结构类型
 /**
@@ -33,7 +34,7 @@ const DiscussionsContext = createContext(undefined);
  * @param {React.ReactNode} props.children - 子组件
  * @returns {JSX.Element}
  */
-export const DiscussionsProvider = ({ children }) => {
+function DiscussionsProviderContent({ children }) {
     const [discussions, setDiscussions] = useState([]); // 存储讨论列表
     const [singleDiscussion, setSingleDiscussion] = useState(null); // 存储单个讨论的详细信息
     const [loading, setLoading] = useState(false); // 表示加载状态
@@ -181,6 +182,16 @@ export const DiscussionsProvider = ({ children }) => {
         >
             {children}
         </DiscussionsContext.Provider>
+    );
+};
+
+export const DiscussionsProvider = ({ children }) => {
+    return (
+        <WithSearchParams>
+            <DiscussionsProviderContent>
+                {children}
+            </DiscussionsProviderContent>
+        </WithSearchParams>
     );
 };
 

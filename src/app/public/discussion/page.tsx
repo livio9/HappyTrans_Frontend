@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useDiscussions } from '@/context/DiscussionsContext';
 import CommentSection from './CommentSection'; // 评论区组件
 import { useAuth } from '@/context/AuthContext';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 
-const PostDetails = () => {
+function PostDetailsContent() {
     const { singleDiscussion, fetchDiscussion, loading } = useDiscussions(); // 使用上下文提供的单个帖子数据
     const searchParams = useSearchParams();
     const { user } = useAuth(); // 获取当前登录用户信息
@@ -203,6 +204,14 @@ const PostDetails = () => {
                 </CardContent>
             </Card>
         </div>
+    );
+};
+
+const PostDetails = () => {
+    return (
+        <WithSearchParams>
+            <PostDetailsContent />
+        </WithSearchParams>
     );
 };
 

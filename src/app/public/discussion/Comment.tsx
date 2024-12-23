@@ -19,6 +19,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, ThumbsUp, Eye } from 'lucide-react'; // 导入图标组件
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window'; // 导入 react-window
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 
 interface UserType {
     id: string;
@@ -45,7 +46,7 @@ interface CommentProps {
 // 定义扁平化后的回复类型
 type FlattenedReply = CommentType & { replyToUsername?: string };
 
-const Comment = ({ comment, fetchComments }: CommentProps) => {
+function CommentContent({ comment, fetchComments }: CommentProps) {
     const { token, user } = useAuth(); // 获取 token 和当前用户信息
     const csrfToken = getCookie('csrftoken'); // 获取 CSRF token
     const [commentUser, setCommentUser] = useState<UserType | null>(null); // 存储评论用户信息
@@ -766,6 +767,14 @@ const Comment = ({ comment, fetchComments }: CommentProps) => {
                 </div>
             )}
         </Card>
+    );
+};
+
+const Comment = ({ comment, fetchComments }: CommentProps) => {
+    return (
+        <WithSearchParams>
+            <CommentContent comment={comment} fetchComments={fetchComments} />
+        </WithSearchParams>
     );
 };
 

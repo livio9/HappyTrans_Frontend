@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext'; // 导入 useAuth 钩子v
 import { useProject } from '@/context/ProjectContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -27,7 +28,7 @@ interface LanguageVersion {
     progress: number; // 翻译进度百分比
 }
 
-export default function LanguageVersions() {
+function LanguageVersionsContent() {
     const { user, token } = useAuth();
     const { project, fetchProjectInfo } = useProject();
     const router = useRouter();
@@ -282,5 +283,13 @@ export default function LanguageVersions() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function LanguageVersions() {
+    return (
+        <WithSearchParams>
+            <LanguageVersionsContent />
+        </WithSearchParams>
     );
 }

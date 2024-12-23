@@ -3,12 +3,13 @@
 import { useState, useEffect, ChangeEvent, SetStateAction } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { getCookie } from '@/utils/cookies';
 import { useAuth } from '@/context/AuthContext';
 import { useDiscussions } from '@/context/DiscussionsContext';
 import { useProject } from '@/context/ProjectContext';
 
-const CreatePost = () => {
+function PageContent() {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [selectedTopics, setSelectedTopics] = useState('');
@@ -108,7 +109,7 @@ const CreatePost = () => {
 
     // 跳转到社区页面
     const handleCommunityNavigation = () => {
-        router.push(`/community-forum?project=${projectName }`);
+        router.push(`/community-forum?project=${projectName}`);
     };
 
     // 提交新评论
@@ -141,7 +142,7 @@ const CreatePost = () => {
         // 4. 提交表单数据
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${projectName }`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/?project_name=${projectName}`,
                 {
                     method: 'POST',
                     headers: {
@@ -318,6 +319,14 @@ const CreatePost = () => {
                 </button>
             </div>
         </div>
+    );
+}
+
+const CreatePost = () => {
+    return (
+        <WithSearchParams>
+            <PageContent />
+        </WithSearchParams>
     );
 };
 
