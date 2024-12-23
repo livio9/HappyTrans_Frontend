@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 // 创建 ProjectContext
 const ProjectContext = createContext();
 
+
 /**
  * ProjectProvider 组件
  * 提供项目管理上下文，包括当前项目信息、加载状态、错误信息及相关操作函数
@@ -16,6 +17,66 @@ export const ProjectProvider = ({ children }) => {
   const [loading, setLoading] = useState(false); // 加载状态
   const [error, setError] = useState(null); // 错误信息
   const { token } = useAuth();
+
+  // entries 相关状态
+  const [entries, setEntries] = useState([]);
+  const [entriesMap, setEntriesMap] = useState(new Map());
+  
+  // 更新 entries 和 entriesMap
+  const updateEntries = (newEntries) => {
+    const formattedEntries = newEntries.map(entry => ({
+      value: entry.idx_in_language,
+      label: `${entry.idx_in_language}: ${entry.msgid}`
+    }));
+    setEntries(formattedEntries);
+    setEntriesMap(new Map(formattedEntries.map(entry => [entry.value, entry.label])));
+  };
+
+  // 获取 entries
+  const fetchEntries = async (projectName, languageCode) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}&start=0`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`
+          }
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.languages && data.languages[0] && data.languages[0].entries) {
+          updateEntries(data.languages[0].entries);
+        } else {
+          setEntries([]);
+          setEntriesMap(new Map());
+        }
+        return Array.isArray(entries) ? entries : [];
+      } else {
+        setError('Failed to fetch entries');
+      }
+    } catch (err) {
+      setError('Error fetching entries: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 根据 value 获取 label
+  const getLabelByValue = (value) => {
+    return entriesMap.get(value) || `Entry ${value}`;
+  };
+
+  // 清空 entries
+  const clearEntries = () => {
+    setEntries([]);
+    setEntriesMap(new Map());
+  };
 
   // 直接设置当前项目的信息
   const setCurrentProject = (projectData) => {
@@ -71,11 +132,31 @@ export const ProjectProvider = ({ children }) => {
   };
 
   return (
-    <ProjectContext.Provider value={{ project, loading, error, setProject, setCurrentProject, fetchProjectInfo, clearProject, getProjectName  }}>
+    <ProjectContext.Provider value={{
+      project,
+      loading,
+      error,
+      entries,
+      entriesMap,
+      setProject,
+      setCurrentProject,
+      fetchProjectInfo,
+      clearProject,
+      getProjectName,
+      fetchEntries,
+      getLabelByValue,
+      clearEntries
+    }}>
       {children}
     </ProjectContext.Provider>
   );
 };
 
 // 自定义钩子，方便使用 ProjectContext
-export const useProject = () => useContext(ProjectContext);
+export const useProject = () => {
+  const context = useContext(ProjectContext);
+  if (!context) {
+    throw new Error('useProject must be used within a ProjectProvider');
+  }
+  return context;
+};

@@ -1026,7 +1026,7 @@ export default function TranslationInterface() {
             )}
           </TabsContent> {/* 历史内容 */}
 
-          <TabsContent value="comment" className="overflow-y-auto max-h-[400px]">
+          <TabsContent value="comment" className=" max-h-[400px]">
             <div className="p-2">
               <div className="flex justify-between items-center mb-2 p-4">
                 <div className="text-xl font-semibold">Relative Discussions</div> {/* 设置较大的字体 */}

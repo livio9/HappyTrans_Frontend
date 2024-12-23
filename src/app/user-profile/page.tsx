@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Globe, ChevronRight, PieChart } from "lucide-react"; // Ensure ChevronRight and PieChart icons are imported
 import Link from 'next/link'; // Import Link component
 import ProjectCard from "@/components/shared/ProjectCard"; // Import ProjectCard component
+import { ChevronLeft } from "lucide-react"; // 导入图标组件
+import { useRouter } from "next/navigation"; 
 
 // Define language options
 const languageOptions = [
@@ -91,6 +93,8 @@ export default function UserProfile() {
 
   // Project activity logs state
   const [projectActivities, setProjectActivities] = useState<{ [projectName: string]: ActivityLog[] }>({});
+
+   const router = useRouter();
 
   // Function to fetch activity logs
   const fetchActivityLogs = useCallback(async (projectName: string, authToken: string): Promise<ActivityLog[]> => {
@@ -322,6 +326,16 @@ export default function UserProfile() {
 
   return (
     <div className="container mx-auto p-4">
+      {/* 添加返回按钮 */}
+      <Button
+        variant="ghost"
+        onClick={() => router.back()}
+        className="mb-4 flex items-center gap-2"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
+
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center gap-4">
           {/* Use shared UserAvatar component */}

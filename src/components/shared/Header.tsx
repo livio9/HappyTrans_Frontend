@@ -79,19 +79,19 @@ const Header: React.FC = () => {
                     {dropdownOpen && (
                         <div
                             ref={dropdownRef}
-                            className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary text-secondary-foreground shadow-lg rounded-md z-20"
+                            className="absolute right-0 mt-2 w-30 bg-white dark:bg-secondary text-secondary-foreground shadow-lg rounded-md z-20"
                             style={{ top: "100%", marginTop: "8px" }} // 确保菜单下移
                         >
                             <ul className="space-y-2 p-4">
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     
                                     <Button variant="ghost" className="w-full text-left text-sm"  onClick={handleProfileClick}>
-                                        Profile Settings
+                                        Profile
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">
                                     <Button variant="ghost" className="w-full text-left text-sm" onClick={handleAccountClick}>
-                                        Account Settings
+                                        Settings
                                     </Button>
                                 </li>
                                 <li className="hover:bg-gray-200 dark:hover:bg-muted rounded-md p-2">

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { useRouter } from "next/navigation";
 import { useSearchParams } from 'next/navigation';
 import { getCookie } from '@/utils/cookies';
 import { useAuth } from "@/context/AuthContext";
 import { useDiscussions } from '@/context/DiscussionsContext';
+import { useProject } from "@/context/ProjectContext";
 
 const CreatePost = () => {
     const [title, setTitle] = useState('');
@@ -19,10 +20,89 @@ const CreatePost = () => {
 
     const router = useRouter();
     const csrfToken = getCookie("csrftoken"); // 获取 CSRF token
-    const { token } = useAuth(); // 从上下文中获取当前用户信息
+    const { user, token, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
     const searchParams = useSearchParams();
     const fetchprojectName = searchParams.get("project"); 
     const { addDiscussion } = useDiscussions();
+
+    interface Language {
+        language_code: string;
+    }
+
+    interface Entry {
+        value: number;
+        label: string;
+    }
+
+    // 使用 ProjectContext
+    const {
+        loading,
+        error,
+        entries,
+        fetchProjectInfo,
+        fetchEntries,
+        getLabelByValue,
+        getFormattedEntryInfo
+    } = useProject();
+    
+    // 使用 projectInProcess 作为项目列表
+    const projects = projectInProcess || [];
+    const [selectedProject, setSelectedProject] = useState('');
+    const [selectedLanguage, setSelectedLanguage] = useState('');
+    const [selectedEntry, setSelectedEntry] = useState('');
+    const [languages, setLanguages] = useState([]); 
+
+    // 处理项目选择变更
+    const handleProjectChange = async (e: ChangeEvent<HTMLSelectElement>) => {
+        const projectName = e.target.value;
+        setInputError('');
+        setSelectedProject(projectName);
+        setSelectedLanguage(''); // 清空语言选择
+        setSelectedEntry(''); // 清空条目选择
+        if (projectName) {
+            const projectData = await fetchProjectInfo(projectName);
+            if (projectData && projectData.languages) {
+                setLanguages(projectData.languages);
+            }
+        } else {
+            setLanguages([]);
+            setSelectedLanguage('');
+            setSelectedEntry('');
+        }
+        updateTopics(projectName, '', '');
+    };
+
+    const handleLanguageChange = async (e: ChangeEvent<HTMLSelectElement>) => {
+        setInputError(''); // 清除错误信息
+        if (!selectedProject) {
+            setInputError("Please select a Project first.");
+            setSelectedLanguage('');
+            return;
+        }
+
+        const languageCode = e.target.value;
+        setSelectedLanguage(languageCode);
+        setSelectedEntry(''); // 清空条目选择
+        if (languageCode) {
+            console.log("selectedProject:", selectedProject);
+            console.log("languageCode:", languageCode);
+            await fetchEntries(selectedProject, languageCode);
+        }
+        updateTopics(selectedProject, languageCode, '');
+    };
+
+    const handleEntryChange = (e: ChangeEvent<HTMLSelectElement>) => {
+        setInputError(''); // 清除错误信息
+        if (!selectedLanguage) {
+            setInputError("Please select a Language first.");
+            setSelectedEntry('');
+            return;
+        }
+
+        const entryValue = e.target.value;
+        setSelectedEntry(entryValue);
+        updateTopics(selectedProject, selectedLanguage, entryValue);
+    };
 
     // 处理Topics的格式化
     const handleTopicChange = () => {
@@ -35,31 +115,6 @@ const CreatePost = () => {
         }
         else {
             setSelectedTopics('');
-        }
-    };
-
-    // 输入处理逻辑：检查 projectName 后再更新 languageCode 和 idxInLanguage
-    const handleLanguageCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputError(''); // 清除输入错误信息
-        if (!projectName) {
-            setInputError("Please enter the Project Name first.");
-            setLanguageCode('');
-            return;
-        } else {
-            setInputError('');
-            setLanguageCode(e.target.value);
-        }
-    };
-
-    const handleIdxInLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputError(''); // 清除输入错误信息
-        if (!languageCode) {
-            setInputError("Please enter the Language Code first.");
-            setIdxInLanguage('');
-            return;
-        } else {
-            setInputError('');
-            setIdxInLanguage(e.target.value);
         }
     };
 
@@ -132,6 +187,21 @@ const CreatePost = () => {
         }
     };
 
+    // 更新 Topics
+    const updateTopics = (project: string, language: string, entry: string) => {
+        let topics = '';
+        if (project) {
+            topics = `#${project}`;
+            if (language) {
+                topics += ` #${language}`;
+                if (entry) {
+                    topics += ` #${entry}`;
+                }
+            }
+        }
+        setSelectedTopics(topics);
+    };
+
     return (
         <div className="container mx-auto p-4">
             <h1 className="text-2xl font-bold mb-4">Create a New Post</h1>
@@ -174,41 +244,55 @@ const CreatePost = () => {
             <div className="mb-4 flex space-x-4">
                 <div className="flex-1">
                     <label htmlFor="projectName" className="block text-sm font-semibold mb-2">Project Name</label>
-                    <input
+                    <select
                         id="projectName"
-                        type="text"
-                        value={projectName}
-                        onChange={(e) => {
-                            setProjectName(e.target.value); // 更新 projectName
-                            setInputError(''); // 清除输入错误信息
-                        }}
+                        value={selectedProject}
+                        onChange={handleProjectChange}
                         className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="Enter project name"
-                    />
+                    >
+                        <option value="">Select a project</option>
+                        {(projects || []).map((projectName: string) => (
+                            <option key={projectName} value={projectName}>
+                                {projectName}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="flex-1">
                     <label htmlFor="languageCode" className="block text-sm font-semibold mb-2">Language Code</label>
-                    <input
+                    <select
                         id="languageCode"
-                        type="text"
-                        value={languageCode}
-                        onChange={handleLanguageCodeChange}
+                        value={selectedLanguage}
+                        onChange={handleLanguageChange}
                         className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="Enter language code"
-                    />
+                        disabled={!selectedProject}
+                    >
+                        <option value="">Select a language</option>
+                        {languages.map((lang: Language) => (
+                            <option key={lang.language_code} value={lang.language_code}>
+                                {lang.language_code}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="flex-1">
                     <label htmlFor="idxInLanguage" className="block text-sm font-semibold mb-2">Index in Language</label>
-                    <input
+                    <select
                         id="idxInLanguage"
-                        type="text"
-                        value={idxInLanguage}
-                        onChange={handleIdxInLanguageChange}
+                        value={selectedEntry}
+                        onChange={handleEntryChange}
                         className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="Enter index in language"
-                    />
+                        disabled={!selectedLanguage}
+                    >
+                        <option value="">Select an entry</option>
+                        {entries.map((entry: Entry) => (
+                            <option key={entry.value} value={entry.value}>
+                                {entry.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
 

@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import UserAvatar from '@/components/shared/UserAvatar';
 import { useDiscussions } from '@/context/DiscussionsContext';
+import { useProject } from "@/context/ProjectContext";
 
 interface UserType {
   id: string;
@@ -29,6 +30,10 @@ interface DiscussionType {
   created_at: string;
   updated_at: string;
   user?: UserType;
+}
+interface Entry {
+  value: number;
+  label: string;
 }
 
 const CommunityForumPage = () => {
@@ -61,6 +66,12 @@ const CommunityForumPage = () => {
     setCurrentPage,
     totalPages,
   } = useDiscussions();
+
+    // 使用 ProjectContext
+      const {
+          fetchProjectInfo,
+          fetchEntries,
+      } = useProject();
 
   // 获取所有帖子及对应用户信息
   useEffect(() => {
@@ -95,6 +106,7 @@ const CommunityForumPage = () => {
     };
   };
 
+  
   // 组件展示逻辑
   const TitleDisplay = ({ title }: { title: string }) => {
     const { mainTitle, projectName, languageCode, idxInLanguage } = parseTitle(title);
@@ -230,6 +242,74 @@ const CommunityForumPage = () => {
   // 提交编辑
   const submitEdit = async (discussionId: number) => {
     if (!authUser) return;
+
+    // 解析编辑后的标题
+    const { mainTitle, projectName, languageCode, idxInLanguage } = parseTitle(editTitle);
+
+    // 1. 验证 projectName
+    if (projectName) {
+      if (!projectInProcess?.includes(projectName)) {
+        window.alert(`Error: Project "${projectName}" is not valid`);
+        return;
+      }
+    }
+
+    // 2. 验证 languageCode
+    if (languageCode) {
+      if (!projectName) {
+        window.alert('Error: Cannot validate language code without a valid project');
+        return;
+      }
+
+      try {
+        const projectData = await fetchProjectInfo(projectName);
+        if (!projectData || !projectData.languages) {
+          window.alert('Error: Failed to fetch project data');
+          return;
+        }
+
+        const validLanguages = projectData.languages.map((lang: { language_code: string }) => lang.language_code);
+        if (!validLanguages.includes(languageCode)) {
+          window.alert(`Error: Language "${languageCode}" is not valid for project "${projectName}"`);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching project languages:', error);
+        window.alert('Error: Failed to validate language code');
+        return;
+      }
+    }
+
+    // 3. 验证 idxInLanguage
+    if (idxInLanguage) {
+      if (!projectName || !languageCode) {
+        window.alert('Error: Cannot validate entry without valid project and language');
+        return;
+      }
+
+      try {
+        console.log("name:", projectName);
+        console.log("lang: ", languageCode);
+        const entriesData = await fetchEntries(projectName, languageCode);
+        console.log("entriesData", entriesData);
+        if (!entriesData) {
+          window.alert('Error: Failed to fetch entries data');
+          return;
+        }
+
+        const validEntries = entriesData.map((entry: Entry) => entry.value.toString());
+        if (!validEntries.includes(idxInLanguage)) {
+          window.alert(`Error: Entry "${idxInLanguage}" is not valid for the selected project and language`);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching entries:', error);
+        window.alert('Error: Failed to validate entry');
+        return;
+      }
+    }
+
+    // 确认编辑
     const confirmMessage = `Editing the post will likely affect existing comments, sure you want to re-edit?`;
     if (!window.confirm(confirmMessage)) {
       return;
