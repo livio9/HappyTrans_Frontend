@@ -117,7 +117,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ onSuccess, onClose }) => {
             params.append('password', password);
 
             const response = await fetch(
-                `http://127.0.0.1:8000/add-user?${params.toString()}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/add-user?${params.toString()}`,
                 {
                     method: 'POST',
                     headers: {

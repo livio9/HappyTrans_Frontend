@@ -74,7 +74,7 @@ const UserList: React.FC = () => {
 
         try {
             const response = await fetch(
-                `http://127.0.0.1:8000/remove-user?user_id=${userId}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/remove-user?user_id=${userId}`,
                 {
                     method: 'DELETE',
                     headers: {
