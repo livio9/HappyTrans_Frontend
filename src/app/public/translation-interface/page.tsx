@@ -874,66 +874,13 @@ function TranslationInterfaceContent() {
                             <Button
                                 variant="outline"
                                 onClick={handleSuggest}
-                                disabled={isLoadingSuggestions}
+                                disabled={true}
                             >
                                 {isLoadingSuggestions
                                     ? 'loading...'
                                     : 'Suggest'}
                             </Button>
-                            {/* 翻译建议的 Dialog */}
-                            <Dialog
-                                open={isSuggestDialogOpen}
-                                onOpenChange={setIsSuggestDialogOpen}
-                            >
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            Translation suggestions
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            Select a translation suggestion from
-                                            the options below.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="py-4">
-                                        <RadioGroup
-                                            value={selectedSuggestion}
-                                            onValueChange={
-                                                setSelectedSuggestion
-                                            }
-                                        >
-                                            {suggestions.map(
-                                                (suggestion, idx) => (
-                                                    <div
-                                                        key={idx}
-                                                        className="flex items-center space-x-2"
-                                                    >
-                                                        <Label
-                                                            htmlFor={`suggestion-${idx}`}
-                                                        >
-                                                            <span className="font-semibold">
-                                                                {
-                                                                    suggestion.source
-                                                                }
-                                                                :
-                                                            </span>{' '}
-                                                            {
-                                                                suggestion.translation
-                                                            }
-                                                        </Label>
-                                                    </div>
-                                                )
-                                            )}
-                                        </RadioGroup>
-                                    </div>
-                                    <Button
-                                        onClick={handleSelectSuggestion}
-                                        disabled={!selectedSuggestion}
-                                    >
-                                        Use of selected Suggestion
-                                    </Button>
-                                </DialogContent>
-                            </Dialog>
+                            
 
                             {/* <Button variant="outline">Skip</Button> */}
                         </div>
