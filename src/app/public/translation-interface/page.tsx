@@ -33,7 +33,7 @@ import { Badge } from '@/components/ui/badge'; // 导入自定义徽章组件
 import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator'; // 导入自定义分隔符组件
 import { ScrollArea } from '@/components/ui/scroll-area'; // 导入自定义滚动区域组件
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, set } from 'date-fns';
 import { FixedSizeList as List } from 'react-window'; // 导入固定大小列表组件,虚拟窗口提升性能
 import { getCookie } from '@/utils/cookies';
 import Link from 'next/link';
@@ -238,7 +238,6 @@ export default function TranslationInterface() {
 
     // 对于某个特定词条管理员从历史记录中选择翻译结果
     const [showSelectDialog, setShowSelectDialog] = useState(false); // 控制弹窗显示
-    const [selectedMsgstrID, setSelectedMsgstrID] = useState<string>(''); // 选定的 msgstr
 
     const fetchedEntries = useRef(false); // 标记 entries 是否已加载，用来避免多次请求
 
@@ -568,8 +567,22 @@ export default function TranslationInterface() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '获取翻译建议失败');
+                console.log('Failed to fetch suggestions:', response.status);
+                if (response.status === 429) {
+                    console.log('Rate limit exceeded');
+                    setSuggestions([
+                        { 
+                            source: 'Rate limit exceeded', 
+                            translation: 'Please try again later or Sign in to use translate suggestions' 
+                        }
+                    ]);
+                    setIsSuggestDialogOpen(true);
+                    return;
+                }
+                else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch suggestions');
+                }
             }
 
             const data = await response.json();
@@ -584,10 +597,6 @@ export default function TranslationInterface() {
     };
 
     const handleSelectSuggestion = () => {
-        if (selectedSuggestion) {
-            setCurrentTranslation(selectedSuggestion);
-            setIsSuggestDialogOpen(false);
-        }
     };
 
     //历史记录分页显示
@@ -898,12 +907,6 @@ export default function TranslationInterface() {
                                                         key={idx}
                                                         className="flex items-center space-x-2"
                                                     >
-                                                        <RadioGroupItem
-                                                            value={
-                                                                suggestion.translation
-                                                            }
-                                                            id={`suggestion-${idx}`}
-                                                        />
                                                         <Label
                                                             htmlFor={`suggestion-${idx}`}
                                                         >

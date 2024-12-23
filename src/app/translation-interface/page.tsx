@@ -226,7 +226,8 @@ export default function TranslationInterface() {
     const [suggestions, setSuggestions] = React.useState<
         TranslationSuggestion[]
     >([]); // 翻译建议
-    const [selectedSuggestion, setSelectedSuggestion] = React.useState(''); // 选定的翻译建议
+    const [selectedSuggestion, setSelectedSuggestion] = useState<string>(''); // 选定的翻译建议
+    const [selectedTranslation, setSelectedTranslation] = useState<string>('');
     const [isSuggestDialogOpen, setIsSuggestDialogOpen] = useState(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
@@ -653,9 +654,12 @@ export default function TranslationInterface() {
     };
 
     const handleSelectSuggestion = () => {
-        if (selectedSuggestion) {
-            setCurrentTranslation(selectedSuggestion);
+        const selectedIndex = parseInt(selectedSuggestion.split('-')[1]);
+        const translation = suggestions[selectedIndex]?.translation;
+        if (translation) {
+            setCurrentTranslation(translation);
             setIsSuggestDialogOpen(false);
+            setSelectedSuggestion(''); // 重置选择
         }
     };
 
@@ -1063,7 +1067,7 @@ export default function TranslationInterface() {
                                                     >
                                                         <RadioGroupItem
                                                             value={
-                                                                suggestion.translation
+                                                                `suggestion-${idx}`
                                                             }
                                                             id={`suggestion-${idx}`}
                                                         />

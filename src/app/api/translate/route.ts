@@ -144,7 +144,7 @@ export async function POST(request: Request) {
                             .map((item: any) => item.dst)
                             .join(' ');
                         suggestions.push({
-                            source: '百度翻译',
+                            source: 'Baidu',
                             translation: baiduTranslation,
                         });
                     }
