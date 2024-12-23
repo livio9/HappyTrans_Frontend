@@ -6,6 +6,7 @@ import { Table, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input'; //使用输入框组件
 import { Button } from '@/components/ui/button'; //使用按钮组件
 import { Progress } from '@/components/ui/progress'; //使用进度条组件
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import {
     Select,
     SelectContent,
@@ -87,7 +88,7 @@ const getTagColorClass = (tag: string) => {
     }
 };
 
-export default function ProjectDetails() {
+function ProjectDetailsContent() {
     const router = useRouter(); // 使用路由钩子跳转页面
     const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
     const projectName = searchParams.get('project_name'); //  获取项目名称
@@ -708,5 +709,13 @@ export default function ProjectDetails() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function ProjectDetails() {
+    return (
+        <WithSearchParams>
+            <ProjectDetailsContent />
+        </WithSearchParams>
     );
 }

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useDiscussions } from '@/context/DiscussionsContext';
 import CommentSection from './CommentSection'; // 评论区组件
@@ -10,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
-const PostDetails = () => {
+function PostDetailsContent() {
     const { singleDiscussion, fetchDiscussion, loading } = useDiscussions(); // 使用上下文提供的单个帖子数据
     const searchParams = useSearchParams();
     const { user } = useAuth(); // 获取当前登录用户信息
@@ -84,8 +85,8 @@ const PostDetails = () => {
                                 lineHeight: '1.2', // 与标题保持一致的行高
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -106,8 +107,8 @@ const PostDetails = () => {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -128,8 +129,8 @@ const PostDetails = () => {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -273,6 +274,14 @@ const PostDetails = () => {
                 </CardContent>
             </Card>
         </div>
+    );
+};
+
+const PostDetails = () => {
+    return (
+        <WithSearchParams>
+            <PostDetailsContent />
+        </WithSearchParams>
     );
 };
 

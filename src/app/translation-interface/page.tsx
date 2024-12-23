@@ -30,6 +30,7 @@ import { useAuth } from '@/context/AuthContext'; // 导入用户上下文钩子
 import { useProject } from '@/context/ProjectContext'; // 导入项目上下文钩子
 import { useSearchParams, useRouter } from 'next/navigation'; // 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // 导入自定义头像组件
 import { Badge } from '@/components/ui/badge'; // 导入自定义徽章组件
 import { motion } from 'framer-motion';
@@ -197,7 +198,7 @@ function FeedbackItem({ feedback }: { feedback: Feedback }) {
     );
 }
 
-export default function TranslationInterface() {
+function TranslationInterfaceContent() {
     const router = useRouter(); //用于跳转
     const searchParams = useSearchParams();
 
@@ -1745,5 +1746,13 @@ export default function TranslationInterface() {
             {/* 添加 ToastContainer */}
             {/* <ToastContainer /> */}
         </div>
+    );
+}
+
+export default function TranslationInterface() {
+    return (
+        <WithSearchParams>
+            <TranslationInterfaceContent />
+        </WithSearchParams>
     );
 }

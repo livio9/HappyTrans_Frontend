@@ -7,8 +7,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 
-export default function SignIn() {
+function SignInContent() {
     //创建formData状态，保存输入的用户名和密码
     const [formData, setFormData] = useState({
         username: '',
@@ -124,5 +125,13 @@ export default function SignIn() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function SignIn() {
+    return (
+        <WithSearchParams>
+            <SignInContent />
+        </WithSearchParams>
     );
 }

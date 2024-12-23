@@ -2,6 +2,7 @@
 import { useAuth } from '@/context/AuthContext'; // 使用认证上下文获取用户信息和认证令牌
 import React, { useEffect, useState, useMemo, useCallback } from 'react'; // 添加useMemo实现缓存排序和筛选结果
 import { useSearchParams, useRouter } from 'next/navigation'; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { FixedSizeList as List } from 'react-window'; // 使用 react-window 渲染虚拟列表，提高性能
 import {
     Table,
@@ -105,7 +106,7 @@ const OuterElement = React.forwardRef<
     <div {...props} ref={ref} style={{ ...props.style, overflowX: 'hidden' }} />
 ));
 
-export default function ProjectDetails() {
+function ProjectDetailsContent() {
     const router = useRouter(); // 使用路由钩子跳转页面
     const { token } = useAuth(); // 使用认证上下文获取用户信息和认证令牌
     const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
@@ -278,9 +279,9 @@ export default function ProjectDetails() {
                 // 根据更新时间排序
                 return sortDirection === 'asc'
                     ? new Date(a.updated_at).getTime() -
-                          new Date(b.updated_at).getTime()
+                    new Date(b.updated_at).getTime()
                     : new Date(b.updated_at).getTime() -
-                          new Date(a.updated_at).getTime();
+                    new Date(a.updated_at).getTime();
             }
             return 0;
         });
@@ -676,13 +677,13 @@ export default function ProjectDetails() {
                                             {/* 第四列：翻译内容 */}
                                             <div className="text-gray-700">
                                                 {entry.selected_msgstr_index ===
-                                                -1
+                                                    -1
                                                     ? ''
                                                     : entry.msgstr[
-                                                          entry
-                                                              .selected_msgstr_index
-                                                      ]?.msg ||
-                                                      'No translation'}
+                                                        entry
+                                                            .selected_msgstr_index
+                                                    ]?.msg ||
+                                                    'No translation'}
                                             </div>
 
                                             {/* 第五列：更新时间 */}
@@ -764,5 +765,13 @@ export default function ProjectDetails() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function ProjectDetails() {
+    return (
+        <WithSearchParams>
+            <ProjectDetailsContent />
+        </WithSearchParams>
     );
 }

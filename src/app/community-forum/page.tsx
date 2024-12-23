@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { getCookie } from '@/utils/cookies';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
@@ -53,7 +54,7 @@ interface Entry {
     label: string;
 }
 
-const CommunityForumPage = () => {
+function PageContent() {
     const { token, user: authUser } = useAuth();
     const csrfToken = getCookie('csrftoken');
 
@@ -168,8 +169,8 @@ const CommunityForumPage = () => {
                                 lineHeight: '1.2', // 与标题保持一致的行高
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -190,8 +191,8 @@ const CommunityForumPage = () => {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -212,8 +213,8 @@ const CommunityForumPage = () => {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                                (e.currentTarget.style.textDecoration =
-                                    'underline')
+                            (e.currentTarget.style.textDecoration =
+                                'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -496,7 +497,7 @@ const CommunityForumPage = () => {
 
     function getAcceptedEntriesBadge(entries?: number) {
         if (!entries) return null;
-        
+
         if (entries < 50) {
             return (
                 <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 inline-flex items-center">
@@ -652,7 +653,7 @@ const CommunityForumPage = () => {
                                         onClick={(e) =>
                                             handleAvatarClick(
                                                 discussion.user?.id ||
-                                                    'Anonymous',
+                                                'Anonymous',
                                                 e
                                             )
                                         }
@@ -708,7 +709,7 @@ const CommunityForumPage = () => {
                                             {/* 如果当前用户是帖子作者，显示编辑/删除按钮 */}
                                             {authUser &&
                                                 authUser.id ===
-                                                    discussion.user?.id && (
+                                                discussion.user?.id && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
@@ -826,6 +827,15 @@ const CommunityForumPage = () => {
                 </div>
             )}
         </div>
+    );
+}
+
+
+const CommunityForumPage = () => {
+    return (
+        <WithSearchParams>
+            <PageContent />
+        </WithSearchParams>
     );
 };
 

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { getCookie } from '@/utils/cookies';
 import { useSearchParams } from 'next/navigation';
+import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
@@ -36,7 +37,7 @@ interface DiscussionType {
     user?: UserType;
 }
 
-const CommunityForumPage = () => {
+function CommunityForumContent() {
     const csrfToken = getCookie('csrftoken');
 
     const router = useRouter();
@@ -507,6 +508,14 @@ const CommunityForumPage = () => {
                 </div>
             )}
         </div>
+    );
+};
+
+const CommunityForumPage = () => {
+    return (
+        <WithSearchParams>
+            <CommunityForumContent />
+        </WithSearchParams>
     );
 };
 
