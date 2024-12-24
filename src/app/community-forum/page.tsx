@@ -467,7 +467,7 @@ function PageContent() {
 
     // 删除帖子
     const deleteDiscussion = async (discussion: DiscussionType) => {
-        if (!authUser || authUser.id !== discussion.user?.id) return;
+        if (!authUser || (authUser.id !== discussion.user?.id && authUser.role !== "admin")) return;
 
         const confirmMessage = `Deleting this post will also delete all comments, sure you want to delete it?`;
         if (!window.confirm(confirmMessage)) {
@@ -708,8 +708,7 @@ function PageContent() {
                                             </Link>
                                             {/* 如果当前用户是帖子作者，显示编辑/删除按钮 */}
                                             {authUser &&
-                                                authUser.id ===
-                                                discussion.user?.id && (
+                                                (authUser.id === discussion.user?.id || authUser.role === "admin") && (
                                                     <>
                                                         <Button
                                                             variant="ghost"

@@ -578,7 +578,7 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                         )}
 
                         {/* 删除按钮，仅作者可见 */}
-                        {replyUser?.id === user?.id && (
+                        {(replyUser?.id === user?.id || user?.role === "admin") && (
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -695,7 +695,7 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                     )}
 
                     {/* 编辑按钮 */}
-                    {user?.id === commentUser?.id && (
+                    {(user?.id === commentUser?.id || user?.role === "admin") && (
                         <Button
                             variant="ghost"
                             onClick={handleEdit}
@@ -706,7 +706,7 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                     )}
 
                     {/* 删除按钮 */}
-                    {user?.id === commentUser?.id && (
+                    {(user?.id === commentUser?.id || user?.role === "admin") && (
                         <Button
                             variant="ghost"
                             onClick={handleDelete}
