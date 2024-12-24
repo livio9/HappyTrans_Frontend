@@ -244,7 +244,8 @@ function TranslationInterfaceContent() {
     const [project, setProject] = useState<Project>(); // 使用项目上下文获取当前项目
 
     const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
-    const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
+    // const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
+    const [currentEntryForLan, setCurrentEntryForLan] = useState<Entry | null>(null); // 当前词条
     const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
     const [otherLanguagesEntry, setOtherLanguagesEntry] = useState<
         { languageCode: string; entry: Entry }[]
@@ -257,7 +258,7 @@ function TranslationInterfaceContent() {
         TranslationSuggestion[]
     >([]); // 翻译建议
     const [selectedSuggestion, setSelectedSuggestion] = useState<string>(''); // 选定的翻译建议
-    const [selectedTranslation, setSelectedTranslation] = useState<string>('');
+    const [entriesNumber, setEntriesNumber] = useState(0);
     const [isSuggestDialogOpen, setIsSuggestDialogOpen] = useState(false);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
@@ -270,7 +271,7 @@ function TranslationInterfaceContent() {
     const [isCustom, setIsCustom] = useState<boolean>(false); // 控制是否显示自定义标签输入框
     const [isAdding, setIsAdding] = useState(false);
     const [tags, setTags] = useState<string[]>(
-        strings[currentIndex]?.tags || []
+        currentEntryForLan?.tags || []
     );
     const [showRemoveCross, setShowRemoveCross] = useState(false);
 
@@ -296,12 +297,12 @@ function TranslationInterfaceContent() {
 
     // 初始化 tags，当 strings 或 currentIndex 改变时更新 tags
     useEffect(() => {
-        if (strings[currentIndex]?.tags) {
-            setTags(strings[currentIndex].tags);
+        if (currentEntryForLan?.tags) {
+            setTags(currentEntryForLan.tags);
         } else {
             setTags([]);
         }
-    }, [strings, currentIndex]);
+    }, [/*strings*/, currentIndex]);
 
     // 初始化获取项目数据
     useEffect(() => {
@@ -340,12 +341,41 @@ function TranslationInterfaceContent() {
             projectName,
             languageCode,
             index1,
-            strings,
+            // strings,
             currentIndex,
         });
 
         if (projectName && languageCode) {
             // 确保项目名称和语言代码存在
+            // 设置进度条进度
+            const fetchLanguageInfo = async () => {
+                try {
+                    const response = await fetch(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
+                            projectName
+                        )}&language_code=${encodeURIComponent(languageCode)}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Token ${token}`,
+                            },
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch language info');
+                    }
+                    const data = await response.json();
+                    console.log('Fetched language info:', data);
+                    setEntriesNumber(data.total_entries_count); // 设置词条数
+                    setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
+                } catch (error) {
+                    console.error('Error fetching language info:', error);
+                }
+            };
+
+            fetchLanguageInfo(); // 获取语言信息，主要目的是获取翻译进度和词条数
             // 获取讨论数据
             const fetchDiscussions = async () => {
                 console.log('Fetching discussions...');
@@ -413,50 +443,50 @@ function TranslationInterfaceContent() {
             fetchDiscussions();
 
             // 获取词条数据
-            const fetchEntriesData = async () => {
-                console.log('Fetching entries data...');
-                try {
-                    const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
-                            projectName
-                        )}&language_code=${encodeURIComponent(languageCode)}`,
-                        {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Token ${token}`,
-                            },
-                        }
-                    );
+            // const fetchEntriesData = async () => {
+            //     console.log('Fetching entries data...');
+            //     try {
+            //         const response = await fetch(
+            //             `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
+            //                 projectName
+            //             )}&language_code=${encodeURIComponent(languageCode)}`,
+            //             {
+            //                 method: 'GET',
+            //                 headers: {
+            //                     'Content-Type': 'application/json',
+            //                     Authorization: `Token ${token}`,
+            //                 },
+            //             }
+            //         );
 
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch entries data');
-                    }
-                    const data: Entries = await response.json();
-                    console.log('Fetched entries data:', data);
+            //         if (!response.ok) {
+            //             throw new Error('Failed to fetch entries data');
+            //         }
+            //         const data: Entries = await response.json();
+            //         console.log('Fetched entries data:', data);
 
-                    const languageData = data.languages.find(
-                        (language) => language.language_code === languageCode
-                    );
+            //         const languageData = data.languages.find(
+            //             (language) => language.language_code === languageCode
+            //         );
 
-                    if (languageData) {
-                        console.log('Found language data:', languageData);
-                        setStrings(languageData.entries); // 更新 strings为获取的词条数据
-                        setShouldFetchEntries(false); // 设置 shouldFetchEntries 为 false
-                    } else {
-                        console.log(
-                            `No language data found for ${languageCode}`
-                        );
-                    }
-                } catch (error) {
-                    console.error('Error fetching entries data:', error);
-                }
-            };
+            //         if (languageData) {
+            //             console.log('Found language data:', languageData);
+            //             setStrings(languageData.entries); // 更新 strings为获取的词条数据
+            //             setShouldFetchEntries(false); // 设置 shouldFetchEntries 为 false
+            //         } else {
+            //             console.log(
+            //                 `No language data found for ${languageCode}`
+            //             );
+            //         }
+            //     } catch (error) {
+            //         console.error('Error fetching entries data:', error);
+            //     }
+            // };
 
-            // 仅在 entries 数据未加载时获取
-            if (shouldFetchEntries) {
-                fetchEntriesData();
-            }
+            // // 仅在 entries 数据未加载时获取
+            // if (shouldFetchEntries) {
+            //     fetchEntriesData();
+            // }
 
             // 获取相邻词条数据
             const fetchEntryData = async () => {
@@ -465,7 +495,7 @@ function TranslationInterfaceContent() {
                     currentIndex
                 );
 
-                if (strings.length > 0 && currentIndex < strings.length) {
+                if (entriesNumber > 0 && currentIndex < entriesNumber) {
                     try {
                         const response = await fetch(
                             `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
@@ -493,7 +523,7 @@ function TranslationInterfaceContent() {
                             current,
                             next,
                         });
-
+                        setCurrentEntryForLan(current[languageCode]); // 设置当前词条
                         const currentOtherLanguagesEntry = Object.entries(
                             current
                         ).map(([languageCode, entry]) => ({
@@ -504,7 +534,7 @@ function TranslationInterfaceContent() {
                         setOtherLanguagesEntry(currentOtherLanguagesEntry); // 设置其他语言词条
                         console.log(
                             'Other languages entries:',
-                            otherLanguagesEntry
+                            currentOtherLanguagesEntry
                         );
                         setNearbyStrings([
                             // 设置附近字符串
@@ -524,17 +554,16 @@ function TranslationInterfaceContent() {
             };
 
             // 确保 `strings` 已经加载，才能获取当前词条数据
-            if (strings.length > 0 && currentIndex >= 0) {
+            if (entriesNumber > 0 && currentIndex >= 0) {
                 console.log('Strings loaded, fetching entry data...');
                 fetchEntryData();
             }
 
             // 获取并设置当前翻译文本
-            if (strings.length > 0 && currentIndex < strings.length) {
+            if (entriesNumber > 0 && currentIndex < entriesNumber) {
                 // 确保 strings 已加载且 currentIndex 有效
-                const currentEntry = strings[currentIndex]; // 获取当前词条
+                const currentEntry = currentEntryForLan; // 获取当前词条
                 console.log('Current entry:', currentEntry);
-                length = currentEntry?.msgstr.length;
                 setCurrentTranslation(
                     currentEntry?.msgstr[currentEntry.selected_msgstr_index]
                         ?.msg || ''
@@ -545,34 +574,6 @@ function TranslationInterfaceContent() {
                 );
             }
 
-            // 设置进度条进度
-            const fetchLanguageInfo = async () => {
-                try {
-                    const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/language-info?project_name=${encodeURIComponent(
-                            projectName
-                        )}&language_code=${encodeURIComponent(languageCode)}`,
-                        {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Token ${token}`,
-                            },
-                        }
-                    );
-
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch language info');
-                    }
-                    const data = await response.json();
-                    console.log('Fetched language info:', data);
-                    setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
-                } catch (error) {
-                    console.error('Error fetching language info:', error);
-                }
-            };
-
-            fetchLanguageInfo(); // 获取语言信息，主要目的是获取翻译进度
 
             // 获取反馈信息
             const fetchFeedback = async () => {
@@ -609,7 +610,7 @@ function TranslationInterfaceContent() {
         projectName,
         languageCode,
         currentIndex,
-        strings,
+        // strings,
         ordering,
         shouldFetchEntries,
     ]); // 确保数据更新后执行
@@ -674,55 +675,57 @@ function TranslationInterfaceContent() {
     // 处理翻译建议
     const handleSuggest = async () => {
         setIsLoadingSuggestions(true);
-        try {
-            // 调用机器翻译 API
-            const MachineResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suggestions?target_language=${languageCode}&source_language=${sourceLanguage}&text=${strings[currentIndex].msgid}`, {
+        if (currentEntryForLan) {
+            try {
+                // 调用机器翻译 API
+                const MachineResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suggestions?target_language=${languageCode}&source_language=${sourceLanguage}&text=${currentEntryForLan.msgid}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${token}`,
+                    },
+                });
+                if (MachineResponse.ok) {
+                    const MachineData = await MachineResponse.json();
+                    if (MachineData.error) {
+                        console.error('Machine Translation API Error:', MachineData.error);
+                    } else {
+                        // 使用 setSuggestions 更新状态
+                        setSuggestions(MachineData)
+                    }
+                }
+                // 调用 LLM API
+                const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Token ${token}`,
                 },
-            });
-            if (MachineResponse.ok) {
-                const MachineData = await MachineResponse.json();
-                if (MachineData.error) {
-                    console.error('Machine Translation API Error:', MachineData.error);
+                }
+                );
+                if (LLMResponse.ok) {
+                const LLMData = await LLMResponse.json();
+                if (LLMData.error) {
+                    console.error('LLM API Error:', LLMData.error);
                 } else {
                     // 使用 setSuggestions 更新状态
-                    setSuggestions(MachineData)
-                }
+                    setSuggestions(prevSuggestions => [
+                        ...prevSuggestions,
+                        ...LLMData.map((llm: {name: string, suggestion: string}) => ({
+                        source: llm.name,
+                        suggestion: llm.suggestion
+                        }))
+                    ]);
+                    
+                    }
+                } 
+                setIsSuggestDialogOpen(true); // 打开翻译建议对话框
             }
-            // 调用 LLM API
-            const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Token ${token}`,
-              },
-              }
-            );
-            if (LLMResponse.ok) {
-              const LLMData = await LLMResponse.json();
-              if (LLMData.error) {
-                console.error('LLM API Error:', LLMData.error);
-              } else {
-                // 使用 setSuggestions 更新状态
-                setSuggestions(prevSuggestions => [
-                    ...prevSuggestions,
-                    ...LLMData.map((llm: {name: string, suggestion: string}) => ({
-                    source: llm.name,
-                    suggestion: llm.suggestion
-                    }))
-                ]);
-                
-                }
-            } 
-            setIsSuggestDialogOpen(true); // 打开翻译建议对话框
-          }
-          catch (error) {
-            console.error('调用LLM API 时出错:', error);
-          } finally {
-            setIsLoadingSuggestions(false);
+            catch (error) {
+                console.error('调用LLM API 时出错:', error);
+            } finally {
+                setIsLoadingSuggestions(false);
+            }
         }
     };
 
@@ -769,9 +772,11 @@ function TranslationInterfaceContent() {
 
     const handleConfirmSelect = () => {
         // 确认选择翻译结果
-        if (selectedMsgstrID) {
+        if (selectedMsgstrID && currentEntryForLan?.msgstr) {
             selectMsgstr(selectedMsgstrID); // 执行 select-msgstr API 调用
-            setCurrentTranslation(strings[currentIndex].msgstr[parseInt(selectedMsgstrID)].msg); // 更新当前翻译文本
+            const msgIndex = parseInt(selectedMsgstrID);
+            const translation = currentEntryForLan.msgstr[msgIndex]?.msg || '';
+            setCurrentTranslation(translation); // 更新当前翻译文本
         }
         setShowSelectDialog(false); // 关闭弹窗
     };
@@ -789,12 +794,12 @@ function TranslationInterfaceContent() {
     const paginatedHistory = useMemo(() => {
         const startIndex = (currentHisPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        return strings[currentIndex]?.msgstr.slice(startIndex, endIndex) || [];
-    }, [strings, currentIndex, currentHisPage]);
+        return currentEntryForLan?.msgstr.slice(startIndex, endIndex) || [];
+    }, [/*strings*/, currentIndex, currentHisPage]);
 
     //总页数
     const totalPages = Math.ceil(
-        strings[currentIndex]?.msgstr.length / itemsPerPage
+        (currentEntryForLan?.msgstr?.length || 0) / itemsPerPage
     );
 
     // 添加tag
@@ -1009,7 +1014,7 @@ function TranslationInterfaceContent() {
                         </Button>
                         {/* 显示当前词条索引 */}
                         <span className="text-sm font-medium">
-                            {currentIndex + 1} / {strings.length}
+                            {currentIndex + 1} / {entriesNumber}
                         </span>
                         {/* 跳转到下一个词条 */}
                         <Button
@@ -1018,12 +1023,12 @@ function TranslationInterfaceContent() {
                             onClick={() =>
                                 setCurrentIndex(
                                     Math.min(
-                                        strings.length - 1,
+                                        entriesNumber - 1,
                                         currentIndex + 1
                                     )
                                 )
                             }
-                            disabled={currentIndex === strings.length - 1}
+                            disabled={currentIndex === entriesNumber - 1}
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -1031,8 +1036,8 @@ function TranslationInterfaceContent() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurrentIndex(strings.length - 1)}
-                            disabled={currentIndex === strings.length - 1}
+                            onClick={() => setCurrentIndex(entriesNumber - 1)}
+                            disabled={currentIndex === entriesNumber - 1}
                         >
                             <ChevronsRight className="h-4 w-4" />
                         </Button>
@@ -1050,7 +1055,7 @@ function TranslationInterfaceContent() {
                                     Source
                                 </h2>
                                 <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded">
-                                    {strings[currentIndex]?.msgid ||
+                                    {currentEntryForLan?.msgid ||
                                         'No source text available'}
                                 </div>
                             </CardContent>
@@ -1221,7 +1226,7 @@ function TranslationInterfaceContent() {
                                         Reference:
                                     </strong>
                                     <span className="text-secondary-foreground">
-                                        {strings[currentIndex]?.references}
+                                        {currentEntryForLan?.references}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
@@ -1229,7 +1234,7 @@ function TranslationInterfaceContent() {
                                         Last updated:
                                     </strong>
                                     <span className="text-secondary-foreground">
-                                        {strings[currentIndex]?.updated_at}
+                                        {currentEntryForLan?.updated_at}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
@@ -1238,7 +1243,7 @@ function TranslationInterfaceContent() {
                                     </strong>
                                     <span className="text-secondary-foreground">
                                         The{' '}
-                                        {strings[currentIndex]?.idx_in_language}
+                                        {currentEntryForLan?.idx_in_language}
                                         th entry in the translation file
                                     </span>
                                 </div>
@@ -1524,7 +1529,7 @@ function TranslationInterfaceContent() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {otherLanguagesEntry.map((entry, idx) => (
+                                    {otherLanguagesEntry.map((entry, idx) => (entry && (
                                         <tr key={idx}>
                                             <td>{entry.languageCode}</td>
                                             <td>
@@ -1551,7 +1556,7 @@ function TranslationInterfaceContent() {
                                                 </Button>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )))}
                                 </tbody>
                             </table>
                         </TabsContent>{' '}
