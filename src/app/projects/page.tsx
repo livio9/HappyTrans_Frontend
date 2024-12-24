@@ -129,8 +129,6 @@ export default function Projects() {
     >([]); // 翻译中的项目
     const [projectInProcess, setProjectInProcess] = useState<Project[]>([]); // 翻译中的项目
     const [shouldFetchProjects, setShouldFetchProjects] = useState(false); // 是否应该获取项目列表
-    const [shouldAddAdmin, setShouldAddAdmin] = useState(false); // 是否应该添加管理员
-    const [createdProjectName, setCreatedProjectName] = useState(''); // 创建的项目名称
     const [projectFilterTerm, setProjectFilterTerm] = useState(''); // 项目过滤条件
 
     // 在组件内部定义编辑项目的状态
@@ -357,9 +355,7 @@ export default function Projects() {
                 const newProject = await response.json(); // 解析响应数据
                 setProjects((prevProjects) => [...prevProjects, newProject]); // 将新项目添加到项目列表
                 setIsCreateDialogOpen(false); // 关闭创建项目对话框
-                setShouldAddAdmin(true); // 设置标记以添加管理员
                 console.log('Project created successfully:', projectData); // 打印成功日志
-                setCreatedProjectName(projectData.name); // 设置创建的项目名称
                 // 无需重置状态，因为子组件已处理
             } else {
                 const errorData = await response.json();
@@ -379,31 +375,6 @@ export default function Projects() {
         }
     };
 
-    /**
-     * 添加项目管理员的函数
-     */
-    const addAdminToProject = async (projectName: string) => {
-        try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/add-project-group-user?group=managers&project_name=${projectName}&user_id=${2}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Token ${token}`, // 使用认证令牌
-                    },
-                }
-            );
-            if (response.ok) {
-                console.log('Admin added to project successfully');
-            } else {
-                throw new Error('Failed to add admin to project'); // 抛出错误
-            }
-        } catch (error) {
-            console.error('Error adding admin to project:', error); // 打印错误日志
-            throw error; // 重新抛出错误
-        }
-    };
 
     /**
      * 管理项目的函数
@@ -589,21 +560,7 @@ export default function Projects() {
         }
     };
 
-    useEffect(() => {
-        if (shouldAddAdmin) {
-            console.log('Adding admin to project:', createdProjectName);
-            addAdminToProject(createdProjectName)
-                .then(() => {
-                    console.log('管理员添加成功');
-                })
-                .catch((error) => {
-                    console.error('添加管理员失败:', error);
-                })
-                .finally(() => {
-                    setShouldAddAdmin(false);
-                });
-        }
-    }, [shouldAddAdmin, createdProjectName]);
+
 
     /**
      * 启动翻译项目的函数
