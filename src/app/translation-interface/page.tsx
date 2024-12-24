@@ -287,7 +287,6 @@ function TranslationInterfaceContent() {
 
     // 管理底部面板的高度
     const [footerHeight, setFooterHeight] = useState(200); // 默认高度
-    const [isResizing, setIsResizing] = useState(false);
 
     // 排序更新-comments
     const handleSortChange = (newOrdering: string) => {
@@ -302,7 +301,7 @@ function TranslationInterfaceContent() {
         } else {
             setTags([]);
         }
-    }, [/*strings*/, currentIndex]);
+    }, [currentEntryForLan, currentIndex]);
 
     // 初始化获取项目数据
     useEffect(() => {
@@ -341,7 +340,7 @@ function TranslationInterfaceContent() {
             projectName,
             languageCode,
             index1,
-            // strings,
+            currentEntryForLan,
             currentIndex,
         });
 
@@ -495,7 +494,7 @@ function TranslationInterfaceContent() {
                     currentIndex
                 );
 
-                if (entriesNumber > 0 && currentIndex < entriesNumber) {
+                if ( currentIndex >=0 ) {
                     try {
                         const response = await fetch(
                             `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
@@ -554,7 +553,7 @@ function TranslationInterfaceContent() {
             };
 
             // 确保 `strings` 已经加载，才能获取当前词条数据
-            if (entriesNumber > 0 && currentIndex >= 0) {
+            if (currentIndex >= 0) {
                 console.log('Strings loaded, fetching entry data...');
                 fetchEntryData();
             }
@@ -610,7 +609,7 @@ function TranslationInterfaceContent() {
         projectName,
         languageCode,
         currentIndex,
-        // strings,
+        // currentEntryForLan,
         ordering,
         shouldFetchEntries,
     ]); // 确保数据更新后执行
@@ -795,7 +794,7 @@ function TranslationInterfaceContent() {
         const startIndex = (currentHisPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
         return currentEntryForLan?.msgstr.slice(startIndex, endIndex) || [];
-    }, [/*strings*/, currentIndex, currentHisPage]);
+    }, [currentEntryForLan, currentIndex, currentHisPage]);
 
     //总页数
     const totalPages = Math.ceil(
