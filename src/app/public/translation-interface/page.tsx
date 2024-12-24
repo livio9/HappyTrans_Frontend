@@ -616,47 +616,7 @@ function TranslationInterfaceContent() {
         strings[currentIndex]?.msgstr.length / itemsPerPage
     );
 
-    // 添加tag
-    const handleAdd = async () => {
-        try {
-            if (!projectName) {
-                throw new Error('Project name is required');
-            }
 
-            const tagToSend = isCustom ? customTag : selectedTag;
-
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/modify-entry-tag?index=${index1}&language_code=${languageCode}&project_name=${encodeURIComponent(projectName)}`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken || '',
-                    },
-                    body: JSON.stringify({
-                        action: 'add',
-                        tag: tagToSend,
-                    }),
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`Failed to add tag: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('Tag added successfully', data);
-
-            setTags([...tags, tagToSend]);
-
-            setIsAdding(false);
-            setSelectedTag('');
-            setIsCustom(false);
-            setCustomTag('');
-        } catch (error) {
-            console.error('Error adding tag:', error);
-        }
-    };
 
     // 获取标签颜色的类
     const getTagColorClass = (tag: string) => {
@@ -933,10 +893,6 @@ function TranslationInterfaceContent() {
                                 <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
                                     <strong>Last updated:</strong>{' '}
                                     {strings[currentIndex]?.updated_at}
-                                </div>
-                                <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
-                                    <strong>Source string added:</strong> 3
-                                    years ago
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-gray-100 shadow-sm p-4">
                                     <strong>String Location:</strong> The{' '}
