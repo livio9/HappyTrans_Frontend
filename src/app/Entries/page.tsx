@@ -754,18 +754,52 @@ function ProjectDetailsContent() {
                                             }
                                         >
                                             {/* 第一列：索引 */}
-                                            <div className="font-medium pl-4 text-gray-500">
+                                            <div
+                                                className="font-medium pl-4 text-gray-500 break-words"
+                                                style={{
+                                                    minWidth: '50px', // 最小宽度
+                                                    height: 'auto', // 自动高度
+                                                    lineHeight: '20px', // 行高
+                                                    textAlign: 'center',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap', // 允许换行
+                                                    textOverflow: 'ellipsis', // 超出部分显示省略号
+                                                }}
+                                                title={entry.idx_in_language.toString()}
+                                            >
                                                 {entry.idx_in_language}
                                             </div>
 
                                             {/* 第二列：参考信息 */}
-                                            <div className="font-mono text-xs text-gray-600">
+                                            <div
+                                                className="font-mono text-xs text-gray-600 break-words"
+                                                style={{
+                                                    minWidth: '100px',
+                                                    height: 'auto',
+                                                    lineHeight: '18px',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                }}
+                                                title={entry.references}
+                                            >
                                                 {entry.references}
                                             </div>
 
                                             {/* 第三列：msgid 和 标签 */}
                                             <div className="flex items-center justify-start space-x-2">
-                                                <div className="flex-1 pr-2 text-gray-700">
+                                                <div
+                                                    className="flex-1 pr-2 text-gray-700 break-words"
+                                                    style={{
+                                                    minWidth: '150px',
+                                                    height: 'auto',
+                                                    lineHeight: '18px',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                    }}
+                                                    title={entry.msgid}
+                                                >
                                                     {entry.msgid}
                                                 </div>
                                                 <div className="flex flex-wrap mt-1">
@@ -799,7 +833,26 @@ function ProjectDetailsContent() {
                                             </div>
 
                                             {/* 第四列：翻译内容 */}
-                                            <div className="text-gray-700">
+                                            <div
+                                                className="text-gray-700 break-words"
+                                                style={{
+                                                    minWidth: '150px',
+                                                    height: 'auto',
+                                                    lineHeight: '18px',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'normal',
+                                                    textOverflow: 'ellipsis',
+                                                }}
+                                                title={
+                                                    entry.selected_msgstr_index ===
+                                                    -1
+                                                        ? ''
+                                                        : entry.msgstr[
+                                                            entry
+                                                                .selected_msgstr_index
+                                                        ]?.msg || 'No translation'
+                                                }
+                                            >
                                                 {entry.selected_msgstr_index ===
                                                     -1
                                                     ? ''
