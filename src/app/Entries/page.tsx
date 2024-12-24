@@ -1,6 +1,7 @@
 'use client'; // 使用客户端模式
+
 import { useAuth } from '@/context/AuthContext'; // 使用认证上下文获取用户信息和认证令牌
-import React, { useEffect, useState, useMemo, useCallback } from 'react'; // 添加useMemo实现缓存排序和筛选结果
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation'; // 使用路由钩子跳转页面，使用useSearchParams获取URL查询参数
 import { WithSearchParams } from '@/components/common/WithSearchParams';
 import { FixedSizeList as List } from 'react-window'; // 使用 react-window 渲染虚拟列表，提高性能
@@ -31,6 +32,7 @@ import {
     Search,
 } from 'lucide-react'; // 使用lucide图标
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // 使用卡片组件
+import { set } from 'date-fns';
 
 // 用于entries返回的数据结构中的msgstr数组
 type msgstr = {
@@ -59,10 +61,11 @@ type Entry = {
 
 type LanguageData = {
     language_code: string; // 语言代码
+    total: number; // 总条目数
     entries: Entry[]; // 翻译条目数组
 };
 
-// 这两个LanguageData的区别在于第二个是从project_info返回的数据结构中的languages数组中取出的，第一个是从entries返回的数据结构中取出的
+// 用于project_info返回的数据结构中的languages数组中取出的
 type ProjectLanguageData = {
     language_code: string;
     pot_creation_date: string;
@@ -112,32 +115,56 @@ function ProjectDetailsContent() {
     const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
     const projectName = searchParams.get('project_name'); // 获取项目名称
     const languageCode = searchParams.get('language_code'); // 获取语言代码
-    const query = searchParams.get('query'); // 获取查询参数，只有在搜索时才会使用
+    // const query = searchParams.get('query'); // 获取查询参数，只有在搜索时才会使用
 
     const [languageProcess, setLanguageProcess] = useState<number>(0); // 保存翻译进度到状态
 
-    // 使用 useMemo 缓存 queryParams，只有在依赖项变化时才重新计算，用于调用entries构建查询参数
+    const [startDate, setStartDate] = useState<string>('');
+    const [endDate, setEndDate] = useState<string>('');
+    const [query, setQuery] = useState<string>(''); // 搜索关键词
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const AVAILABLE_TAGS = [
+        'To be translated',
+        'To be reviewed',
+        'Need to check again',
+        'Default'
+    ] as const;
+
+    const itemsPerPage = 8; // 每页显示的条目数，固定为8
+    const [currentPage, setCurrentPage] = useState(1); // 当前页码
+    const [totalItems, setTotalItems] = useState(0); // 总条目数
+    const totalPages = useMemo(() => Math.ceil(totalItems / itemsPerPage), [totalItems]);
+
+    // 使用 useMemo 缓存 queryParams，包含分页和过滤参数
     const queryParams = useMemo(() => {
-        return new URLSearchParams({
+        const params = new URLSearchParams({
             project_name: projectName || '',
             language_code: languageCode || '',
-            ...(query ? { query } : {}), // 只有在 query 存在时才添加到查询参数中
+            start: ((currentPage - 1) * itemsPerPage).toString(),
+            count: itemsPerPage.toString(),
+            ...(query ? { query } : {}),
         });
-    }, [projectName, languageCode, query]);
+        if (startDate) {
+            params.append('start_time', new Date(startDate).toISOString());
+        }
+        if (endDate) {
+            params.append('end_time', new Date(endDate).toISOString());
+        }
+        selectedTags.forEach(tag => params.append('tags', tag));
+        return params;
+    }, [projectName, languageCode, query, currentPage, itemsPerPage, startDate, endDate, selectedTags]);
 
-    const [currentPage, setCurrentPage] = useState(1); // 当前页码
-    const itemsPerPage = 8; // 每页显示的条目数
-
-    const [entriesdata, setEntriesData] = useState<Entries>(); // 保存 entries 数据到状态
+    const [entriesData, setEntriesData] = useState<Entries | undefined>(); // 保存 entries 数据到状态
     const [projectData, setProjectData] = useState<ProjectData | null>(null); // 保存 project_info 数据到状态
     const [loading, setLoading] = useState<boolean>(true); // 加载状态
+    const [error, setError] = useState<string>(''); // 错误信息
 
-    // 搜索、排序和分页相关状态
+    // 搜索相关状态
     const [searchTerm, setSearchTerm] = useState('');
 
-    // 添加新的状态用于排序
-    const [sortColumn, setSortColumn] = useState<string>('idx_in_language'); // 选择用于排序的列，默认使用index
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 排序方向，默认升序
+    // 排序相关状态
+    const [sortColumn, setSortColumn] = useState<string>('idx_in_language'); // 默认排序列
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 默认排序方向
 
     useEffect(() => {
         if (!token) return;
@@ -162,6 +189,7 @@ function ProjectDetailsContent() {
                 setProjectData(data); // 保存 projectData 到状态
             } catch (error) {
                 console.error('Error fetching project data:', error);
+                setError('Failed to fetch project data.');
             }
         };
 
@@ -183,8 +211,12 @@ function ProjectDetailsContent() {
                 }
                 const data: Entries = await response.json();
                 setEntriesData(data); // 保存 entriesdata 到状态
+                console.log('Fetched entries data:', data);
+                const language = data.languages.find(lang => lang.language_code === languageCode);
+                setTotalItems(language?.total || 0);
             } catch (error) {
                 console.error('Error fetching entries data:', error);
+                setError('Failed to fetch entries data.');
             }
         };
 
@@ -212,18 +244,21 @@ function ProjectDetailsContent() {
                 setLanguageProcess(data.selected_entries_ratio); // 设置进度条进度
             } catch (error) {
                 console.error('Error fetching language info:', error);
+                setError('Failed to fetch language info.');
             }
         };
 
         const fetchData = async () => {
             // 获取数据，设置加载状态，调用fetchProjectData和fetchEntriesData
             setLoading(true);
+            setError('');
             if (projectName && languageCode) {
                 await fetchProjectData(); // 获取 project_info 数据
                 await fetchEntriesData(); // 获取 entriesdata 数据
                 await fetchLanguageInfo(); // 获取语言版本信息
             } else {
                 console.error('Missing project_name or language_code in URL.');
+                setError('Missing project_name or language_code in URL.');
             }
             setLoading(false);
         };
@@ -241,89 +276,74 @@ function ProjectDetailsContent() {
         }
     };
 
-    // 使用 useMemo 缓存筛选和排序结果
-    const filteredAndSortedEntries = useMemo(() => {
-        if (!entriesdata || !entriesdata.languages) return [];
+    // 排序后的条目
+    const sortedEntries = useMemo(() => {
+        if (!entriesData || !entriesData.languages.length) return [];
 
-        const languageData = entriesdata.languages.find(
+        const languageData = entriesData.languages.find(
             (lang) => lang.language_code === languageCode
         );
 
         if (!languageData) return [];
 
-        // 排序
-        const sorted = [...languageData.entries].sort((a, b) => {
+        return [...languageData.entries].sort((a, b) => {
             if (sortColumn === 'idx_in_language') {
-                // 根据索引排序
                 return sortDirection === 'asc'
                     ? a.idx_in_language - b.idx_in_language
                     : b.idx_in_language - a.idx_in_language;
             } else if (sortColumn === 'key') {
-                // 根据references排序
                 return sortDirection === 'asc'
                     ? a.references.localeCompare(b.references)
                     : b.references.localeCompare(a.references);
             } else if (sortColumn === 'original') {
-                // 根据msgid排序
                 return sortDirection === 'asc'
                     ? a.msgid.localeCompare(b.msgid)
                     : b.msgid.localeCompare(a.msgid);
             } else if (sortColumn === 'translation') {
-                // 根据msgstr排序
                 const aTranslation = a.msgstr[0]?.msg || '';
                 const bTranslation = b.msgstr[0]?.msg || '';
                 return sortDirection === 'asc'
                     ? aTranslation.localeCompare(bTranslation)
                     : bTranslation.localeCompare(aTranslation);
             } else if (sortColumn === 'updatedAt') {
-                // 根据更新时间排序
                 return sortDirection === 'asc'
-                    ? new Date(a.updated_at).getTime() -
-                    new Date(b.updated_at).getTime()
-                    : new Date(b.updated_at).getTime() -
-                    new Date(a.updated_at).getTime();
+                    ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+                    : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
             }
             return 0;
         });
+    }, [entriesData, sortColumn, sortDirection, languageCode]);
 
-        return sorted;
-    }, [entriesdata, sortColumn, sortDirection, languageCode]);
+    // 当前页的数据
+    const paginatedEntries = sortedEntries;
 
-    // 分页数据
-    const paginatedEntries = useMemo(() => {
-        // 使用 useMemo 缓存entries的分页结果
-        return filteredAndSortedEntries.slice(
-            (currentPage - 1) * itemsPerPage,
-            currentPage * itemsPerPage
-        );
-    }, [filteredAndSortedEntries, currentPage, itemsPerPage]);
-
-    const totalPages = Math.ceil(
-        filteredAndSortedEntries.length / itemsPerPage
-    );
-
+    // 处理语言切换功能
     const handleLanguageChange = (newLanguageCode: string) => {
-        // 处理语言切换功能
         if (projectName) {
+            // 重置分页到第一页
+            setCurrentPage(1);
             router.push(
                 `/Entries?project_name=${encodeURIComponent(projectName)}&language_code=${encodeURIComponent(newLanguageCode)}`
             );
         }
     };
 
+    const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages) return;
+        setCurrentPage(newPage);
+    };
+
     // 处理搜索重定向问题，同时更新若query为空则重定向内容不包括query
     const handleSearch = () => {
         if (projectName && languageCode) {
-            const baseUrl = `/Entries?project_name=${encodeURIComponent(
-                projectName
-            )}&language_code=${encodeURIComponent(languageCode)}`;
-            const queryParam = searchTerm
-                ? `&query=${encodeURIComponent(searchTerm)}`
-                : '';
-
-            router.push(baseUrl + queryParam);
+            setCurrentPage(1); // 重置到第一页
+            setQuery(searchTerm);
+            // 重新构建 queryParams 已包含 start=0
+            // fetchEntriesData 将自动触发 useEffect
         }
     };
+
+
 
     if (loading) {
         // 加载状态，显示加载动画
@@ -335,7 +355,22 @@ function ProjectDetailsContent() {
     }
 
     // 现在不区分错误和没有数据的情况，显示一个友好的消息，一般是因为没有数据
-    if (!entriesdata?.languages.length) {
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <CardTitle>Error</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-red-500">{error}</p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!entriesData?.languages.length) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Card className="w-full max-w-md">
@@ -363,7 +398,6 @@ function ProjectDetailsContent() {
      */
     const handleProjectLanguage = () => {
         if (projectName) {
-            // 只有当 projectName 有值时，才会进行跳转
             router.push(
                 `/language-versions?project=${encodeURIComponent(projectName)}`
             );
@@ -377,8 +411,6 @@ function ProjectDetailsContent() {
 
     return (
         <div className="min-h-screen mx-auto p-6 space-y-8">
-            {' '}
-            {/* 使用 h-screen 代替 h-100vh */}
             {/* 项目导航面包屑 */}
             <div className="flex items-center space-x-1 mb-6 text-sm text-gray-600">
                 {/* Projects按钮 */}
@@ -412,7 +444,6 @@ function ProjectDetailsContent() {
             {/* 项目信息部分 */}
             <Card className="w-full">
                 <CardHeader>
-                    {' '}
                     {/* 项目标题和描述 */}
                     <CardTitle className="text-3xl font-bold">
                         {projectData?.name || projectName}
@@ -422,12 +453,11 @@ function ProjectDetailsContent() {
                     </p>
                 </CardHeader>
                 <CardContent className="grid gap-6 md:grid-cols-3">
-                    {' '}
                     {/* 项目信息 */}
                     <div>
                         <h2 className="text-lg font-semibold mb-2">
                             Current Language
-                        </h2>{' '}
+                        </h2>
                         {/* 当前语言, 可以快速选择其他语言项*/}
                         <Select
                             value={languageCode || undefined}
@@ -449,7 +479,6 @@ function ProjectDetailsContent() {
                         </Select>
                     </div>
                     <div className="md:col-span-2">
-                        {' '}
                         {/* 翻译进度 */}
                         <h2 className="text-lg font-semibold mb-2">
                             Translation Progress
@@ -467,12 +496,13 @@ function ProjectDetailsContent() {
                     <CardTitle>Entries</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {/* 搜索框和搜索按钮 */}
+                    {/* 搜索框和过滤控件 */}
                     <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                        {/* 搜索控件 */}
                         <div className="relative md:w-2/3">
                             <Input
                                 type="text"
-                                placeholder="Search Index/Source/Translation..."
+                                placeholder="Search Source..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 pr-4 py-2 w-full"
@@ -491,12 +521,55 @@ function ProjectDetailsContent() {
                         </Button>
                     </div>
 
+                    {/* 过滤控件 */}
+                    <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+                        {/* 时间筛选 */}
+                        <div className="flex space-x-2">
+                            <Input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => {
+                                    setStartDate(e.target.value);
+                                }}
+                                placeholder="Start Date"
+                                className="w-full md:w-auto"
+                            />
+                            <Input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => {
+                                    setEndDate(e.target.value);
+                                }}
+                                placeholder="End Date"
+                                className="w-full md:w-auto"
+                            />
+                        </div>
+                        {/* 标签筛选 */}
+                        <div className="flex items-center space-x-2">
+                            {AVAILABLE_TAGS.map(tag => (
+                                <label key={tag} className="flex items-center space-x-1">
+                                    <input
+                                        type="checkbox"
+                                        value={tag}
+                                        checked={selectedTags.includes(tag)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedTags([...selectedTags, tag]);
+                                            } else {
+                                                setSelectedTags(selectedTags.filter(t => t !== tag));
+                                            }
+                                        }}
+                                    />
+                                    <span>{tag}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* 表格容器，处理水平滚动 */}
                     <div className="overflow-x-auto rounded-md border w-full">
                         {/* 表头和列表一起放在一个容器内，统一水平滚动 */}
                         <div style={{ minWidth: `${tableTotalWidth}px` }}>
-                            {' '}
-                            {/* 确保总宽度足够，避免内容溢出 */}
                             {/* 表头部分 */}
                             <div className="sticky top-0 bg-muted z-10">
                                 <Table>
@@ -505,7 +578,6 @@ function ProjectDetailsContent() {
                                             className={`grid grid-cols-[2fr_5.4fr_8fr_8fr_3fr] bg-muted`}
                                         >
                                             <TableHead>
-                                                {' '}
                                                 {/* 索引 */}
                                                 <div className="flex items-center">
                                                     Index
@@ -524,7 +596,6 @@ function ProjectDetailsContent() {
                                                 </div>
                                             </TableHead>
                                             <TableHead>
-                                                {' '}
                                                 {/* references */}
                                                 <div className="flex items-center">
                                                     Key
@@ -541,7 +612,6 @@ function ProjectDetailsContent() {
                                                 </div>
                                             </TableHead>
                                             <TableHead>
-                                                {' '}
                                                 {/* 翻译原文 */}
                                                 <div className="flex items-center">
                                                     Source
@@ -560,7 +630,6 @@ function ProjectDetailsContent() {
                                                 </div>
                                             </TableHead>
                                             <TableHead>
-                                                {' '}
                                                 {/* 翻译结果 */}
                                                 <div className="flex items-center">
                                                     Translation
@@ -579,7 +648,6 @@ function ProjectDetailsContent() {
                                                 </div>
                                             </TableHead>
                                             <TableHead>
-                                                {' '}
                                                 {/* 更新时间 */}
                                                 <div className="flex items-center">
                                                     Updated At
@@ -603,10 +671,9 @@ function ProjectDetailsContent() {
                             </div>
                             {/* 虚拟滚动区域 */}
                             <List
-                                // 移除 height={400} 的固定高度
                                 height={Math.max(
                                     paginatedEntries.length * 50,
-                                    window.innerHeight - 600
+                                    8 * 50
                                 )} // 动态计算高度
                                 itemCount={paginatedEntries.length}
                                 itemSize={50}
@@ -705,18 +772,16 @@ function ProjectDetailsContent() {
                             Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
                             {Math.min(
                                 currentPage * itemsPerPage,
-                                filteredAndSortedEntries.length
+                                totalItems
                             )}{' '}
-                            of {filteredAndSortedEntries.length} entries
+                            of {totalItems} entries
                         </div>
                         <div className="flex space-x-2">
-                            {' '}
-                            {/* 分页按钮 */}
                             {/* 第一页 */}
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setCurrentPage(1)}
+                                onClick={() => handlePageChange(1)}
                                 disabled={currentPage === 1}
                                 aria-label="First page"
                             >
@@ -726,11 +791,7 @@ function ProjectDetailsContent() {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.max(prev - 1, 1)
-                                    )
-                                }
+                                onClick={() => handlePageChange(currentPage - 1)}
                                 disabled={currentPage === 1}
                                 aria-label="Previous page"
                             >
@@ -740,11 +801,7 @@ function ProjectDetailsContent() {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() =>
-                                    setCurrentPage((prev) =>
-                                        Math.min(prev + 1, totalPages)
-                                    )
-                                }
+                                onClick={() => handlePageChange(currentPage + 1)}
                                 disabled={currentPage === totalPages}
                                 aria-label="Next page"
                             >
@@ -754,7 +811,7 @@ function ProjectDetailsContent() {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setCurrentPage(totalPages)}
+                                onClick={() => handlePageChange(totalPages)}
                                 disabled={currentPage === totalPages}
                                 aria-label="Last page"
                             >
