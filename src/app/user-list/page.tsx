@@ -43,7 +43,7 @@ const UserList: React.FC = () => {
         setError('');
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${search}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=100000&username=${search}`,
                 {
                     method: 'GET',
                     headers: {

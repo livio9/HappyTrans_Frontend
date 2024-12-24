@@ -88,7 +88,7 @@ type EntryData = {
 // 定义翻译建议的类型
 type TranslationSuggestion = {
     source: string; // 建议来源（如 DeepL、Google Translate）
-    translation: string; // 建议的翻译文本
+    suggestion: string; // 建议的翻译文本
 };
 
 type Feedback = {
@@ -675,6 +675,24 @@ function TranslationInterfaceContent() {
     const handleSuggest = async () => {
         setIsLoadingSuggestions(true);
         try {
+            // 调用机器翻译 API
+            const MachineResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suggestions?target_language=${languageCode}&source_language=${sourceLanguage}&text=${strings[currentIndex].msgid}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Token ${token}`,
+                },
+            });
+            if (MachineResponse.ok) {
+                const MachineData = await MachineResponse.json();
+                if (MachineData.error) {
+                    console.error('Machine Translation API Error:', MachineData.error);
+                } else {
+                    // 使用 setSuggestions 更新状态
+                    setSuggestions(MachineData)
+                }
+            }
+            // 调用 LLM API
             const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
               method: 'GET',
               headers: {
@@ -693,12 +711,13 @@ function TranslationInterfaceContent() {
                     ...prevSuggestions,
                     ...LLMData.map((llm: {name: string, suggestion: string}) => ({
                     source: llm.name,
-                    translation: llm.suggestion
+                    suggestion: llm.suggestion
                     }))
                 ]);
-                setIsSuggestDialogOpen(true); // 打开翻译建议对话框
+                
                 }
             } 
+            setIsSuggestDialogOpen(true); // 打开翻译建议对话框
           }
           catch (error) {
             console.error('调用LLM API 时出错:', error);
@@ -709,7 +728,7 @@ function TranslationInterfaceContent() {
 
     const handleSelectSuggestion = () => {
         const selectedIndex = parseInt(selectedSuggestion.split('-')[1]);
-        const translation = suggestions[selectedIndex]?.translation;
+        const translation = suggestions[selectedIndex]?.suggestion;
         if (translation) {
             setCurrentTranslation(translation);
             setIsSuggestDialogOpen(false);
@@ -1136,7 +1155,7 @@ function TranslationInterfaceContent() {
                                                                 :
                                                             </span>{' '}
                                                             {
-                                                                suggestion.translation
+                                                                suggestion.suggestion
                                                             }
                                                         </Label>
                                                     </div>
