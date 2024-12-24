@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'next/navigation';
 import { WithSearchParams } from '@/components/common/WithSearchParams';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 interface CommentSection {
     total: string;
@@ -44,6 +45,10 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
     const csrfToken = getCookie('csrftoken');
     const [comments, setComments] = useState<CommentType[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [offset, setOffset] = useState(0);
+    const pageSize = 6; // 每页显示的评论数量
+    const [totalPages, setTotalPages] = useState(1); // 新增总页数状态
+    const [currentPage, setCurrentPage] = useState(1);
 
     const searchParams = useSearchParams(); // 使用useSearchParams获取URL查询参数
     const projectName = searchParams.get('project_name'); // 获取项目名称
@@ -56,7 +61,7 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
     const fetchComments = async () => {
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=0&ordering=desc&page_length=10`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=${offset}&ordering=desc&page_length=${pageSize}`,
                 {
                     method: 'GET',
                     headers: {
@@ -73,6 +78,7 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
                 ? result.results
                 : [];
             setComments(data);
+            setTotalPages(Math.ceil(parseInt(result.total) / pageSize)); // 设置总页数
         } catch (error) {
             console.error('Fail to fetch comments:', error);
         }
@@ -81,7 +87,13 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
     useEffect(() => {
         if (!token) return;
         fetchComments();
-    }, [discussionId, token]);
+    }, [offset, discussionId, token]);
+
+    // 更新偏移量和当前页码
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        setOffset((newPage - 1) * pageSize);
+    };
 
     // 发送新评论
     const submitNewComment = async () => {
@@ -166,6 +178,35 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
                     <p>No comments yet, be the first to comment one!</p>
                 )}
             </div>
+
+            {/* 分页 */}
+            {totalPages > 0 && (
+                <div className="pagination flex justify-center items-center space-x-4 mt-6">
+                    <Button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                    >
+                        <ChevronLeftIcon className="w-4 h-4" />
+                        <span>Previous</span>
+                    </Button>
+                    <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                    >
+                        <span>Next</span>
+                        <ChevronRightIcon className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

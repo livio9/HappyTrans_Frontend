@@ -61,7 +61,24 @@ function LanguageVersionsContent() {
                         // 语言代码与名称的映射
                         const languageNames: { [key: string]: string } = {
                             'zh-hans': 'Simplified Chinese',
-                            en: 'English',
+                            'zh-hant': 'Traditional Chinese',
+                            'en': 'English',
+                            'es': 'Spanish',
+                            'fr': 'French',
+                            'de': 'German',
+                            'it': 'Italian',
+                            'ja': 'Japanese',
+                            'ko': 'Korean',
+                            'ru': 'Russian',
+                            'ar': 'Arabic',
+                            'pt': 'Portuguese',
+                            'hi': 'Hindi',
+                            'tr': 'Turkish',
+                            'pl': 'Polish',
+                            'nl': 'Dutch',
+                            'sv': 'Swedish',
+                            'no': 'Norwegian',
+                            'da': 'Danish'
                             // 需要支持更多语言时可扩展
                         };
 
