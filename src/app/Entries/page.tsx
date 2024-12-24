@@ -33,6 +33,13 @@ import {
 } from 'lucide-react'; // 使用lucide图标
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // 使用卡片组件
 import { set } from 'date-fns';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // 用于entries返回的数据结构中的msgstr数组
 type msgstr = {
@@ -165,6 +172,9 @@ function ProjectDetailsContent() {
     // 排序相关状态
     const [sortColumn, setSortColumn] = useState<string>('idx_in_language'); // 默认排序列
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 默认排序方向
+
+    const [sourcePopoverOpen, setSourcePopoverOpen] = useState(false);
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
     useEffect(() => {
         if (!token) return;
@@ -521,50 +531,6 @@ function ProjectDetailsContent() {
                         </Button>
                     </div>
 
-                    {/* 过滤控件 */}
-                    <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-                        {/* 时间筛选 */}
-                        <div className="flex space-x-2">
-                            <Input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => {
-                                    setStartDate(e.target.value);
-                                }}
-                                placeholder="Start Date"
-                                className="w-full md:w-auto"
-                            />
-                            <Input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => {
-                                    setEndDate(e.target.value);
-                                }}
-                                placeholder="End Date"
-                                className="w-full md:w-auto"
-                            />
-                        </div>
-                        {/* 标签筛选 */}
-                        <div className="flex items-center space-x-2">
-                            {AVAILABLE_TAGS.map(tag => (
-                                <label key={tag} className="flex items-center space-x-1">
-                                    <input
-                                        type="checkbox"
-                                        value={tag}
-                                        checked={selectedTags.includes(tag)}
-                                        onChange={(e) => {
-                                            if (e.target.checked) {
-                                                setSelectedTags([...selectedTags, tag]);
-                                            } else {
-                                                setSelectedTags(selectedTags.filter(t => t !== tag));
-                                            }
-                                        }}
-                                    />
-                                    <span>{tag}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
 
                     {/* 表格容器，处理水平滚动 */}
                     <div className="overflow-x-auto rounded-md border w-full">
@@ -614,7 +580,49 @@ function ProjectDetailsContent() {
                                             <TableHead>
                                                 {/* 翻译原文 */}
                                                 <div className="flex items-center">
-                                                    Source
+                                                    
+                                                    <Popover open={sourcePopoverOpen} onOpenChange={setSourcePopoverOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="ghost" title="Filter by tags" >
+                                                                Source
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-80">
+                                                            <div className="grid gap-4">
+                                                                <div className="space-y-2">
+                                                                    <h4 className="font-medium leading-none">Filter by Tags</h4>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Select tags to filter the entries
+                                                                    </p>
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    {AVAILABLE_TAGS.map(tag => (
+                                                                        <div key={tag} className="flex items-center space-x-2">
+                                                                            <Checkbox
+                                                                                id={tag}
+                                                                                checked={selectedTags.includes(tag)}
+                                                                                onCheckedChange={(checked) => {
+                                                                                    if (checked) {
+                                                                                        setSelectedTags([...selectedTags, tag]);
+                                                                                    } else {
+                                                                                        setSelectedTags(selectedTags.filter(t => t !== tag));
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <Label htmlFor={tag}>{tag}</Label>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                                <Button 
+                                                                    className="mt-2" 
+                                                                    variant="outline" 
+                                                                    onClick={() => setSourcePopoverOpen(false)}
+                                                                >
+                                                                    Close
+                                                                </Button>
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -650,7 +658,56 @@ function ProjectDetailsContent() {
                                             <TableHead>
                                                 {/* 更新时间 */}
                                                 <div className="flex items-center">
-                                                    Updated At
+                                                    
+                                                    <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                title="Filter by date range (from...to)"
+                                                            >
+                                                                Updated At
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-80">
+                                                            <div className="grid gap-4">
+                                                                <div className="space-y-2">
+                                                                    <h4 className="font-medium leading-none">Date Range</h4>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        Set the start and end dates for filtering
+                                                                    </p>
+                                                                </div>
+                                                                <div className="grid gap-2">
+                                                                    <div className="grid grid-cols-3 items-center gap-4">
+                                                                        <Label htmlFor="start">From</Label>
+                                                                        <Input
+                                                                            id="start"
+                                                                            type="date"
+                                                                            className="col-span-2 h-8"
+                                                                            value={startDate}
+                                                                            onChange={(e) => setStartDate(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="grid grid-cols-3 items-center gap-4">
+                                                                        <Label htmlFor="end">To</Label>
+                                                                        <Input
+                                                                            id="end"
+                                                                            type="date"
+                                                                            className="col-span-2 h-8"
+                                                                            value={endDate}
+                                                                            onChange={(e) => setEndDate(e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <Button 
+                                                                    className="mt-2" 
+                                                                    variant="outline" 
+                                                                    onClick={() => setDatePopoverOpen(false)}
+                                                                >
+                                                                    Close
+                                                                </Button>
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -832,3 +889,4 @@ export default function ProjectDetails() {
         </WithSearchParams>
     );
 }
+
