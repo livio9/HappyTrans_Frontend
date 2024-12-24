@@ -335,7 +335,7 @@ function PageContent() {
 
     // 开始编辑帖子
     const startEditing = (discussion: DiscussionType) => {
-        if (!authUser || authUser.id !== discussion.user?.id) return;
+        if (!authUser || (authUser.id !== discussion.user?.id && authUser.role !== "admin")) return;
         setEditingDiscussionId(discussion.id);
         setEditTitle(discussion.title);
         setEditContent(discussion.content);

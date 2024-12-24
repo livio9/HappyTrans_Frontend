@@ -31,6 +31,7 @@ export const ProjectProvider = ({ children }) => {
         setEntriesMap(
             new Map(formattedEntries.map((entry) => [entry.value, entry.label]))
         );
+        return formattedEntries; 
     };
 
     // 获取 entries
@@ -56,12 +57,12 @@ export const ProjectProvider = ({ children }) => {
                     data.languages[0] &&
                     data.languages[0].entries
                 ) {
-                    updateEntries(data.languages[0].entries);
+                    return updateEntries(data.languages[0].entries);
                 } else {
                     setEntries([]);
                     setEntriesMap(new Map());
+                    return [];
                 }
-                return Array.isArray(entries) ? entries : [];
             } else {
                 setError('Failed to fetch entries');
             }
