@@ -192,7 +192,7 @@ export default function Projects() {
         setLoading(true); // 设置加载状态为加载中
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects?project_name=${projectFilterTerm}&page_size=${100}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/projects?project_name=${projectFilterTerm}&page_size=${100000}`,
                 {
                     method: 'GET',
                     headers: {

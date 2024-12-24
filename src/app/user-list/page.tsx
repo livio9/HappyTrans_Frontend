@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
     Table,
     TableBody,
@@ -29,6 +30,11 @@ const UserList: React.FC = () => {
     const [loading, setLoading] = useState(true); // 加载状态
     const [error, setError] = useState(''); // 错误信息
     const [openDialog, setOpenDialog] = useState(false); // 控制对话框开关
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10); // Number of items per page
+    const [totalItems, setTotalItems] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    
 
     // 确保只有管理员可以访问该页面
     useEffect(() => {
@@ -38,12 +44,17 @@ const UserList: React.FC = () => {
     }, [user]);
 
     // 获取用户列表
+    // Modify the fetchUsers function to handle pagination
     const fetchUsers = async (search = '') => {
         setLoading(true);
         setError('');
         try {
+            const start_id = (currentPage - 1) * pageSize;
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${search}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?` + 
+                `start_id=${start_id}&` +
+                `length=${pageSize}&` +
+                `username=${search}`,
                 {
                     method: 'GET',
                     headers: {
@@ -59,12 +70,30 @@ const UserList: React.FC = () => {
 
             const data = await response.json();
             setUsers(data.results || []);
+            setTotalItems(data.total || 0);
+            setTotalPages(Math.ceil(data.total / pageSize));
         } catch (err) {
             console.error('Error fetching users:', err);
             setError('Failed to fetch users.');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Add useEffect to refetch when page changes
+    useEffect(() => {
+        fetchUsers(searchTerm);
+    }, [currentPage, pageSize]); // Re-fetch when page or page size changes
+
+    // Add pagination controls handlers
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newSize = parseInt(event.target.value);
+        setPageSize(newSize);
+        setCurrentPage(1); // Reset to first page when changing page size
     };
 
     // 删除用户
@@ -138,37 +167,78 @@ const UserList: React.FC = () => {
             {loading ? (
                 <p>Loading...</p>
             ) : (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>ID</TableHead>
-                            <TableHead>Username</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((u: any) => (
-                            <TableRow key={u.id}>
-                                <TableCell>{u.id}</TableCell>
-                                <TableCell>{u.username}</TableCell>
-                                <TableCell>{u.email}</TableCell>
-                                <TableCell>
-                                    {u.profile?.role || 'N/A'}
-                                </TableCell>
-                                <TableCell>
-                                    <Button
-                                        onClick={() => deleteUser(u.id)}
-                                        color="red"
-                                    >
-                                        Delete
-                                    </Button>
-                                </TableCell>
+                <>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Username</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Role</TableHead>
+                                <TableHead>Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {users.map((u: any) => (
+                                <TableRow key={u.id}>
+                                    <TableCell>{u.id}</TableCell>
+                                    <TableCell>{u.username}</TableCell>
+                                    <TableCell>{u.email}</TableCell>
+                                    <TableCell>
+                                        {u.profile?.role || 'N/A'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            onClick={() => deleteUser(u.id)}
+                                            color="red"
+                                        >
+                                            Delete
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {/* Add pagination controls */}
+                    <div className="mt-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <span>Rows per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={handlePageSizeChange}
+                                className="border rounded p-1"
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={20}>20</option>
+                                <option value={50}>50</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <span>
+                                Page {currentPage} of {totalPages}{' '}
+                                ({totalItems} total items)
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </>
             )}
 
             {/* Dialog */}
