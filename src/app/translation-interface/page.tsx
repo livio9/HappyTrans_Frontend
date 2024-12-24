@@ -1215,20 +1215,12 @@ function TranslationInterfaceContent() {
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
                                     <strong className="text-secondary-foreground">
-                                        Source string added:
-                                    </strong>
-                                    <span className="text-secondary-foreground">
-                                        3 years ago
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
-                                    <strong className="text-secondary-foreground">
                                         String Location:
                                     </strong>
                                     <span className="text-secondary-foreground">
                                         The{' '}
                                         {strings[currentIndex]?.idx_in_language}
-                                        th in the translation file
+                                        th entry in the translation file
                                     </span>
                                 </div>
                                 {/* tag是否可编辑需要看用户权限 */}
