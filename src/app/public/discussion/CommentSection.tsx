@@ -7,6 +7,7 @@ import Comment from './Comment'; // 导入 Comment 组件
 import { getCookie } from '@/utils/cookies';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 
 interface CommentSection {
     total: string;
@@ -38,12 +39,16 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
     const csrfToken = getCookie('csrftoken');
     const [comments, setComments] = useState<CommentType[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [offset, setOffset] = useState(0);
+    const pageSize = 6; // 每页显示的评论数量
+    const [totalPages, setTotalPages] = useState(1); // 新增总页数状态
+    const [currentPage, setCurrentPage] = useState(1);
 
     // 获取所有评论
     const fetchComments = async () => {
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=0&ordering=desc&page_length=10`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/comments/?discussion_id=${discussionId}&offset=${offset}&ordering=desc&page_length=${pageSize}`,
                 {
                     method: 'GET',
                     headers: {
@@ -59,7 +64,8 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
             const data: CommentType[] = Array.isArray(result.results)
                 ? result.results
                 : [];
-            setComments(data);
+            setComments(data); 
+            setTotalPages(Math.ceil(parseInt(result.total) / pageSize)); // 设置总页数
         } catch (error) {
             console.error('Fail to fetch comments:', error);
         }
@@ -67,7 +73,13 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
 
     useEffect(() => {
         fetchComments();
-    }, [discussionId, token]);
+    }, [offset, discussionId]);
+
+    // 更新偏移量和当前页码
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        setOffset((newPage - 1) * pageSize);
+    };
 
     // 发送新评论
     const submitNewComment = async () => {
@@ -146,6 +158,36 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
                     <p>No comments yet, be the first to comment one!</p>
                 )}
             </div>
+
+
+            {/* 分页 */}
+            {totalPages > 0 && (
+                <div className="pagination flex justify-center items-center space-x-4 mt-6">
+                    <Button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                    >
+                        <ChevronLeftIcon className="w-4 h-4" />
+                        <span>Previous</span>
+                    </Button>
+                    <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                    >
+                        <span>Next</span>
+                        <ChevronRightIcon className="w-4 h-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };
