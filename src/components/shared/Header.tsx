@@ -41,7 +41,7 @@ const Header: React.FC = () => {
     const handleLogout = async () => {
         try {
             await logout();
-            window.location.href = '/welcome'; // 重定向到登录页
+            router.push('/welcome'); // 重定向到登录页
         } catch (error) {
             console.error('Logout failed:', error);
             throw error;

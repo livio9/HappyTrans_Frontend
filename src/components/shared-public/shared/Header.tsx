@@ -7,11 +7,13 @@ import UserAvatar from '@/components/shared/UserAvatar'; // 引入共享的 User
 import { Button } from '@/components/ui/button';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     // 切换下拉菜单显示状态
     const toggleDropdown = () => {
@@ -38,8 +40,8 @@ const Header: React.FC = () => {
     // 处理登出操作
     const handleLogout = async () => {
         try {
-            await logout();
-            window.location.href = '/welcome'; // 重定向到登录页
+            
+            router.push('/welcome'); // 重定向到登录页
         } catch (error) {
             console.error('Logout failed:', error);
             throw error;
