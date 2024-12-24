@@ -612,7 +612,7 @@ export default function Projects() {
     const handleGoToTranslate = async (projectName: string) => {
         try {
             await fetchProjectInfo(projectName); // 获取项目详细信息
-            setCurrentProject({ name: projectName }); // 设置当前项目
+            // setCurrentProject({ name: projectName }); // 设置当前项目
             router.push(
                 `/language-versions?project=${encodeURIComponent(projectName)}`
             ); // 跳转到语言版本页面

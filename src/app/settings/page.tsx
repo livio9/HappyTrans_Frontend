@@ -1,3 +1,5 @@
+// src/app/settings/page.tsx
+
 'use client';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
@@ -46,30 +48,21 @@ const SettingsPage: React.FC = () => {
     const [username, setUsername] = useState<string>('');
     const [email, setEmail] = useState<string>('');
 
-    // 通知设置状态
-    const [emailNotifications, setEmailNotifications] =
-        useState<boolean>(false);
-    const [pushNotifications, setPushNotifications] = useState<boolean>(false);
-
     // 语言设置状态（改为数组存储）
     const [primaryLanguage, setPrimaryLanguage] = useState<string>('');
     const [secondaryLanguages, setSecondaryLanguages] = useState<string[]>([]);
 
     // 编辑时的临时语言状态
     const [editPrimaryLanguage, setEditPrimaryLanguage] = useState<string>('');
-    const [editSecondaryLanguages, setEditSecondaryLanguages] = useState<
-        string[]
-    >([]);
+    const [editSecondaryLanguages, setEditSecondaryLanguages] = useState<string[]>([]);
 
     // 控制语言编辑模式
-    const [isEditingLanguages, setIsEditingLanguages] =
-        useState<boolean>(false);
+    const [isEditingLanguages, setIsEditingLanguages] = useState<boolean>(false);
 
     // 状态消息
     const [languageError, setLanguageError] = useState<string>('');
     const [isLanguageSaving, setIsLanguageSaving] = useState<boolean>(false);
-    const [languageSuccessMessage, setLanguageSuccessMessage] =
-        useState<string>('');
+    const [languageSuccessMessage, setLanguageSuccessMessage] = useState<string>('');
 
     // 通用错误消息状态
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -78,29 +71,28 @@ const SettingsPage: React.FC = () => {
 
     // 获取用户资料（个人资料和通知设置）
     useEffect(() => {
-        const authToken = localStorage.getItem('authToken') || '';
-        if (!authToken) {
-            console.error('No authentication token found.');
-            setErrorMessage('认证信息丢失，请重新登录。');
-            return;
-        }
+        const fetchProfile = async () => {
+            const authToken = localStorage.getItem('authToken') || '';
+            if (!authToken) {
+                console.error('No authentication token found.');
+                setErrorMessage('认证信息丢失，请重新登录。');
+                return;
+            }
 
-        // 获取个人资料和通知设置
-        fetch('http://localhost:8000/profile', {
-            method: 'GET',
-            credentials: 'include', // 包含Cookies
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Token ${authToken}`, // 使用Token进行认证
-            },
-        })
-            .then(async (res) => {
+            try {
+                // 获取个人资料和通知设置
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
+                    method: 'GET',
+                    credentials: 'include', // 包含Cookies
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${authToken}`, // 使用Token进行认证
+                    },
+                });
+
                 if (!res.ok) {
                     const contentType = res.headers.get('Content-Type');
-                    if (
-                        contentType &&
-                        contentType.includes('application/json')
-                    ) {
+                    if (contentType && contentType.includes('application/json')) {
                         const errorData = await res.json();
                         throw new Error(errorData.error || '未知错误');
                     } else {
@@ -108,16 +100,12 @@ const SettingsPage: React.FC = () => {
                         throw new Error(`意外的响应格式: ${text}`);
                     }
                 }
-                return res.json();
-            })
-            .then((data) => {
+
+                const data = await res.json();
+
                 // 设置用户资料
                 setUsername(localStorage.getItem('username') || '');
                 setEmail(data.email || '');
-
-                // 设置通知设置
-                setEmailNotifications(data.email_notifications || false);
-                setPushNotifications(data.push_notifications || false);
 
                 // 设置语言设置
                 setPrimaryLanguage(data.native_language || '');
@@ -128,11 +116,13 @@ const SettingsPage: React.FC = () => {
                 setEditSecondaryLanguages(data.preferred_languages || []);
 
                 setErrorMessage('');
-            })
-            .catch((err) => {
+            } catch (err: any) {
                 console.error('Error fetching profile:', err);
                 setErrorMessage(err.message || '获取用户资料时出错');
-            });
+            }
+        };
+
+        fetchProfile();
     }, []);
 
     // 进入编辑语言模式
@@ -156,7 +146,7 @@ const SettingsPage: React.FC = () => {
     };
 
     // 保存语言设置
-    const handleSaveLanguages = () => {
+    const handleSaveLanguages = async () => {
         if (isLanguageSaving) return; // 防止重复提交
 
         setIsLanguageSaving(true);
@@ -189,50 +179,49 @@ const SettingsPage: React.FC = () => {
         }
 
         const updatedData = {
-            native_language: editPrimaryLanguage,
+            native_language: editPrimaryLanguage.toLowerCase(),
             preferred_languages: editSecondaryLanguages.map((lang) =>
                 lang.toLowerCase()
             ),
         };
 
-        // 发送请求保存修改后的语言设置
-        fetch('http://localhost:8000/profile', {
-            method: 'PUT',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Token ${authToken}`,
-            },
-            body: JSON.stringify(updatedData),
-        })
-            .then(async (res) => {
-                if (!res.ok) {
-                    const contentType = res.headers.get('Content-Type');
-                    if (
-                        contentType &&
-                        contentType.includes('application/json')
-                    ) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error || '未知错误');
-                    } else {
-                        const text = await res.text();
-                        throw new Error(`意外的响应格式: ${text}`);
-                    }
-                }
-                return res.json();
-            })
-            .then(() => {
-                setPrimaryLanguage(editPrimaryLanguage);
-                setSecondaryLanguages([...editSecondaryLanguages]);
-                setLanguageSuccessMessage('语言设置已保存');
-                setIsLanguageSaving(false);
-                setIsEditingLanguages(false);
-            })
-            .catch((err) => {
-                console.error('Error saving languages:', err);
-                setLanguageError('保存失败: ' + (err.message || '未知错误'));
-                setIsLanguageSaving(false);
+        try {
+            // 发送请求保存修改后的语言设置
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Token ${authToken}`,
+                },
+                body: JSON.stringify(updatedData),
             });
+
+            if (!res.ok) {
+                const contentType = res.headers.get('Content-Type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || '未知错误');
+                } else {
+                    const text = await res.text();
+                    throw new Error(`意外的响应格式: ${text}`);
+                }
+            }
+
+            // 假设响应包含更新后的数据
+            const data = await res.json();
+
+            // 更新状态
+            setPrimaryLanguage(data.native_language || '');
+            setSecondaryLanguages(data.preferred_languages || []);
+            setLanguageSuccessMessage('语言设置已保存');
+            setIsEditingLanguages(false);
+            setIsLanguageSaving(false);
+        } catch (err: any) {
+            console.error('Error saving languages:', err);
+            setLanguageError('保存失败: ' + (err.message || '未知错误'));
+            setIsLanguageSaving(false);
+        }
     };
 
     return (
@@ -290,7 +279,7 @@ const SettingsPage: React.FC = () => {
                 </CardContent>
             </Card>
 
-            {/* 通知设置部分 */}
+            {/* 主题设置部分 */}
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle>Theme Settings</CardTitle>
@@ -307,12 +296,6 @@ const SettingsPage: React.FC = () => {
                             onCheckedChange={toggleTheme}
                         />
                     </div>
-                    {/* 或者使用按钮 */}
-                    {/* 
-          <Button onClick={toggleTheme}>
-            Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
-          </Button>
-          */}
                 </CardContent>
             </Card>
 
@@ -447,10 +430,7 @@ const SettingsPage: React.FC = () => {
                                 </p>
                             </div>
 
-                            <Button
-                                className="bg-primary text-primary-foreground border border-border px-4 py-2 rounded transition duration-300 ease-in-out hover:bg-primary-hover hover:text-primary-foreground-hover hover:border-border-hover"
-                                onClick={handleEditLanguages}
-                            >
+                            <Button onClick={handleEditLanguages}>
                                 Edit Languages
                             </Button>
                         </>
@@ -459,6 +439,7 @@ const SettingsPage: React.FC = () => {
             </Card>
         </div>
     );
+
 };
 
 export default SettingsPage;

@@ -15,10 +15,9 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Globe, ChevronRight, PieChart } from 'lucide-react'; // Ensure ChevronRight and PieChart icons are imported
+import { User, Globe, ChevronRight, PieChart, ChevronLeft } from 'lucide-react'; // 合并导入
 import Link from 'next/link'; // Import Link component
 import ProjectCard from '@/components/shared/ProjectCard'; // Import ProjectCard component
-import { ChevronLeft } from 'lucide-react'; // 导入图标组件
 import { useRouter } from 'next/navigation';
 
 // Define language options
@@ -83,9 +82,7 @@ export default function UserProfile() {
     // Temporary states for editing
     const [editBio, setEditBio] = useState('');
     const [editNativeLanguage, setEditNativeLanguage] = useState('');
-    const [editPreferredLanguages, setEditPreferredLanguages] = useState<
-        string[]
-    >([]);
+    const [editPreferredLanguages, setEditPreferredLanguages] = useState<string[]>([]);
 
     // Error message state
     const [errorMessage, setErrorMessage] = useState('');
@@ -110,7 +107,9 @@ export default function UserProfile() {
         ): Promise<ActivityLog[]> => {
             try {
                 const response = await fetch(
-                    `http://localhost:8000/activity_logs?project_name=${encodeURIComponent(projectName)}&page_length=3&ordering=desc`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/activity_logs?project_name=${encodeURIComponent(
+                        projectName
+                    )}&page_length=3&ordering=desc`,
                     {
                         method: 'GET',
                         headers: {
@@ -138,23 +137,25 @@ export default function UserProfile() {
     );
 
     useEffect(() => {
-        const authToken = localStorage.getItem('authToken') || '';
-        if (!authToken) {
-            console.error('No authentication token found.');
-            setErrorMessage('认证信息丢失，请重新登录。');
-            return;
-        }
+        const fetchProfile = async () => {
+            const authToken = localStorage.getItem('authToken') || '';
+            if (!authToken) {
+                console.error('No authentication token found.');
+                setErrorMessage('认证信息丢失，请重新登录。');
+                return;
+            }
 
-        // Fetch user profile
-        fetch('http://localhost:8000/profile', {
-            method: 'GET',
-            credentials: 'include', // Include Cookies
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Token ${authToken}`, // Use Token for authentication
-            },
-        })
-            .then(async (res) => {
+            try {
+                // Fetch user profile
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
+                    method: 'GET',
+                    credentials: 'include', // Include Cookies
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${authToken}`, // Use Token for authentication
+                    },
+                });
+
                 if (!res.ok) {
                     const contentType = res.headers.get('Content-Type');
                     if (
@@ -168,9 +169,9 @@ export default function UserProfile() {
                         throw new Error(`意外的响应格式: ${text}`);
                     }
                 }
-                return res.json();
-            })
-            .then(async (data: ProfileData) => {
+
+                const data: ProfileData = await res.json();
+
                 setProfileData(data);
                 setEditBio(data.bio || '');
                 setEditNativeLanguage(data.native_language || '');
@@ -195,18 +196,19 @@ export default function UserProfile() {
                 const activitiesResults = await Promise.all(activitiesPromises);
 
                 // Build the projectActivities map
-                const activitiesMap: { [projectName: string]: ActivityLog[] } =
-                    {};
+                const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
                 activitiesResults.forEach(({ projectName, activities }) => {
                     activitiesMap[projectName] = activities;
                 });
 
                 setProjectActivities(activitiesMap);
-            })
-            .catch((err) => {
+            } catch (err: any) {
                 console.error('Error fetching profile:', err);
                 setErrorMessage(err.message || '获取用户资料时出错');
-            });
+            }
+        };
+
+        fetchProfile();
     }, [fetchActivityLogs]);
 
     const handleEdit = () => {
@@ -224,7 +226,7 @@ export default function UserProfile() {
         setErrorMessage(''); // Clear error message
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!profileData) return;
 
         // Frontend validation
@@ -256,64 +258,59 @@ export default function UserProfile() {
             return;
         }
 
-        // Send PUT request to update user profile
-        fetch('http://localhost:8000/profile', {
-            method: 'PUT',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Token ${authToken}`,
-            },
-            body: JSON.stringify(updatedData),
-        })
-            .then(async (res) => {
-                if (!res.ok) {
-                    const contentType = res.headers.get('Content-Type');
-                    if (
-                        contentType &&
-                        contentType.includes('application/json')
-                    ) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error || '未知错误');
-                    } else {
-                        const text = await res.text();
-                        throw new Error(`意外的响应格式: ${text}`);
-                    }
-                }
-                return res.json();
-            })
-            .then(async (data: ProfileData) => {
-                setProfileData(data);
-                setIsEditing(false);
-                setErrorMessage(''); // Clear any error messages
-
-                // Update project activity logs
-                const allProjects = [
-                    ...data.managed_projects,
-                    ...data.translated_projects,
-                ];
-                const activitiesPromises = allProjects.map(async (project) => {
-                    const activities = await fetchActivityLogs(
-                        project.name,
-                        authToken
-                    );
-                    return { projectName: project.name, activities };
-                });
-
-                const activitiesResults = await Promise.all(activitiesPromises);
-                const activitiesMap: { [projectName: string]: ActivityLog[] } =
-                    {};
-                activitiesResults.forEach(({ projectName, activities }) => {
-                    activitiesMap[projectName] = activities;
-                });
-
-                setProjectActivities(activitiesMap);
-            })
-            .catch((err) => {
-                console.error('Update failed:', err);
-                setErrorMessage('保存失败: ' + (err.message || '未知错误'));
-                // Do not reset input fields, allow user to continue editing
+        try {
+            // Send PUT request to update user profile
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Token ${authToken}`,
+                },
+                body: JSON.stringify(updatedData),
             });
+
+            if (!res.ok) {
+                const contentType = res.headers.get('Content-Type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || '未知错误');
+                } else {
+                    const text = await res.text();
+                    throw new Error(`意外的响应格式: ${text}`);
+                }
+            }
+
+            const data: ProfileData = await res.json();
+            setProfileData(data);
+            setIsEditing(false);
+            setErrorMessage(''); // Clear any error messages
+
+            // Update project activity logs
+            const allProjects = [
+                ...data.managed_projects,
+                ...data.translated_projects,
+            ];
+            const activitiesPromises = allProjects.map(async (project) => {
+                const activities = await fetchActivityLogs(
+                    project.name,
+                    authToken
+                );
+                return { projectName: project.name, activities };
+            });
+
+            const activitiesResults = await Promise.all(activitiesPromises);
+            const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+            activitiesResults.forEach(({ projectName, activities }) => {
+                activitiesMap[projectName] = activities;
+            });
+
+            setProjectActivities(activitiesMap);
+        } catch (err: any) {
+            console.error('Update failed:', err);
+            setErrorMessage('保存失败: ' + (err.message || '未知错误'));
+            // Do not reset input fields, allow user to continue editing
+        }
     };
 
     if (!profileData) {
@@ -580,7 +577,12 @@ export default function UserProfile() {
                                             ).color
                                         }`}
                                         style={{
-                                            width: `${Math.min((profileData.accepted_entries / 5000) * 100, 100)}%`,
+                                            width: `${Math.min(
+                                                (profileData.accepted_entries /
+                                                    5000) *
+                                                    100,
+                                                100
+                                            )}%`,
                                         }}
                                     />
                                 </div>

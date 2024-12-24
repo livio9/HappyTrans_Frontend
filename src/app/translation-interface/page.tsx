@@ -27,7 +27,6 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'; // 导入自定义单选按钮组组件
 import { Label } from '@/components/ui/label'; // 导入自定义标签组件
 import { useAuth } from '@/context/AuthContext'; // 导入用户上下文钩子
-import { useProject } from '@/context/ProjectContext'; // 导入项目上下文钩子
 import { useSearchParams, useRouter } from 'next/navigation'; // 导入路由钩子和查询参数钩子
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { WithSearchParams } from '@/components/common/WithSearchParams';
@@ -109,6 +108,37 @@ interface UserType {
     username: string;
     email?: string;
     bio?: string;
+}
+
+interface Project {
+    name: string; // 项目名称
+    description: string; // 项目描述
+    source_language: string; // 源语言代码
+    create_at: string; // 创建日期
+    language_code: string; // 目标语言代码
+    po_file?: File; // 可选的 PO 文件
+    languages: {
+        language_code: string;
+        total_entries_count: number;
+        selected_entries_count: number;
+        selected_entries_ratio: number;
+    }[]; // 目标语言列表
+    overall_statistics: {
+        total_languages: number; // 总语言数
+        total_entries: number; // 总字符串数
+        total_selected_entries: number; // 已选择的字符串数
+        overall_selected_ratio: number; // 已选择的字符串比例
+    }; // 修正为单个分号
+    translators: {
+        id: number;
+        username: string;
+    }[]; // 翻译者列表
+    managers: {
+        id: number;
+        username: string;
+    }[]; // 项目管理员列表
+    is_public: boolean; // 是否为公共项目
+    is_managed: boolean; // 是否为管理员
 }
 
 // 帖子类型
@@ -211,8 +241,7 @@ function TranslationInterfaceContent() {
 
     const { user, token, projectInProcess, projectManaged } = useAuth(); // 使用用户上下文获取当前用户
     const isAdmin = user?.role === 'admin'; // 判断是否为管理员
-    const { project } = useProject(); // 使用项目上下文获取当前项目
-    console.log('fetching project from useProject', project);
+    const [project, setProject] = useState<Project>(); // 使用项目上下文获取当前项目
 
     const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
     const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
@@ -253,7 +282,7 @@ function TranslationInterfaceContent() {
 
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
-    const [sourceLanguage, setSourceLanguage] = useState<string>('en'); // 源语言
+    const [sourceLanguage, setSourceLanguage] = useState<string>('en'); // 源语言代码
 
     // 管理底部面板的高度
     const [footerHeight, setFooterHeight] = useState(200); // 默认高度
@@ -274,8 +303,39 @@ function TranslationInterfaceContent() {
         }
     }, [strings, currentIndex]);
 
+    // 初始化获取项目数据
     useEffect(() => {
-        if (!user || !token) return;
+        if (!projectName || !languageCode) return;
+        const fetchProject = async () => {
+            try {
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/project-info?project_name=${encodeURIComponent(projectName)}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Token ${token}`, // 确保传递认证令牌
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch project');
+                }
+                const data = await response.json();
+                console.log('Fetched project:', data);
+                setProject(data);
+                setSourceLanguage(data.source_language);
+            } catch (error) {
+                console.error('Error fetching project:', error);
+            }
+        };
+
+        fetchProject();
+    }, [projectName, languageCode]);
+
+    useEffect(() => {
+        // if (!user || !token) return;
         console.log('useEffect triggered', {
             projectName,
             languageCode,
@@ -555,7 +615,6 @@ function TranslationInterfaceContent() {
     ]); // 确保数据更新后执行
 
     //判断用户是否有权限翻译
-    console.log('user.managed_projects:', user?.managed_projects);
     const canTranslate =
         user?.role === 'admin' ||
         (user && projectName && projectInProcess?.includes(projectName));
@@ -616,40 +675,34 @@ function TranslationInterfaceContent() {
     const handleSuggest = async () => {
         setIsLoadingSuggestions(true);
         try {
-            console.log('Fetching translation suggestions...');
-            console.log('Current index:', currentIndex);
-            console.log('Current string:', strings[currentIndex]?.msgid);
-            console.log('Current language code:', languageCode);
-            const response = await fetch('/api/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-                body: JSON.stringify({
-                    projectName: projectName,
-                    idx_in_project: currentIndex,
-                    // sourceLanguage: project.source_language,
-                    sourceLanguage: sourceLanguage, // 源语言为英文
-                    text: strings[currentIndex]?.msgid || '',
-                    // text: "Hello, world!", // 传递源文本
-                    targetLanguage: languageCode, // 根据需要调整目标语言，DeepL 需要大写
-                    // targetLanguage: "zh-CHS", // 目标语言为中文
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || '获取翻译建议失败');
-            }
-
-            const data = await response.json();
-
-            setSuggestions(data.suggestions); // 设置多个翻译建议
-            setIsSuggestDialogOpen(true); // 打开 Dialog
-        } catch (error) {
-            console.error('获取翻译建议时出错:', error);
-        } finally {
+            const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Token ${token}`,
+              },
+              }
+            );
+            if (LLMResponse.ok) {
+              const LLMData = await LLMResponse.json();
+              if (LLMData.error) {
+                console.error('LLM API Error:', LLMData.error);
+              } else {
+                // 使用 setSuggestions 更新状态
+                setSuggestions(prevSuggestions => [
+                    ...prevSuggestions,
+                    ...LLMData.map((llm: {name: string, suggestion: string}) => ({
+                    source: llm.name,
+                    translation: llm.suggestion
+                    }))
+                ]);
+                setIsSuggestDialogOpen(true); // 打开翻译建议对话框
+                }
+            } 
+          }
+          catch (error) {
+            console.error('调用LLM API 时出错:', error);
+          } finally {
             setIsLoadingSuggestions(false);
         }
     };
@@ -699,6 +752,7 @@ function TranslationInterfaceContent() {
         // 确认选择翻译结果
         if (selectedMsgstrID) {
             selectMsgstr(selectedMsgstrID); // 执行 select-msgstr API 调用
+            setCurrentTranslation(strings[currentIndex].msgstr[parseInt(selectedMsgstrID)].msg); // 更新当前翻译文本
         }
         setShowSelectDialog(false); // 关闭弹窗
     };
