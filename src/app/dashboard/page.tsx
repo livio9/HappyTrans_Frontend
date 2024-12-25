@@ -597,4 +597,6 @@ const Dashboard: React.FC = () => {
     );
 };
 
-export default Dashboard;
+export default function DashboardPage() {
+    return <Dashboard />;
+}
