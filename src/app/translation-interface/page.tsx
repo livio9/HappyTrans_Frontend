@@ -578,7 +578,7 @@ function TranslationInterfaceContent() {
             const fetchFeedback = async () => {
                 try {
                     const response = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/feedbacks/by_entry?project_name=${encodeURIComponent(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/feedbacks/by_entry/?project_name=${encodeURIComponent(
                             projectName
                         )}&language_code=${encodeURIComponent(languageCode)}&idx_in_language=${currentIndex}`,
                         {
