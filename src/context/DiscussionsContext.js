@@ -127,7 +127,7 @@ function DiscussionsProviderContent({ children }) {
         setLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${id}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/discussions/${id}/`,
                 {
                     method: 'GET',
                     headers: {
