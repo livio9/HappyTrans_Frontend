@@ -801,11 +801,11 @@ function ProjectDetailsContent() {
                                             
                                                 {/* tags 部分，跨剩余的列 */}
                                                 <div 
-    className="flex flex-col flex-wrap h-[50px] gap-0.5 px-1 overflow-hidden"
-    style={{
-        alignContent: 'flex-start', // 从左到右开始排列
-    }}
->
+                                                    className="flex flex-col flex-wrap h-[50px] gap-0.5 px-1 overflow-hidden"
+                                                    style={{
+                                                        alignContent: 'flex-start', // 从左到右开始排列
+                                                    }}
+                                                >
                                                     {entry.tags.map(
                                                         (tag, idx) => (
                                                             <span

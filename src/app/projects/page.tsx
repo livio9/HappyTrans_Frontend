@@ -27,6 +27,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'; // 导入下拉菜单组件
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'; // 导入分页图标
 import { Input } from '@/components/ui/input'; // 导入输入框组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // 导入标签页组件
 import { EditProjectDialog } from '@/components/projectsDialog/edit-project-dialog';
@@ -138,6 +139,7 @@ export default function Projects() {
     const isAdmin = user?.role === 'admin'; // 判断当前用户是否为管理员
 
     // 定义分页相关的状态
+    const [totalItems, setTotalItems] = useState(0); // 总项目数
     const [currentPage, setCurrentPage] = useState(1); // 当前页码
     const [currentPageInProcess, setCurrentPageInProcess] = useState(1); // 当前页码
 
@@ -203,6 +205,7 @@ export default function Projects() {
             if (response.ok) {
                 const data = await response.json(); // 解析响应数据
                 console.log('data', data);
+                setTotalItems(data.count);
                 const validatedData: Project[] = data.results.filter(
                     (project: Project) => typeof project.name === 'string'
                 );
@@ -775,24 +778,54 @@ export default function Projects() {
                                 )}
                             </div>
                             {/* 分页导航 */}
-                            <div className="flex justify-center mt-6 space-x-2">
-                                {/* 页码按钮 */}
-                                {Array.from(
-                                    { length: totalPages },
-                                    (_, index) => index + 1
-                                ).map((page) => (
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                                    {Math.min(currentPage * itemsPerPage, totalItems)}{' '}
+                                    of {totalItems} entries
+                                </div>
+                                <div className="flex space-x-2">
+                                    {/* 第一页 */}
                                     <Button
-                                        key={page}
-                                        variant={
-                                            page === currentPage
-                                                ? 'outline'
-                                                : 'ghost'
-                                        } // 当前页码为主按钮
-                                        onClick={() => goToPage(page)}
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPage(1)}
+                                        disabled={currentPage === 1}
+                                        aria-label="First page"
                                     >
-                                        {page} {/* 显示页码 */}
+                                        <ChevronsLeft className="h-4 w-4" />
                                     </Button>
-                                ))}
+                                    {/* 上一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPage(currentPage - 1)}
+                                        disabled={currentPage === 1}
+                                        aria-label="Previous page"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    {/* 下一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPage(currentPage + 1)}
+                                        disabled={currentPage === totalPages}
+                                        aria-label="Next page"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                    {/* 最后一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPage(totalPages)}
+                                        disabled={currentPage === totalPages}
+                                        aria-label="Last page"
+                                    >
+                                        <ChevronsRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </TabsContent>
                         <TabsContent value="in-progress">
@@ -826,24 +859,54 @@ export default function Projects() {
                                 )}
                             </div>
                             {/* 分页导航 */}
-                            <div className="flex justify-center mt-6 space-x-2">
-                                {/* 页码按钮 */}
-                                {Array.from(
-                                    { length: totalPagesInProcess },
-                                    (_, index2) => index2 + 1
-                                ).map((page) => (
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {(currentPageInProcess - 1) * itemsPerPage + 1} to{' '}
+                                    {Math.min(currentPageInProcess * itemsPerPage, totalItems)}{' '}
+                                    of {totalItems} entries
+                                </div>
+                                <div className="flex space-x-2">
+                                    {/* 第一页 */}
                                     <Button
-                                        key={page}
-                                        variant={
-                                            page === currentPageInProcess
-                                                ? 'outline'
-                                                : 'ghost'
-                                        } // 当前页码为主按钮
-                                        onClick={() => goToPageInProcess(page)}
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPageInProcess(1)}
+                                        disabled={currentPageInProcess === 1}
+                                        aria-label="First page"
                                     >
-                                        {page} {/* 显示页码 */}
+                                        <ChevronsLeft className="h-4 w-4" />
                                     </Button>
-                                ))}
+                                    {/* 上一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPageInProcess(currentPageInProcess - 1)}
+                                        disabled={currentPageInProcess === 1}
+                                        aria-label="Previous page"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </Button>
+                                    {/* 下一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPageInProcess(currentPageInProcess + 1)}
+                                        disabled={currentPageInProcess === totalPagesInProcess}
+                                        aria-label="Next page"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                    {/* 最后一页 */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => goToPageInProcess(totalPagesInProcess)}
+                                        disabled={currentPageInProcess === totalPagesInProcess}
+                                        aria-label="Last page"
+                                    >
+                                        <ChevronsRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </TabsContent>
                     </Tabs>
