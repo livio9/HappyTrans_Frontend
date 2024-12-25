@@ -55,7 +55,8 @@ function CommentsSectionContent({ discussionId }: CommentsSectionProps) {
 
     const { user, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
     const canCreateComment =
-        user && projectName && projectInProcess?.includes(projectName);
+        user?.role === 'admin' ||
+        (user && projectName && projectInProcess?.includes(projectName));
 
     // 获取所有评论
     const fetchComments = async () => {

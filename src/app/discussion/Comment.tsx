@@ -71,7 +71,8 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
     const projectName = searchParams.get('project_name'); // 获取项目名称
 
     const canCreateComment =
-        user && projectName && projectInProcess?.includes(projectName);
+        user?.role === 'admin' ||
+        (user && projectName && projectInProcess?.includes(projectName));
 
     // 初始化 replies 状态与 comment.replies 同步
     useEffect(() => {
