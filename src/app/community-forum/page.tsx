@@ -161,7 +161,7 @@ function PageContent() {
                     {/* projectName */}
                     {projectName && (
                         <a
-                            href={`language-versions?project=${projectName}`}
+                            href={`/language-versions?project=${projectName}`}
                             style={{
                                 fontSize: '1.2rem', // 话题字体大小
                                 color: '#6b7280', // 灰色字体
@@ -183,7 +183,7 @@ function PageContent() {
                     {/* languageCode */}
                     {languageCode && (
                         <a
-                            href={`Entries?project_name=${projectName}&language_code=${languageCode}`}
+                            href={`/Entries?project_name=${projectName}&language_code=${languageCode}`}
                             style={{
                                 fontSize: '1.2rem',
                                 color: '#6b7280',
@@ -205,7 +205,7 @@ function PageContent() {
                     {/* idxInLanguage */}
                     {idxInLanguage && (
                         <a
-                            href={`translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${encodeURIComponent(idxInLanguage)}`}
+                            href={`/translation-interface?project_name=${projectName}&language_code=${languageCode}&idx_in_language=${encodeURIComponent(idxInLanguage)}`}
                             style={{
                                 fontSize: '1.2rem',
                                 color: '#6b7280',
