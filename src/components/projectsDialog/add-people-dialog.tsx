@@ -56,11 +56,11 @@ export function AddPeopleDialog({
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=10&username=${value}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?start_id=0&length=100000&username=${value}`,
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${localStorage.getItem('authToken')}`,
+                        Authorization: `Token ${token}`,
                     },
                 }
             );
@@ -167,8 +167,24 @@ export function AddPeopleDialog({
         }
     };
 
+    // 添加重置状态的函数
+    const resetStates = () => {
+        setSelectedUsers([]);
+        setSearchTerm('');
+        setSearchResults([]);
+        setErrorMessage('');
+    };
+
+    // 修改 Dialog 的 onOpenChange 处理
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            resetStates();
+        }
+        onOpenChange(open);
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-[475px]">
                 <DialogHeader>
                     <DialogTitle>
@@ -274,7 +290,7 @@ export function AddPeopleDialog({
                 <DialogFooter>
                     <Button
                         variant="outline"
-                        onClick={() => onOpenChange(false)}
+                        onClick={() => handleOpenChange(false)}
                     >
                         Cancel
                     </Button>
