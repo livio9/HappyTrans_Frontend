@@ -137,7 +137,7 @@ function ProjectDetailsContent() {
         'Default'
     ] as const;
 
-    const itemsPerPage = 8; // 每页显示的条目数，固定为8
+    const itemsPerPage = 10; // 每页显示的条目数，固定为8
     const [currentPage, setCurrentPage] = useState(1); // 当前页码
     const [totalItems, setTotalItems] = useState(0); // 总条目数
     const totalPages = useMemo(() => Math.ceil(totalItems / itemsPerPage), [totalItems]);
@@ -730,7 +730,7 @@ function ProjectDetailsContent() {
                             <List
                                 height={Math.max(
                                     paginatedEntries.length * 50,
-                                    8 * 50
+                                    10 * 50
                                 )} // 动态计算高度
                                 itemCount={paginatedEntries.length}
                                 itemSize={50}
@@ -744,7 +744,7 @@ function ProjectDetailsContent() {
                                         <div
                                             style={style}
                                             key={entry.idx_in_language}
-                                            className="grid grid-cols-[2fr_5.4fr_8fr_8fr_3fr] items-center border-b hover:bg-muted/50 cursor-pointer"
+                                            className="grid grid-cols-[1.5fr_5fr_8fr_8fr_3fr] items-center border-b hover:bg-muted/50 cursor-pointer"
                                             onClick={() =>
                                                 router.push(
                                                     `/translation-interface?project_name=${encodeURIComponent(
@@ -760,9 +760,8 @@ function ProjectDetailsContent() {
                                                     minWidth: '50px', // 最小宽度
                                                     height: 'auto', // 自动高度
                                                     lineHeight: '20px', // 行高
-                                                    textAlign: 'center',
                                                     overflow: 'hidden',
-                                                    whiteSpace: 'nowrap', // 允许换行
+                                                    whiteSpace: 'nowrap', // 不允许换行
                                                     textOverflow: 'ellipsis', // 超出部分显示省略号
                                                 }}
                                                 title={entry.idx_in_language.toString()}
@@ -787,27 +786,31 @@ function ProjectDetailsContent() {
                                             </div>
 
                                             {/* 第三列：msgid 和 标签 */}
-                                            <div className="flex items-center justify-start space-x-2">
+                                            <div className="grid grid-cols-[6fr_3fr] gap-2 w-fll h-[50px] items-center overflow-hidden">
+                                                {/* msgid 部分 */}
                                                 <div
-                                                    className="flex-1 pr-2 text-gray-700 break-words"
+                                                    className="text-gray-700 truncate"
                                                     style={{
                                                     minWidth: '150px',
-                                                    height: 'auto',
                                                     lineHeight: '18px',
-                                                    overflow: 'hidden',
-                                                    whiteSpace: 'nowrap',
-                                                    textOverflow: 'ellipsis',
                                                     }}
                                                     title={entry.msgid}
                                                 >
                                                     {entry.msgid}
                                                 </div>
-                                                <div className="flex flex-wrap mt-1">
+                                            
+                                                {/* tags 部分，跨剩余的列 */}
+                                                <div 
+    className="flex flex-col flex-wrap h-[50px] gap-0.5 px-1 overflow-hidden"
+    style={{
+        alignContent: 'flex-start', // 从左到右开始排列
+    }}
+>
                                                     {entry.tags.map(
                                                         (tag, idx) => (
                                                             <span
                                                                 key={idx}
-                                                                className={`px-2 py-0.5 text-[10px] text-gray-900 rounded-sm mr-1 mb-1 ${getTagColorClass(tag)}`}
+                                                                className={`inline-flex items-center justify-center px-1 py-0.5 text-[8px] rounded-sm whitespace-nowrap ${getTagColorClass(tag)}`}
                                                                 style={{
                                                                     minWidth:
                                                                         '15px', // 最小宽度
@@ -834,13 +837,13 @@ function ProjectDetailsContent() {
 
                                             {/* 第四列：翻译内容 */}
                                             <div
-                                                className="text-gray-700 break-words"
+                                                className="text-gray-700"
                                                 style={{
                                                     minWidth: '150px',
                                                     height: 'auto',
                                                     lineHeight: '18px',
                                                     overflow: 'hidden',
-                                                    whiteSpace: 'normal',
+                                                    whiteSpace: 'nowrap',
                                                     textOverflow: 'ellipsis',
                                                 }}
                                                 title={
@@ -864,7 +867,16 @@ function ProjectDetailsContent() {
                                             </div>
 
                                             {/* 第五列：更新时间 */}
-                                            <div className="text-xs text-gray-500">
+                                            <div className="text-xs text-gray-500"
+                                                style={{
+                                                    minWidth: '100px',
+                                                    height: 'auto',
+                                                    lineHeight: '18px',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap',
+                                                    textOverflow: 'ellipsis',
+                                                }}
+                                            >
                                                 {new Date(
                                                     entry.updated_at
                                                 ).toLocaleString()}
