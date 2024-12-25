@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // 配置选项
+  trailingSlash: true,
+  output: 'export', // 启用静态导出模式
   eslint: {
     // 完全禁用 ESLint
     ignoreDuringBuilds: true,
