@@ -36,6 +36,7 @@ import { motion } from 'framer-motion';
 import { Separator } from '@/components/ui/separator'; // 导入自定义分隔符组件
 import { ScrollArea } from '@/components/ui/scroll-area'; // 导入自定义滚动区域组件
 import { formatDistanceToNow, set } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { FixedSizeList as List } from 'react-window'; // 导入固定大小列表组件,虚拟窗口提升性能
 import { getCookie } from '@/utils/cookies';
 import Link from 'next/link';
@@ -1233,7 +1234,11 @@ function TranslationInterfaceContent() {
                                         Last updated:
                                     </strong>
                                     <span className="text-secondary-foreground">
-                                        {currentEntryForLan?.updated_at}
+                                        {currentEntryForLan?.updated_at && 
+                                            formatDistanceToNow(new Date(currentEntryForLan.updated_at), 
+                                                { addSuffix: true, locale: enUS }
+                                            )
+                                        }
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
