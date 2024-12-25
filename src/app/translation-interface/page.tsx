@@ -1220,11 +1220,11 @@ function TranslationInterfaceContent() {
                         </TabsContent>
                         <TabsContent value="info">
                             <div className="space-y-2">
-                                <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
-                                    <strong className="text-secondary-foreground">
+                                <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md w-full">
+                                    <strong className="text-secondary-foreground w-full">
                                         Reference:
                                     </strong>
-                                    <span className="text-secondary-foreground">
+                                    <span className="text-secondary-foreground break-words w-full sm:flex-1 whitespace-pre-wrap">
                                         {currentEntryForLan?.references}
                                     </span>
                                 </div>
