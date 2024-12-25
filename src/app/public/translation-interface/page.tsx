@@ -572,17 +572,19 @@ function TranslationInterfaceContent() {
                 if (response.status === 429) {
                     console.log('Rate limit exceeded');
                     setSuggestions([
-                        { 
-                            source: 'Rate limit exceeded', 
-                            translation: 'Please try again later or Sign in to use translate suggestions' 
-                        }
+                        {
+                            source: 'Rate limit exceeded',
+                            translation:
+                                'Please try again later or Sign in to use translate suggestions',
+                        },
                     ]);
                     setIsSuggestDialogOpen(true);
                     return;
-                }
-                else {
+                } else {
                     const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch suggestions');
+                    throw new Error(
+                        errorData.error || 'Failed to fetch suggestions'
+                    );
                 }
             }
 
@@ -597,8 +599,7 @@ function TranslationInterfaceContent() {
         }
     };
 
-    const handleSelectSuggestion = () => {
-    };
+    const handleSelectSuggestion = () => {};
 
     //历史记录分页显示
     const [currentHisPage, setCurrentHisPage] = useState(1); //当前页码
@@ -615,8 +616,6 @@ function TranslationInterfaceContent() {
     const totalPages = Math.ceil(
         strings[currentIndex]?.msgstr.length / itemsPerPage
     );
-
-
 
     // 获取标签颜色的类
     const getTagColorClass = (tag: string) => {
@@ -840,7 +839,6 @@ function TranslationInterfaceContent() {
                                     ? 'loading...'
                                     : 'Suggest'}
                             </Button>
-                            
 
                             {/* <Button variant="outline">Skip</Button> */}
                         </div>

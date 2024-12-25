@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -24,7 +24,7 @@ import {
 import AddUserForm from '@/components/AddUserForm';
 
 const UserList: React.FC = () => {
-    const { user,token } = useAuth(); // 从上下文中获取当前用户信息
+    const { user, token } = useAuth(); // 从上下文中获取当前用户信息
     const [users, setUsers] = useState([]); // 保存用户列表数据
     const [searchTerm, setSearchTerm] = useState(''); // 搜索关键字
     const [loading, setLoading] = useState(true); // 加载状态
@@ -34,7 +34,6 @@ const UserList: React.FC = () => {
     const [pageSize, setPageSize] = useState(10); // Number of items per page
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
-    
 
     // 确保只有管理员可以访问该页面
     useEffect(() => {
@@ -51,10 +50,10 @@ const UserList: React.FC = () => {
         try {
             const start_id = (currentPage - 1) * pageSize;
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?` + 
-                `start_id=${start_id}&` +
-                `length=${pageSize}&` +
-                `username=${search}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/user-list?` +
+                    `start_id=${start_id}&` +
+                    `length=${pageSize}&` +
+                    `username=${search}`,
                 {
                     method: 'GET',
                     headers: {
@@ -90,7 +89,9 @@ const UserList: React.FC = () => {
         setCurrentPage(newPage);
     };
 
-    const handlePageSizeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const handlePageSizeChange = (
+        event: React.ChangeEvent<HTMLSelectElement>
+    ) => {
         const newSize = parseInt(event.target.value);
         setPageSize(newSize);
         setCurrentPage(1); // Reset to first page when changing page size
@@ -217,13 +218,15 @@ const UserList: React.FC = () => {
 
                         <div className="flex items-center space-x-2">
                             <span>
-                                Page {currentPage} of {totalPages}{' '}
-                                ({totalItems} total items)
+                                Page {currentPage} of {totalPages} ({totalItems}{' '}
+                                total items)
                             </span>
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => handlePageChange(currentPage - 1)}
+                                onClick={() =>
+                                    handlePageChange(currentPage - 1)
+                                }
                                 disabled={currentPage === 1}
                             >
                                 <ChevronLeft className="h-4 w-4" />
@@ -231,7 +234,9 @@ const UserList: React.FC = () => {
                             <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => handlePageChange(currentPage + 1)}
+                                onClick={() =>
+                                    handlePageChange(currentPage + 1)
+                                }
                                 disabled={currentPage === totalPages}
                             >
                                 <ChevronRight className="h-4 w-4" />

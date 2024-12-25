@@ -160,9 +160,12 @@ export default function Welcome() {
                         variant="secondary"
                         className="w-48 md:w-60 text-sm md:text-lg py-2 md:py-3 bg-gray-200 hover:bg-gray-300 border-2 border-zinc-900"
                     > */}
-                        <Link href="public/projects" className="text-gray-800 hover:underline text-sm ">
-                            Continue Without Login
-                        </Link>
+                    <Link
+                        href="public/projects"
+                        className="text-gray-800 hover:underline text-sm "
+                    >
+                        Continue Without Login
+                    </Link>
                     {/* </Button> */}
                 </div>
             </div>

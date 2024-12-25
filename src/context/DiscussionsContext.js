@@ -183,14 +183,12 @@ function DiscussionsProviderContent({ children }) {
             {children}
         </DiscussionsContext.Provider>
     );
-};
+}
 
 export const DiscussionsProvider = ({ children }) => {
     return (
         <WithSearchParams>
-            <DiscussionsProviderContent>
-                {children}
-            </DiscussionsProviderContent>
+            <DiscussionsProviderContent>{children}</DiscussionsProviderContent>
         </WithSearchParams>
     );
 };

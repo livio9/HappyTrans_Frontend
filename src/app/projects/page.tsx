@@ -27,7 +27,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'; // 导入下拉菜单组件
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'; // 导入分页图标
+import {
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
+} from 'lucide-react'; // 导入分页图标
 import { Input } from '@/components/ui/input'; // 导入输入框组件
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // 导入标签页组件
 import { EditProjectDialog } from '@/components/projectsDialog/edit-project-dialog';
@@ -378,7 +383,6 @@ export default function Projects() {
         }
     };
 
-
     /**
      * 管理项目的函数
      */
@@ -562,8 +566,6 @@ export default function Projects() {
             alert('Failed to create project. Please try again.');
         }
     };
-
-
 
     /**
      * 启动翻译项目的函数
@@ -780,8 +782,12 @@ export default function Projects() {
                             {/* 分页导航 */}
                             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-                                    {Math.min(currentPage * itemsPerPage, totalItems)}{' '}
+                                    Showing{' '}
+                                    {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                                    {Math.min(
+                                        currentPage * itemsPerPage,
+                                        totalItems
+                                    )}{' '}
                                     of {totalItems} entries
                                 </div>
                                 <div className="flex space-x-2">
@@ -799,7 +805,9 @@ export default function Projects() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToPage(currentPage - 1)}
+                                        onClick={() =>
+                                            goToPage(currentPage - 1)
+                                        }
                                         disabled={currentPage === 1}
                                         aria-label="Previous page"
                                     >
@@ -809,7 +817,9 @@ export default function Projects() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToPage(currentPage + 1)}
+                                        onClick={() =>
+                                            goToPage(currentPage + 1)
+                                        }
                                         disabled={currentPage === totalPages}
                                         aria-label="Next page"
                                     >
@@ -861,8 +871,14 @@ export default function Projects() {
                             {/* 分页导航 */}
                             <div className="flex flex-col md:flex-row justify-between items-center gap-4 mt-6">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {(currentPageInProcess - 1) * itemsPerPage + 1} to{' '}
-                                    {Math.min(currentPageInProcess * itemsPerPage, totalItems)}{' '}
+                                    Showing{' '}
+                                    {(currentPageInProcess - 1) * itemsPerPage +
+                                        1}{' '}
+                                    to{' '}
+                                    {Math.min(
+                                        currentPageInProcess * itemsPerPage,
+                                        totalItems
+                                    )}{' '}
                                     of {totalItems} entries
                                 </div>
                                 <div className="flex space-x-2">
@@ -880,7 +896,11 @@ export default function Projects() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToPageInProcess(currentPageInProcess - 1)}
+                                        onClick={() =>
+                                            goToPageInProcess(
+                                                currentPageInProcess - 1
+                                            )
+                                        }
                                         disabled={currentPageInProcess === 1}
                                         aria-label="Previous page"
                                     >
@@ -890,8 +910,15 @@ export default function Projects() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToPageInProcess(currentPageInProcess + 1)}
-                                        disabled={currentPageInProcess === totalPagesInProcess}
+                                        onClick={() =>
+                                            goToPageInProcess(
+                                                currentPageInProcess + 1
+                                            )
+                                        }
+                                        disabled={
+                                            currentPageInProcess ===
+                                            totalPagesInProcess
+                                        }
                                         aria-label="Next page"
                                     >
                                         <ChevronRight className="h-4 w-4" />
@@ -900,8 +927,15 @@ export default function Projects() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => goToPageInProcess(totalPagesInProcess)}
-                                        disabled={currentPageInProcess === totalPagesInProcess}
+                                        onClick={() =>
+                                            goToPageInProcess(
+                                                totalPagesInProcess
+                                            )
+                                        }
+                                        disabled={
+                                            currentPageInProcess ===
+                                            totalPagesInProcess
+                                        }
                                         aria-label="Last page"
                                     >
                                         <ChevronsRight className="h-4 w-4" />

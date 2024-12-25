@@ -6,7 +6,8 @@ import localFont from 'next/font/local';
 // 页面元数据 (只能在服务器端定义)
 export const metadata: Metadata = {
     title: 'TranslateOS',
-    description: 'TranslateOS is a platform for translating open-source projects.',
+    description:
+        'TranslateOS is a platform for translating open-source projects.',
 };
 // 字体加载
 const geistSans = localFont({
@@ -25,7 +26,10 @@ export default function RootLayoutServer({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+        <html
+            lang="en"
+            className={`${geistSans.variable} ${geistMono.variable}`}
+        >
             <head>
                 <meta charSet="UTF-8" />
                 <meta
@@ -35,11 +39,9 @@ export default function RootLayoutServer({
                 <title>TranslateOS</title>
             </head>
             <body>
-                    <AuthProvider>
-                        <ProjectProvider>
-                                {children}
-                        </ProjectProvider>
-                    </AuthProvider>
+                <AuthProvider>
+                    <ProjectProvider>{children}</ProjectProvider>
+                </AuthProvider>
             </body>
         </html>
     );

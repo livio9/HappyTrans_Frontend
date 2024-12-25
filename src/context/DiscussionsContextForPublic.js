@@ -180,7 +180,7 @@ function DiscussionsProviderForPublicContent({ children }) {
             {children}
         </DiscussionsContext.Provider>
     );
-};
+}
 
 export const DiscussionsProviderForPublic = ({ children }) => {
     return (

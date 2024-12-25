@@ -40,7 +40,6 @@ const Header: React.FC = () => {
     // 处理登出操作
     const handleLogout = async () => {
         try {
-            
             router.push('/welcome'); // 重定向到登录页
         } catch (error) {
             console.error('Logout failed:', error);

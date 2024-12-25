@@ -54,15 +54,19 @@ const SettingsPage: React.FC = () => {
 
     // 编辑时的临时语言状态
     const [editPrimaryLanguage, setEditPrimaryLanguage] = useState<string>('');
-    const [editSecondaryLanguages, setEditSecondaryLanguages] = useState<string[]>([]);
+    const [editSecondaryLanguages, setEditSecondaryLanguages] = useState<
+        string[]
+    >([]);
 
     // 控制语言编辑模式
-    const [isEditingLanguages, setIsEditingLanguages] = useState<boolean>(false);
+    const [isEditingLanguages, setIsEditingLanguages] =
+        useState<boolean>(false);
 
     // 状态消息
     const [languageError, setLanguageError] = useState<string>('');
     const [isLanguageSaving, setIsLanguageSaving] = useState<boolean>(false);
-    const [languageSuccessMessage, setLanguageSuccessMessage] = useState<string>('');
+    const [languageSuccessMessage, setLanguageSuccessMessage] =
+        useState<string>('');
 
     // 通用错误消息状态
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -73,21 +77,26 @@ const SettingsPage: React.FC = () => {
     // 获取用户资料（个人资料和通知设置）
     useEffect(() => {
         const fetchProfile = async () => {
-
             try {
                 // 获取个人资料和通知设置
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
-                    method: 'GET',
-                    credentials: 'include', // 包含Cookies
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Token ${token}`, // 使用Token进行认证
-                    },
-                });
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
+                    {
+                        method: 'GET',
+                        credentials: 'include', // 包含Cookies
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Token ${token}`, // 使用Token进行认证
+                        },
+                    }
+                );
 
                 if (!res.ok) {
                     const contentType = res.headers.get('Content-Type');
-                    if (contentType && contentType.includes('application/json')) {
+                    if (
+                        contentType &&
+                        contentType.includes('application/json')
+                    ) {
                         const errorData = await res.json();
                         throw new Error(errorData.error || '未知错误');
                     } else {
@@ -148,8 +157,6 @@ const SettingsPage: React.FC = () => {
         setLanguageError('');
         setLanguageSuccessMessage('');
 
-        
-
         // 前端验证
         const validLanguageCodes = languageOptions.map((lang) =>
             lang.code.toLowerCase()
@@ -176,15 +183,18 @@ const SettingsPage: React.FC = () => {
 
         try {
             // 发送请求保存修改后的语言设置
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-                body: JSON.stringify(updatedData),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
+                {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${token}`,
+                    },
+                    body: JSON.stringify(updatedData),
+                }
+            );
 
             if (!res.ok) {
                 const contentType = res.headers.get('Content-Type');
@@ -428,7 +438,6 @@ const SettingsPage: React.FC = () => {
             </Card>
         </div>
     );
-
 };
 
 export default SettingsPage;

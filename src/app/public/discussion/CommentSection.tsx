@@ -64,7 +64,7 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
             const data: CommentType[] = Array.isArray(result.results)
                 ? result.results
                 : [];
-            setComments(data); 
+            setComments(data);
             setTotalPages(Math.ceil(parseInt(result.total) / pageSize)); // 设置总页数
         } catch (error) {
             console.error('Fail to fetch comments:', error);
@@ -158,7 +158,6 @@ const CommentsSection = ({ discussionId }: { discussionId: number }) => {
                     <p>No comments yet, be the first to comment one!</p>
                 )}
             </div>
-
 
             {/* 分页 */}
             {totalPages > 0 && (

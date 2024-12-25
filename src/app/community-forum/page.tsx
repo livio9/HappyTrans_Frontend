@@ -169,8 +169,8 @@ function PageContent() {
                                 lineHeight: '1.2', // 与标题保持一致的行高
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -191,8 +191,8 @@ function PageContent() {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -213,8 +213,8 @@ function PageContent() {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -242,13 +242,16 @@ function PageContent() {
     // 添加获取用户信息的函数
     const fetchUserInfo = async (userId: string) => {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?id=${userId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-            });
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile?id=${userId}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${token}`,
+                    },
+                }
+            );
 
             if (!response.ok) {
                 const contentType = response.headers.get('Content-Type');
@@ -270,7 +273,10 @@ function PageContent() {
     };
 
     // 点击头像时显示用户信息
-    const handleAvatarClick = async (userId: string, event: React.MouseEvent) => {
+    const handleAvatarClick = async (
+        userId: string,
+        event: React.MouseEvent
+    ) => {
         event.stopPropagation();
         const discussion = discussions.find((d) => d.user?.id === userId);
         if (discussion) {
@@ -298,7 +304,7 @@ function PageContent() {
                     setHoveredUserInfo(userInfo);
                     setPopupPosition({
                         x: finalX,
-                        y: finalY
+                        y: finalY,
                     });
                 }
             } catch (error) {
@@ -335,7 +341,11 @@ function PageContent() {
 
     // 开始编辑帖子
     const startEditing = (discussion: DiscussionType) => {
-        if (!authUser || (authUser.id !== discussion.user?.id && authUser.role !== "admin")) return;
+        if (
+            !authUser ||
+            (authUser.id !== discussion.user?.id && authUser.role !== 'admin')
+        )
+            return;
         setEditingDiscussionId(discussion.id);
         setEditTitle(discussion.title);
         setEditContent(discussion.content);
@@ -353,13 +363,20 @@ function PageContent() {
         if (!authUser) return;
 
         // 解析编辑后的标题
-        const { mainTitle, projectName: extractedProjectName, languageCode, idxInLanguage } =
-            parseTitle(editTitle);
+        const {
+            mainTitle,
+            projectName: extractedProjectName,
+            languageCode,
+            idxInLanguage,
+        } = parseTitle(editTitle);
 
         // 1. 验证 projectName
         if (extractedProjectName) {
-            if (projectName !== extractedProjectName) { // 修复语法错误，移除多余的括号
-                window.alert(`Error: Project "${extractedProjectName}" is not current project`);
+            if (projectName !== extractedProjectName) {
+                // 修复语法错误，移除多余的括号
+                window.alert(
+                    `Error: Project "${extractedProjectName}" is not current project`
+                );
                 return;
             }
         }
@@ -373,7 +390,8 @@ function PageContent() {
             }
 
             try {
-                const projectData = await fetchProjectInfo(extractedProjectName);
+                const projectData =
+                    await fetchProjectInfo(extractedProjectName);
                 if (!projectData || !projectData.languages) {
                     window.alert('Error: Failed to fetch project data');
                     return;
@@ -383,7 +401,7 @@ function PageContent() {
                     (lang: { language_code: string }) => lang.language_code
                 );
 
-                console.log("validLanguages: ", validLanguages);
+                console.log('validLanguages: ', validLanguages);
                 if (!validLanguages.includes(languageCode)) {
                     window.alert(
                         `Error: Language "${languageCode}" is not valid for project "${extractedProjectName}"`
@@ -419,7 +437,7 @@ function PageContent() {
                 const validEntries = entriesData.map((entry: Entry) =>
                     entry.value.toString()
                 );
-                console.log("validEntries: ", validEntries);
+                console.log('validEntries: ', validEntries);
                 if (!validEntries.includes(idxInLanguage)) {
                     window.alert(
                         `Error: Entry "${idxInLanguage}" is not valid for the selected project and language`
@@ -467,7 +485,11 @@ function PageContent() {
 
     // 删除帖子
     const deleteDiscussion = async (discussion: DiscussionType) => {
-        if (!authUser || (authUser.id !== discussion.user?.id && authUser.role !== "admin")) return;
+        if (
+            !authUser ||
+            (authUser.id !== discussion.user?.id && authUser.role !== 'admin')
+        )
+            return;
 
         const confirmMessage = `Deleting this post will also delete all comments, sure you want to delete it?`;
         if (!window.confirm(confirmMessage)) {
@@ -653,7 +675,7 @@ function PageContent() {
                                         onClick={(e) =>
                                             handleAvatarClick(
                                                 discussion.user?.id ||
-                                                'Anonymous',
+                                                    'Anonymous',
                                                 e
                                             )
                                         }
@@ -708,7 +730,10 @@ function PageContent() {
                                             </Link>
                                             {/* 如果当前用户是帖子作者，显示编辑/删除按钮 */}
                                             {authUser &&
-                                                (authUser.id === discussion.user?.id || authUser.role === "admin") && (
+                                                (authUser.id ===
+                                                    discussion.user?.id ||
+                                                    authUser.role ===
+                                                        'admin') && (
                                                     <>
                                                         <Button
                                                             variant="ghost"
@@ -801,7 +826,9 @@ function PageContent() {
                                         {hoveredUserInfo.username}
                                     </h3>
                                     <span className="ml-2">
-                                        {getAcceptedEntriesBadge(hoveredUserInfo.accepted_entries)}
+                                        {getAcceptedEntriesBadge(
+                                            hoveredUserInfo.accepted_entries
+                                        )}
                                     </span>
                                 </div>
 
@@ -817,7 +844,8 @@ function PageContent() {
                                 )}
                                 {hoveredUserInfo.native_language && (
                                     <p className="text-sm text-gray-600">
-                                        Native Language: {hoveredUserInfo.native_language}
+                                        Native Language:{' '}
+                                        {hoveredUserInfo.native_language}
                                     </p>
                                 )}
                             </>
@@ -828,7 +856,6 @@ function PageContent() {
         </div>
     );
 }
-
 
 const CommunityForumPage = () => {
     return (

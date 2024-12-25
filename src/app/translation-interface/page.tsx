@@ -246,7 +246,9 @@ function TranslationInterfaceContent() {
 
     const [currentIndex, setCurrentIndex] = useState(index1); // 使用初始的 index1
     // const [strings, setStrings] = useState<Entry[]>([]); // 动态获取的翻译条目
-    const [currentEntryForLan, setCurrentEntryForLan] = useState<Entry | null>(null); // 当前词条
+    const [currentEntryForLan, setCurrentEntryForLan] = useState<Entry | null>(
+        null
+    ); // 当前词条
     const [nearbyStrings, setNearbyStrings] = useState<(Entry | null)[]>([]); // 存储附近的字符串
     const [otherLanguagesEntry, setOtherLanguagesEntry] = useState<
         { languageCode: string; entry: Entry }[]
@@ -271,9 +273,7 @@ function TranslationInterfaceContent() {
     const [customTag, setCustomTag] = useState<string>(''); // 存储自定义标签内容
     const [isCustom, setIsCustom] = useState<boolean>(false); // 控制是否显示自定义标签输入框
     const [isAdding, setIsAdding] = useState(false);
-    const [tags, setTags] = useState<string[]>(
-        currentEntryForLan?.tags || []
-    );
+    const [tags, setTags] = useState<string[]>(currentEntryForLan?.tags || []);
     const [showRemoveCross, setShowRemoveCross] = useState(false);
 
     // 对于某个特定词条管理员从历史记录中选择翻译结果
@@ -495,7 +495,7 @@ function TranslationInterfaceContent() {
                     currentIndex
                 );
 
-                if ( currentIndex >=0 ) {
+                if (currentIndex >= 0) {
                     try {
                         const response = await fetch(
                             `${process.env.NEXT_PUBLIC_API_BASE_URL}/entry?project_name=${encodeURIComponent(
@@ -573,7 +573,6 @@ function TranslationInterfaceContent() {
                     'Strings not yet loaded or currentIndex is invalid.'
                 );
             }
-
 
             // 获取反馈信息
             const fetchFeedback = async () => {
@@ -678,50 +677,61 @@ function TranslationInterfaceContent() {
         if (currentEntryForLan) {
             try {
                 // 调用机器翻译 API
-                const MachineResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suggestions?target_language=${languageCode}&source_language=${sourceLanguage}&text=${currentEntryForLan.msgid}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Token ${token}`,
-                    },
-                });
+                const MachineResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/suggestions?target_language=${languageCode}&source_language=${sourceLanguage}&text=${currentEntryForLan.msgid}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Token ${token}`,
+                        },
+                    }
+                );
                 if (MachineResponse.ok) {
                     const MachineData = await MachineResponse.json();
                     if (MachineData.error) {
-                        console.error('Machine Translation API Error:', MachineData.error);
+                        console.error(
+                            'Machine Translation API Error:',
+                            MachineData.error
+                        );
                     } else {
                         // 使用 setSuggestions 更新状态
-                        setSuggestions(MachineData)
+                        setSuggestions(MachineData);
                     }
                 }
                 // 调用 LLM API
-                const LLMResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-                }
+                const LLMResponse = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/ai-suggestions?target_language=${languageCode}&idx_in_project=${currentIndex}&source_language=${sourceLanguage}&project_name=${projectName}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Token ${token}`,
+                        },
+                    }
                 );
                 if (LLMResponse.ok) {
-                const LLMData = await LLMResponse.json();
-                if (LLMData.error) {
-                    console.error('LLM API Error:', LLMData.error);
-                } else {
-                    // 使用 setSuggestions 更新状态
-                    setSuggestions(prevSuggestions => [
-                        ...prevSuggestions,
-                        ...LLMData.map((llm: {name: string, suggestion: string}) => ({
-                        source: llm.name,
-                        suggestion: llm.suggestion
-                        }))
-                    ]);
-                    
+                    const LLMData = await LLMResponse.json();
+                    if (LLMData.error) {
+                        console.error('LLM API Error:', LLMData.error);
+                    } else {
+                        // 使用 setSuggestions 更新状态
+                        setSuggestions((prevSuggestions) => [
+                            ...prevSuggestions,
+                            ...LLMData.map(
+                                (llm: {
+                                    name: string;
+                                    suggestion: string;
+                                }) => ({
+                                    source: llm.name,
+                                    suggestion: llm.suggestion,
+                                })
+                            ),
+                        ]);
                     }
-                } 
+                }
                 setIsSuggestDialogOpen(true); // 打开翻译建议对话框
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('调用LLM API 时出错:', error);
             } finally {
                 setIsLoadingSuggestions(false);
@@ -1145,9 +1155,7 @@ function TranslationInterfaceContent() {
                                                         className="flex items-center space-x-2"
                                                     >
                                                         <RadioGroupItem
-                                                            value={
-                                                                `suggestion-${idx}`
-                                                            }
+                                                            value={`suggestion-${idx}`}
                                                             id={`suggestion-${idx}`}
                                                         />
                                                         <Label
@@ -1234,11 +1242,16 @@ function TranslationInterfaceContent() {
                                         Last updated:
                                     </strong>
                                     <span className="text-secondary-foreground">
-                                        {currentEntryForLan?.updated_at && 
-                                            formatDistanceToNow(new Date(currentEntryForLan.updated_at), 
-                                                { addSuffix: true, locale: enUS }
-                                            )
-                                        }
+                                        {currentEntryForLan?.updated_at &&
+                                            formatDistanceToNow(
+                                                new Date(
+                                                    currentEntryForLan.updated_at
+                                                ),
+                                                {
+                                                    addSuffix: true,
+                                                    locale: enUS,
+                                                }
+                                            )}
                                     </span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 mb-4 bg-secondary p-4 rounded-md">
@@ -1533,34 +1546,42 @@ function TranslationInterfaceContent() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {otherLanguagesEntry.map((entry, idx) => (entry && (
-                                        <tr key={idx}>
-                                            <td>{entry.languageCode}</td>
-                                            <td>
-                                                {entry.entry
-                                                    .selected_msgstr_index ===
-                                                -1
-                                                    ? '(No translation yet)'
-                                                    : entry.entry.msgstr[
-                                                          entry.entry
-                                                              .selected_msgstr_index
-                                                      ]?.msg ||
-                                                      'No translation'}{' '}
-                                            </td>
-                                            <td>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        handleCopy(entry.entry)
-                                                    }
-                                                >
-                                                    <Copy className="h-4 w-4" />{' '}
-                                                    {/* 复制图标 */}
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    )))}
+                                    {otherLanguagesEntry.map(
+                                        (entry, idx) =>
+                                            entry && (
+                                                <tr key={idx}>
+                                                    <td>
+                                                        {entry.languageCode}
+                                                    </td>
+                                                    <td>
+                                                        {entry.entry
+                                                            .selected_msgstr_index ===
+                                                        -1
+                                                            ? '(No translation yet)'
+                                                            : entry.entry
+                                                                  .msgstr[
+                                                                  entry.entry
+                                                                      .selected_msgstr_index
+                                                              ]?.msg ||
+                                                              'No translation'}{' '}
+                                                    </td>
+                                                    <td>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleCopy(
+                                                                    entry.entry
+                                                                )
+                                                            }
+                                                        >
+                                                            <Copy className="h-4 w-4" />{' '}
+                                                            {/* 复制图标 */}
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            )
+                                    )}
                                 </tbody>
                             </table>
                         </TabsContent>{' '}

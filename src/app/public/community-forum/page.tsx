@@ -509,7 +509,7 @@ function CommunityForumContent() {
             )}
         </div>
     );
-};
+}
 
 const CommunityForumPage = () => {
     return (

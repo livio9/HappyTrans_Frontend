@@ -215,7 +215,9 @@ export function AddPeopleDialog({
                         {/* 添加已选用户列表 */}
                         {selectedUsers.length > 0 && (
                             <div className="mt-2 mb-4">
-                                <h4 className="text-sm font-medium mb-2">Selected User:</h4>
+                                <h4 className="text-sm font-medium mb-2">
+                                    Selected User:
+                                </h4>
                                 <div className="flex flex-wrap gap-2">
                                     {selectedUsers.map((user) => (
                                         <div
@@ -223,12 +225,21 @@ export function AddPeopleDialog({
                                             className="flex items-center gap-2 bg-accent p-1 rounded-md"
                                         >
                                             <Avatar className="h-6 w-6">
-                                                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                                                <AvatarImage
+                                                    src={user.avatarUrl}
+                                                    alt={user.name}
+                                                />
+                                                <AvatarFallback>
+                                                    {user.name[0]}
+                                                </AvatarFallback>
                                             </Avatar>
-                                            <span className="text-sm">{user.name}</span>
+                                            <span className="text-sm">
+                                                {user.name}
+                                            </span>
                                             <button
-                                                onClick={() => handleUserClick(user)}
+                                                onClick={() =>
+                                                    handleUserClick(user)
+                                                }
                                                 className="ml-1 text-muted-foreground hover:text-foreground"
                                             >
                                                 ×

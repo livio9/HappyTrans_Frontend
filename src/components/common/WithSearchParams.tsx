@@ -8,10 +8,9 @@ interface WithSearchParamsProps {
 }
 
 // 创建一个高阶组件来包装使用 useSearchParams 的组件
-export function WithSearchParams({ children, fallback = <div>Loading...</div> }: WithSearchParamsProps) {
-    return (
-        <Suspense fallback={fallback}>
-            {children}
-        </Suspense>
-    );
+export function WithSearchParams({
+    children,
+    fallback = <div>Loading...</div>,
+}: WithSearchParamsProps) {
+    return <Suspense fallback={fallback}>{children}</Suspense>;
 }

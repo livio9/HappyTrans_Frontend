@@ -205,7 +205,7 @@ function PostDetailsContent() {
             </Card>
         </div>
     );
-};
+}
 
 const PostDetails = () => {
     return (

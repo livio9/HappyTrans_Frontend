@@ -281,10 +281,10 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                 prevReplies.map((reply) =>
                     reply.id === comment.id
                         ? {
-                            ...reply,
-                            content: updatedComment.content,
-                            updated_at: updatedComment.updated_at,
-                        }
+                              ...reply,
+                              content: updatedComment.content,
+                              updated_at: updatedComment.updated_at,
+                          }
                         : reply
                 )
             );
@@ -578,7 +578,8 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                         )}
 
                         {/* 删除按钮，仅作者可见 */}
-                        {(replyUser?.id === user?.id || user?.role === "admin") && (
+                        {(replyUser?.id === user?.id ||
+                            user?.role === 'admin') && (
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -695,7 +696,8 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                     )}
 
                     {/* 编辑按钮 */}
-                    {(user?.id === commentUser?.id || user?.role === "admin") && (
+                    {(user?.id === commentUser?.id ||
+                        user?.role === 'admin') && (
                         <Button
                             variant="ghost"
                             onClick={handleEdit}
@@ -706,7 +708,8 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
                     )}
 
                     {/* 删除按钮 */}
-                    {(user?.id === commentUser?.id || user?.role === "admin") && (
+                    {(user?.id === commentUser?.id ||
+                        user?.role === 'admin') && (
                         <Button
                             variant="ghost"
                             onClick={handleDelete}
@@ -781,10 +784,7 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
 const Comment = ({ comment, fetchComments }: CommentProps) => {
     return (
         <WithSearchParams>
-            <CommentContent
-                comment={comment}
-                fetchComments={fetchComments}
-            />
+            <CommentContent comment={comment} fetchComments={fetchComments} />
         </WithSearchParams>
     );
 };

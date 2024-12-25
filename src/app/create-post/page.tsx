@@ -52,11 +52,13 @@ function PageContent() {
     // 在组件加载时获取项目信息
     useEffect(() => {
         if (projectName) {
-            fetchProjectInfo(projectName).then((projectData: { languages: SetStateAction<never[]>; }) => {
-                if (projectData && projectData.languages) {
-                    setLanguages(projectData.languages);
+            fetchProjectInfo(projectName).then(
+                (projectData: { languages: SetStateAction<never[]> }) => {
+                    if (projectData && projectData.languages) {
+                        setLanguages(projectData.languages);
+                    }
                 }
-            });
+            );
             // 初始化 topics 为项目名
             setSelectedTopics(`#${projectName}`);
         }

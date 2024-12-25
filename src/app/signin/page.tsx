@@ -76,7 +76,6 @@ function SignInContent() {
     };
     return (
         <div className="flex items-center justify-center min-h-screen ">
-            
             {/*包裹整个表单的容器，居中显示*/}
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
                 <h2 className="text-3xl font-bold text-center">
@@ -85,7 +84,6 @@ function SignInContent() {
                 {error && <p className="text-red-500 text-center">{error}</p>}
                 {/*如果有错误信息采用红色文本居中显示在表单顶部*/}
                 <form className="space-y-4" onSubmit={handleSubmit}>
-                    
                     {/*onSubmit绑定到指定的handleSubmit函数上*/}
                     <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>

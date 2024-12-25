@@ -768,7 +768,7 @@ function CommentContent({ comment, fetchComments }: CommentProps) {
             )}
         </Card>
     );
-};
+}
 
 const Comment = ({ comment, fetchComments }: CommentProps) => {
     return (

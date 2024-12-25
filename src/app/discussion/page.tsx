@@ -85,8 +85,8 @@ function PostDetailsContent() {
                                 lineHeight: '1.2', // 与标题保持一致的行高
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -107,8 +107,8 @@ function PostDetailsContent() {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -129,8 +129,8 @@ function PostDetailsContent() {
                                 lineHeight: '1.2',
                             }}
                             onMouseEnter={(e) =>
-                            (e.currentTarget.style.textDecoration =
-                                'underline')
+                                (e.currentTarget.style.textDecoration =
+                                    'underline')
                             }
                             onMouseLeave={(e) =>
                                 (e.currentTarget.style.textDecoration = 'none')
@@ -275,7 +275,7 @@ function PostDetailsContent() {
             </Card>
         </div>
     );
-};
+}
 
 const PostDetails = () => {
     return (

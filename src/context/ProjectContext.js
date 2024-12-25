@@ -31,7 +31,7 @@ export const ProjectProvider = ({ children }) => {
         setEntriesMap(
             new Map(formattedEntries.map((entry) => [entry.value, entry.label]))
         );
-        return formattedEntries; 
+        return formattedEntries;
     };
 
     // 获取 entries

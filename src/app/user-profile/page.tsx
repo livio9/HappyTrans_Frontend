@@ -82,7 +82,9 @@ export default function UserProfile() {
     // Temporary states for editing
     const [editBio, setEditBio] = useState('');
     const [editNativeLanguage, setEditNativeLanguage] = useState('');
-    const [editPreferredLanguages, setEditPreferredLanguages] = useState<string[]>([]);
+    const [editPreferredLanguages, setEditPreferredLanguages] = useState<
+        string[]
+    >([]);
 
     // Error message state
     const [errorMessage, setErrorMessage] = useState('');
@@ -102,9 +104,7 @@ export default function UserProfile() {
 
     // Function to fetch activity logs
     const fetchActivityLogs = useCallback(
-        async (
-            projectName: string,
-        ): Promise<ActivityLog[]> => {
+        async (projectName: string): Promise<ActivityLog[]> => {
             try {
                 const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/activity_logs?project_name=${encodeURIComponent(
@@ -138,17 +138,19 @@ export default function UserProfile() {
 
     useEffect(() => {
         const fetchProfile = async () => {
-
             try {
                 // Fetch user profile
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
-                    method: 'GET',
-                    credentials: 'include', // Include Cookies
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Token ${token}`, // Use Token for authentication
-                    },
-                });
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
+                    {
+                        method: 'GET',
+                        credentials: 'include', // Include Cookies
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Token ${token}`, // Use Token for authentication
+                        },
+                    }
+                );
 
                 if (!res.ok) {
                     const contentType = res.headers.get('Content-Type');
@@ -180,16 +182,15 @@ export default function UserProfile() {
 
                 // Fetch activity logs for each project
                 const activitiesPromises = allProjects.map(async (project) => {
-                    const activities = await fetchActivityLogs(
-                        project.name,
-                    );
+                    const activities = await fetchActivityLogs(project.name);
                     return { projectName: project.name, activities };
                 });
 
                 const activitiesResults = await Promise.all(activitiesPromises);
 
                 // Build the projectActivities map
-                const activitiesMap: { [projectName: string]: ActivityLog[] } = {};
+                const activitiesMap: { [projectName: string]: ActivityLog[] } =
+                    {};
                 activitiesResults.forEach(({ projectName, activities }) => {
                     activitiesMap[projectName] = activities;
                 });
@@ -244,18 +245,20 @@ export default function UserProfile() {
             ),
         };
 
-
         try {
             // Send PUT request to update user profile
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Token ${token}`,
-                },
-                body: JSON.stringify(updatedData),
-            });
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/profile`,
+                {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Token ${token}`,
+                    },
+                    body: JSON.stringify(updatedData),
+                }
+            );
 
             if (!res.ok) {
                 const contentType = res.headers.get('Content-Type');
@@ -279,9 +282,7 @@ export default function UserProfile() {
                 ...data.translated_projects,
             ];
             const activitiesPromises = allProjects.map(async (project) => {
-                const activities = await fetchActivityLogs(
-                    project.name,
-                );
+                const activities = await fetchActivityLogs(project.name);
                 return { projectName: project.name, activities };
             });
 
