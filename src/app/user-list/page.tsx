@@ -35,12 +35,7 @@ const UserList: React.FC = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
 
-    // 确保只有管理员可以访问该页面
-    useEffect(() => {
-        if (user?.role !== 'admin') {
-            window.location.href = '/dashboard'; // 非管理员重定向到仪表板
-        }
-    }, [user]);
+
 
     // 获取用户列表
     // Modify the fetchUsers function to handle pagination
