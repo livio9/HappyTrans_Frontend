@@ -442,52 +442,6 @@ function TranslationInterfaceContent() {
             // 只有在 projectName 和 languageCode 有值时才进行请求
             fetchDiscussions();
 
-            // 获取词条数据
-            // const fetchEntriesData = async () => {
-            //     console.log('Fetching entries data...');
-            //     try {
-            //         const response = await fetch(
-            //             `${process.env.NEXT_PUBLIC_API_BASE_URL}/entries?project_name=${encodeURIComponent(
-            //                 projectName
-            //             )}&language_code=${encodeURIComponent(languageCode)}`,
-            //             {
-            //                 method: 'GET',
-            //                 headers: {
-            //                     'Content-Type': 'application/json',
-            //                     Authorization: `Token ${token}`,
-            //                 },
-            //             }
-            //         );
-
-            //         if (!response.ok) {
-            //             throw new Error('Failed to fetch entries data');
-            //         }
-            //         const data: Entries = await response.json();
-            //         console.log('Fetched entries data:', data);
-
-            //         const languageData = data.languages.find(
-            //             (language) => language.language_code === languageCode
-            //         );
-
-            //         if (languageData) {
-            //             console.log('Found language data:', languageData);
-            //             setStrings(languageData.entries); // 更新 strings为获取的词条数据
-            //             setShouldFetchEntries(false); // 设置 shouldFetchEntries 为 false
-            //         } else {
-            //             console.log(
-            //                 `No language data found for ${languageCode}`
-            //             );
-            //         }
-            //     } catch (error) {
-            //         console.error('Error fetching entries data:', error);
-            //     }
-            // };
-
-            // // 仅在 entries 数据未加载时获取
-            // if (shouldFetchEntries) {
-            //     fetchEntriesData();
-            // }
-
             // 获取相邻词条数据
             const fetchEntryData = async () => {
                 console.log(
@@ -543,6 +497,7 @@ function TranslationInterfaceContent() {
                             next?.[languageCode] || null,
                         ]);
                         console.log('Nearby strings:', nearbyStrings);
+                        setShouldFetchEntries(false);
                     } catch (error) {
                         console.error('Error fetching entry data:', error);
                     }
@@ -554,7 +509,7 @@ function TranslationInterfaceContent() {
             };
 
             // 确保 `strings` 已经加载，才能获取当前词条数据
-            if (currentIndex >= 0) {
+            if (currentIndex >= 0 && shouldFetchEntries) {
                 console.log('Strings loaded, fetching entry data...');
                 fetchEntryData();
             }
@@ -609,7 +564,7 @@ function TranslationInterfaceContent() {
         projectName,
         languageCode,
         currentIndex,
-        // currentEntryForLan,
+        currentEntryForLan,
         ordering,
         shouldFetchEntries,
     ]); // 确保数据更新后执行
@@ -1006,7 +961,10 @@ function TranslationInterfaceContent() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurrentIndex(0)}
+                            onClick={() => {
+                                setCurrentIndex(0);
+                                setShouldFetchEntries(true);
+                            }}
                             disabled={currentIndex === 0}
                         >
                             <ChevronsLeft className="h-4 w-4" />
@@ -1015,9 +973,10 @@ function TranslationInterfaceContent() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() =>
+                            onClick={() =>{
                                 setCurrentIndex(Math.max(0, currentIndex - 1))
-                            }
+                                setShouldFetchEntries(true);
+                            }}
                             disabled={currentIndex === 0}
                         >
                             <ChevronLeft className="h-4 w-4" />
@@ -1030,14 +989,15 @@ function TranslationInterfaceContent() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() =>
+                            onClick={() =>{
                                 setCurrentIndex(
                                     Math.min(
                                         entriesNumber - 1,
                                         currentIndex + 1
                                     )
                                 )
-                            }
+                                setShouldFetchEntries(true);
+                            }}
                             disabled={currentIndex === entriesNumber - 1}
                         >
                             <ChevronRight className="h-4 w-4" />
@@ -1046,7 +1006,10 @@ function TranslationInterfaceContent() {
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => setCurrentIndex(entriesNumber - 1)}
+                            onClick={() =>{
+                                setCurrentIndex(entriesNumber - 1)
+                                setShouldFetchEntries(true);
+                            }}
                             disabled={currentIndex === entriesNumber - 1}
                         >
                             <ChevronsRight className="h-4 w-4" />
