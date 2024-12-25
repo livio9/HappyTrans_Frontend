@@ -24,7 +24,7 @@ import {
 import AddUserForm from '@/components/AddUserForm';
 
 const UserList: React.FC = () => {
-    const { user } = useAuth(); // 从上下文中获取当前用户信息
+    const { user,token } = useAuth(); // 从上下文中获取当前用户信息
     const [users, setUsers] = useState([]); // 保存用户列表数据
     const [searchTerm, setSearchTerm] = useState(''); // 搜索关键字
     const [loading, setLoading] = useState(true); // 加载状态
@@ -59,7 +59,7 @@ const UserList: React.FC = () => {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${localStorage.getItem('authToken')}`,
+                        Authorization: `Token ${token}`,
                     },
                 }
             );
@@ -108,7 +108,7 @@ const UserList: React.FC = () => {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${localStorage.getItem('authToken')}`,
+                        Authorization: `Token ${token}`,
                     },
                 }
             );

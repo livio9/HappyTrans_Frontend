@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Globe, ChevronRight, PieChart, ChevronLeft } from 'lucide-react'; // 合并导入
-import Link from 'next/link'; // Import Link component
+import { useAuth } from '@/context/AuthContext';
 import ProjectCard from '@/components/shared/ProjectCard'; // Import ProjectCard component
 import { useRouter } from 'next/navigation';
 
@@ -98,12 +98,12 @@ export default function UserProfile() {
     }>({});
 
     const router = useRouter();
+    const { token } = useAuth();
 
     // Function to fetch activity logs
     const fetchActivityLogs = useCallback(
         async (
             projectName: string,
-            authToken: string
         ): Promise<ActivityLog[]> => {
             try {
                 const response = await fetch(
@@ -114,7 +114,7 @@ export default function UserProfile() {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            Authorization: `Token ${authToken}`, // Use Token for authentication
+                            Authorization: `Token ${token}`, // Use Token for authentication
                         },
                     }
                 );
@@ -138,12 +138,6 @@ export default function UserProfile() {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            const authToken = localStorage.getItem('authToken') || '';
-            if (!authToken) {
-                console.error('No authentication token found.');
-                setErrorMessage('认证信息丢失，请重新登录。');
-                return;
-            }
 
             try {
                 // Fetch user profile
@@ -152,7 +146,7 @@ export default function UserProfile() {
                     credentials: 'include', // Include Cookies
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${authToken}`, // Use Token for authentication
+                        Authorization: `Token ${token}`, // Use Token for authentication
                     },
                 });
 
@@ -188,7 +182,6 @@ export default function UserProfile() {
                 const activitiesPromises = allProjects.map(async (project) => {
                     const activities = await fetchActivityLogs(
                         project.name,
-                        authToken
                     );
                     return { projectName: project.name, activities };
                 });
@@ -251,12 +244,6 @@ export default function UserProfile() {
             ),
         };
 
-        const authToken = localStorage.getItem('authToken') || '';
-        if (!authToken) {
-            console.error('No authentication token found.');
-            setErrorMessage('认证信息丢失，请重新登录。');
-            return;
-        }
 
         try {
             // Send PUT request to update user profile
@@ -265,7 +252,7 @@ export default function UserProfile() {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Token ${authToken}`,
+                    Authorization: `Token ${token}`,
                 },
                 body: JSON.stringify(updatedData),
             });
@@ -294,7 +281,6 @@ export default function UserProfile() {
             const activitiesPromises = allProjects.map(async (project) => {
                 const activities = await fetchActivityLogs(
                     project.name,
-                    authToken
                 );
                 return { projectName: project.name, activities };
             });

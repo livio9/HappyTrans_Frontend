@@ -13,6 +13,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import UserAvatar from '@/components/shared/UserAvatar'; // 引入 UserAvatar 组件
 import Medal from '@/components/shared/Medal'; // 引入 Medal 组件
+import { useAuth } from '@/context/AuthContext';
 
 // 定义接口
 interface LanguageVersion {
@@ -85,12 +86,7 @@ const Dashboard: React.FC = () => {
     const [loading, setLoading] = React.useState<boolean>(false);
     const [error, setError] = React.useState<string | null>(null);
 
-    // 从 localStorage 获取 Token
-    const token = React.useMemo(() => {
-        return typeof window !== 'undefined'
-            ? localStorage.getItem('authToken')
-            : null;
-    }, []);
+    const { token } = useAuth(); // 从上下文中获取 token
 
     /**
      * 获取用户的 Profile 信息，包括 managed_projects 和 translated_projects
@@ -103,7 +99,7 @@ const Dashboard: React.FC = () => {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: token ? `Token ${token}` : '',
+                        Authorization: `Token ${token}`,
                     },
                 }
             );

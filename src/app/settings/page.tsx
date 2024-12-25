@@ -68,16 +68,11 @@ const SettingsPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
 
     const router = useRouter();
+    const { token } = useAuth();
 
     // 获取用户资料（个人资料和通知设置）
     useEffect(() => {
         const fetchProfile = async () => {
-            const authToken = localStorage.getItem('authToken') || '';
-            if (!authToken) {
-                console.error('No authentication token found.');
-                setErrorMessage('认证信息丢失，请重新登录。');
-                return;
-            }
 
             try {
                 // 获取个人资料和通知设置
@@ -86,7 +81,7 @@ const SettingsPage: React.FC = () => {
                     credentials: 'include', // 包含Cookies
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${authToken}`, // 使用Token进行认证
+                        Authorization: `Token ${token}`, // 使用Token进行认证
                     },
                 });
 
@@ -153,13 +148,7 @@ const SettingsPage: React.FC = () => {
         setLanguageError('');
         setLanguageSuccessMessage('');
 
-        const authToken = localStorage.getItem('authToken') || '';
-        if (!authToken) {
-            console.error('No authentication token found.');
-            setLanguageError('认证信息丢失，请重新登录。');
-            setIsLanguageSaving(false);
-            return;
-        }
+        
 
         // 前端验证
         const validLanguageCodes = languageOptions.map((lang) =>
@@ -192,7 +181,7 @@ const SettingsPage: React.FC = () => {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Token ${authToken}`,
+                    Authorization: `Token ${token}`,
                 },
                 body: JSON.stringify(updatedData),
             });

@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 
 const AddUserPage: React.FC = () => {
     const router = useRouter();
-    const { user } = useAuth(); // 从上下文中获取当前用户信息
+    const { token } = useAuth(); // 从上下文中获取当前用户信息
 
     const [newUser, setNewUser] = useState({
         username: '',
@@ -44,7 +44,7 @@ const AddUserPage: React.FC = () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${localStorage.getItem('authToken')}`, // 使用本地存储的 authToken
+                        Authorization: `Token ${token}`, // 使用本地存储的 authToken
                     },
                 }
             );

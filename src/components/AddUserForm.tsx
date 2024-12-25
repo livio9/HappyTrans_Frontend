@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import zxcvbn from 'zxcvbn'; // 用于检测密码强度
+import { useAuth } from '@/context/AuthContext';
 
 interface AddUserFormProps {
     onSuccess?: () => void; // 当用户创建成功后，外部可执行的回调（如刷新列表、关闭弹窗）
@@ -22,6 +23,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ onSuccess, onClose }) => {
 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { token } = useAuth();
 
     // 辅助函数：检查用户名格式
     const isValidUsername = (username: string) => {
@@ -122,7 +124,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ onSuccess, onClose }) => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Token ${localStorage.getItem('authToken')}`, // 使用本地存储的 authToken
+                        Authorization: `Token ${token}`, // 使用本地存储的 authToken
                     },
                 }
             );

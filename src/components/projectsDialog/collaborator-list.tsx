@@ -45,7 +45,7 @@ export function CollaboratorList({
                     {
                         headers: {
                             'Content-Type': 'application/json',
-                            Authorization: `Token ${localStorage.getItem('authToken')}`,
+                            Authorization: `Token ${token}`,
                         },
                     }
                 );
