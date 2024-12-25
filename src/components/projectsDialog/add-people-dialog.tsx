@@ -212,6 +212,32 @@ export function AddPeopleDialog({
                                 className="pl-8"
                             />
                         </div>
+                        {/* 添加已选用户列表 */}
+                        {selectedUsers.length > 0 && (
+                            <div className="mt-2 mb-4">
+                                <h4 className="text-sm font-medium mb-2">Selected User:</h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedUsers.map((user) => (
+                                        <div
+                                            key={user.id}
+                                            className="flex items-center gap-2 bg-accent p-1 rounded-md"
+                                        >
+                                            <Avatar className="h-6 w-6">
+                                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-sm">{user.name}</span>
+                                            <button
+                                                onClick={() => handleUserClick(user)}
+                                                className="ml-1 text-muted-foreground hover:text-foreground"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <ScrollArea className="max-h-[300px] overflow-y-auto">
                             {isLoading ? (
                                 <div className="p-4 text-center text-sm text-muted-foreground">
