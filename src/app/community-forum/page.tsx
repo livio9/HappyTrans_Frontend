@@ -86,7 +86,7 @@ function PageContent() {
 
     const { user, projectInProcess } = useAuth(); // 使用用户上下文获取当前用户
     const canCreateDiscussion =
-        user && projectName && projectInProcess?.includes(projectName);
+        user && projectName && (user.role === 'admin' || projectInProcess?.includes(projectName));
 
     const {
         discussions,
