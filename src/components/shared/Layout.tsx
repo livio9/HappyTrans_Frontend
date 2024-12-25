@@ -6,7 +6,7 @@ import Header from './Header';
 import { usePathname } from 'next/navigation';
 
 // 定义不显示侧边栏和头部导航的路径
-const publicPaths = ['/welcome', '/signin', '/signup', '/', ''];
+const publicPaths = ['/welcome', '/signin', '/signup',];
 
 // 布局组件，包含侧边栏和头部导航
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
